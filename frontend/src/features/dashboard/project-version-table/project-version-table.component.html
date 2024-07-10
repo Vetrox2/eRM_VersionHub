@@ -9,11 +9,15 @@
     <ng-container [matColumnDef]="column">
       <th mat-header-cell *matHeaderCellDef>{{ column }}</th>
       <td mat-cell *matCellDef="let element">
-        @if (column === 'Published') {
-        <app-status-chip
-          [status]="getPublicationStatus(element)"
-        ></app-status-chip>
-        } @else {
+        @if (column === 'Actions') {
+          <app-menu-icons (click)="stopPropagation($event)"
+          [menuItems]="menuItems"
+          (menuSelection)="handleMenuSelection($event, element)"></app-menu-icons>
+        } 
+        @if( column === 'Published')
+        {
+            <mat-icon>{{getPublicationIcon(element)}}</mat-icon>            
+        }@else {
         {{ element[column] }}
         }
       </td>
