@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy,Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -14,6 +14,9 @@ import { StatusChipComponent } from '../../../components/status-chip/status-chip
 import { MatButtonModule } from '@angular/material/button';
 import { AppService } from '../../../services/app-service.service';
 import { Subscription } from 'rxjs';
+import { MenuIconsComponent } from '../../../components/menu/menu.component';
+import { Version } from '../../../models/version.model';
+import { MatIcon } from '@angular/material/icon';
 
 interface FlattenedVersion {
   Version: string;
@@ -23,6 +26,12 @@ interface FlattenedVersion {
   Modules: App['Versions'][0]['Modules'];
   ParentApp: App;
 }
+export interface MenuItem {
+  icon: string;
+  label: string;
+  action: string;
+}
+
 
 @Component({
   selector: 'app-project-version-table',
@@ -45,13 +54,20 @@ interface FlattenedVersion {
     MatCheckboxModule,
     StatusChipComponent,
     MatButtonModule,
+    MenuIconsComponent,
+    MatIcon
   ],
 })
 export class ProjectVersionTableComponent implements OnInit, OnDestroy {
   dataSource: FlattenedVersion[] = [];
-  columnsToDisplay = ['Version', 'Description', 'Name', 'ID', 'Published'];
+  columnsToDisplay = ['Actions','Published','Version', 'Description', 'Name', 'ID'];
   expandedElement: FlattenedVersion | null = null;
   private selectedAppSubscription: Subscription | undefined;
+
+  menuItems: MenuItem[] = [
+    { icon: 'publish', label: 'Publish', action: 'publish' },
+    { icon: 'cancel', label: 'Unpublish', action: 'unpublish' },
+  ];
 
   constructor(private appService: AppService) {}
 
@@ -89,6 +105,7 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
   getPublicationStatus(
     version: FlattenedVersion
   ): 'published' | 'semi-published' | 'not-published' {
+    console.log(version);
     const publishedCount = version.Modules.filter((m) => m.IsPublished).length;
     if (publishedCount === version.Modules.length) {
       return 'published';
@@ -97,5 +114,26 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
     } else {
       return 'not-published';
     }
+  }
+  stopPropagation(event: Event) {
+    event.stopPropagation();
+  }
+  handleMenuSelection(action: string, version: Version) {
+    console.log(`Action ${action} selected for app ${version.ID}`);
+    switch (action) {
+      case 'publish':
+        // Handle publish action
+        break;
+      case 'unpublish':
+        // Handle unpublish action
+        break;
+      default:
+        console.warn(`Unknown action: ${action}`);
+    }
+  }
+  getPublicationIcon(version: FlattenedVersion): string {
+    const isPublished = this.getPublicationStatus(version) === 'published';
+    
+    return isPublished ? 'check' : 'close';
   }
 }
