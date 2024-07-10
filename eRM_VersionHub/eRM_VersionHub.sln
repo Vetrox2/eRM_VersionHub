@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35013.160
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "eRM VersionHub", "eRM_VersionHub\eRM_VersionHub.csproj", "{7289B4E1-F6AB-4A94-8880-352EE86AAD4E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "eRM_VersionHub", "eRM_VersionHub\eRM_VersionHub.csproj", "{7289B4E1-F6AB-4A94-8880-352EE86AAD4E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{CE7DE882-AA2F-4409-8EA0-45B86276B9D3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{7289B4E1-F6AB-4A94-8880-352EE86AAD4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7289B4E1-F6AB-4A94-8880-352EE86AAD4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7289B4E1-F6AB-4A94-8880-352EE86AAD4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE7DE882-AA2F-4409-8EA0-45B86276B9D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE7DE882-AA2F-4409-8EA0-45B86276B9D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE7DE882-AA2F-4409-8EA0-45B86276B9D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE7DE882-AA2F-4409-8EA0-45B86276B9D3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -30,13 +30,15 @@ public class AppDataScannerTests
         _mockPermissionService.Setup(service => service.GetPermissionList(token))
         .ReturnsAsync(Result<List<Permission>>.Success(new List<Permission>()
         {
-                new Permission() { Username = token, AppID = "1" },
-                new Permission() { Username = token, AppID = "2" },
-                new Permission() { Username = token, AppID = "3" }
+                new Permission() { Username = token, AppID = "adminxe" },
+                new Permission() { Username = token, AppID = "akcyza2" },
+                new Permission() { Username = token, AppID = "alerter2" }
             }));
 
         bool result = true;
-        var structure = await _appDataScanner.GetAppsStructure("Disc\\apps", "application.json", "Disc\\Disc1\\eRMwewn", "Disc\\Disc1\\eRMzewn", token);
+        var structure = await _appDataScanner.GetAppsStructure("C:\\Users\\User\\source\\repos\\eRM_VersionHub\\eRM_VersionHub\\Tests\\bin\\Debug\\net8.0\\Disc\\apps1", "application.json",
+            "C:\\Users\\User\\source\\repos\\eRM_VersionHub\\eRM_VersionHub\\Tests\\bin\\Debug\\net8.0\\Disc\\Disc1\\eRMwewn\\packages",
+            "C:\\Users\\User\\source\\repos\\eRM_VersionHub\\eRM_VersionHub\\Tests\\bin\\Debug\\net8.0\\Disc\\Disc1\\eRMzewn\\packages", token);
         structure.ForEach(app => app.Versions.ForEach(ver => ver.Modules.ForEach(module =>
         {
             if (module.IsPublished)

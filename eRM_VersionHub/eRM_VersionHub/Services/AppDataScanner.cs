@@ -61,11 +61,11 @@ namespace eRM_VersionHub.Services
         {
             var perms = await _permissionService.GetPermissionList(token);
             var favs = await _favoriteService.GetFavoriteList(token);
-            if (!perms.IsSuccess || perms.Data.Count == 0) return null;
+            if (perms == null || !perms.IsSuccess || perms.Data.Count == 0) return null;
 
             appsStructure = appsStructure.Where(app => perms.Data.Any(perm => perm.AppID == app.ID)).ToList();
 
-            if (favs.IsSuccess && favs.Data.Count > 0)
+            if (favs != null && favs.IsSuccess && favs.Data.Count > 0)
                 appsStructure.ForEach(app => app.IsFavourite = favs.Data.Any(fav => fav.AppID == app.ID));
 
             return appsStructure;
