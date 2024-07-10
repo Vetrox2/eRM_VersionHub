@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories.Interfaces;
-using eRM_VersionHub.Result;
+
 using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Data;
@@ -28,7 +28,7 @@ namespace eRM_VersionHub.Repositories.Database
             public bool IsUnique { get; set; }
         }
 
-        public async Task<Result<bool>> CreateTable(
+        public async Task<ApiResponse<bool>> CreateTable(
             string tableName,
             List<ColumnDefinition> columns
         )
@@ -49,17 +49,17 @@ namespace eRM_VersionHub.Repositories.Database
             )";
 
                 await _db.ExecuteAsync(sql);
-                return Result<bool>.Success(true);
+                return ApiResponse<bool>.SuccessResponse(true);
             }
             catch (Exception ex)
             {
-                return Result<bool>.Failure(
+                return ApiResponse<bool>.ErrorResponse(
                     new List<string> { $"Error creating table: {ex.Message}" }
                 );
             }
         }
 
-        public async Task<Result<bool>> TableExists(string tableName)
+        public async Task<ApiResponse<bool>> TableExists(string tableName)
         {
             var sql =
                 @"SELECT EXISTS (
@@ -69,12 +69,12 @@ namespace eRM_VersionHub.Repositories.Database
             var result = await _db.ExecuteScalarAsync<bool>(sql, new { TableName = tableName });
             if (result == true)
             {
-                return Result<bool>.Success(true);
+                return ApiResponse<bool>.SuccessResponse(true);
             }
-            return Result<bool>.Failure(["Table dont exist"]);
+            return ApiResponse<bool>.ErrorResponse(["Table dont exist"]);
         }
 
-        public async Task<Result<T?>> GetAsync<T>(string command, object parms)
+        public async Task<ApiResponse<T?>> GetAsync<T>(string command, object parms)
         {
             try
             {
@@ -82,21 +82,17 @@ namespace eRM_VersionHub.Repositories.Database
                 T? result = query.FirstOrDefault();
                 if (result == null)
                 {
-                    return Result<T?>.Failure(
-                        ["Object was not found"],
-                        "There is no objects that satisfy this criteria",
-                        404
-                    );
+                    return ApiResponse<T?>.ErrorResponse(["Object was not found"]);
                 }
-                return Result<T?>.Success(result);
+                return ApiResponse<T?>.SuccessResponse(result);
             }
             catch (Exception ex)
             {
-                return Result<T?>.Failure([ex.Message], ex.StackTrace, 500);
+                return ApiResponse<T?>.ErrorResponse([ex.Message]);
             }
         }
 
-        public async Task<Result<List<T>>> GetAll<T>(string command, object parms)
+        public async Task<ApiResponse<List<T>>> GetAll<T>(string command, object parms)
         {
             try
             {
@@ -104,21 +100,17 @@ namespace eRM_VersionHub.Repositories.Database
                 List<T> result = query.ToList();
                 if (result == null)
                 {
-                    return Result<List<T>>.Failure(
-                        ["No data available"],
-                        "There is no data in this table",
-                        404
-                    );
+                    return ApiResponse<List<T>>.ErrorResponse(["No data available"]);
                 }
-                return Result<List<T>>.Success(result);
+                return ApiResponse<List<T>>.SuccessResponse(result);
             }
             catch (Exception ex)
             {
-                return Result<List<T>>.Failure([ex.Message], ex.StackTrace, 500);
+                return ApiResponse<List<T>>.ErrorResponse([ex.Message]);
             }
         }
 
-        public async Task<Result<T?>> EditData<T>(string command, object parms)
+        public async Task<ApiResponse<T?>> EditData<T>(string command, object parms)
         {
             try
             {
@@ -126,17 +118,13 @@ namespace eRM_VersionHub.Repositories.Database
                 T? result = query.FirstOrDefault();
                 if (result == null)
                 {
-                    return Result<T?>.Failure(
-                        ["Object was not found"],
-                        "There is no objects that satisfy this criteria",
-                        404
-                    );
+                    return ApiResponse<T?>.ErrorResponse(["Object was not found"]);
                 }
-                return Result<T?>.Success(result);
+                return ApiResponse<T?>.SuccessResponse(result);
             }
             catch (Exception ex)
             {
-                return Result<T?>.Failure([ex.Message], ex.StackTrace, 500);
+                return ApiResponse<T?>.ErrorResponse([ex.Message]);
             }
         }
     }

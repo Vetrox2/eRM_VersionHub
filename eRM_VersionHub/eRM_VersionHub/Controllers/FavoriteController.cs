@@ -1,5 +1,5 @@
 ﻿using eRM_VersionHub.Models;
-using eRM_VersionHub.Result;
+
 using eRM_VersionHub.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,15 +14,12 @@ namespace eRM_VersionHub.Controllers
         [HttpGet("{Username}")]
         public async Task<IActionResult> GetFavorites(string Username)
         {
-            Result<List<Favorite>> result = await _favoritesService.GetFavoriteList(Username);
-            if (result.IsSuccess)
+            ApiResponse<List<Favorite>> result = await _favoritesService.GetFavoriteList(Username);
+            if (result.Success)
             {
                 return Ok(result.Data);
             }
-            return Problem(
-                detail: string.Join(";", result.ErrorMessages),
-                statusCode: result.ProblemDetails.Status
-            );
+            return Problem(detail: string.Join(";", result.Errors));
         }
 
         [HttpPost("{UserName}/{app_id}")]
@@ -31,14 +28,11 @@ namespace eRM_VersionHub.Controllers
             var result = await _favoritesService.CreateFavorite(
                 new Favorite { Username = UserName, AppID = app_id }
             );
-            if (result.IsSuccess)
+            if (result.Success)
             {
                 return Ok(result.Data);
             }
-            return Problem(
-                detail: string.Join(";", result.ErrorMessages),
-                statusCode: result.ProblemDetails.Status
-            );
+            return Problem(detail: string.Join(";", result.Errors));
         }
 
         [HttpDelete("{UserName}/{app_id}")]
@@ -47,42 +41,33 @@ namespace eRM_VersionHub.Controllers
             var result = await _favoritesService.DeleteFavorite(
                 new Favorite { Username = UserName, AppID = app_id }
             );
-            if (result.IsSuccess)
+            if (result.Success)
             {
                 return Ok(result.Data);
             }
-            return Problem(
-                detail: string.Join(";", result.ErrorMessages),
-                statusCode: result.ProblemDetails.Status
-            );
+            return Problem(detail: string.Join(";", result.Errors));
         }
 
         [HttpPost]
         public async Task<IActionResult> AddFavorites([FromBody] Favorite favorite)
         {
-            Result<Favorite?> result = await _favoritesService.CreateFavorite(favorite);
-            if (result.IsSuccess)
+            ApiResponse<Favorite?> result = await _favoritesService.CreateFavorite(favorite);
+            if (result.Success)
             {
                 return Ok(result.Data);
             }
-            return Problem(
-                detail: string.Join(";", result.ErrorMessages),
-                statusCode: result.ProblemDetails.Status
-            );
+            return Problem(detail: string.Join(";", result.Errors));
         }
 
         [HttpDelete]
         public async Task<IActionResult> DeletePermission([FromBody] Favorite favorite)
         {
-            Result<Favorite?> result = await _favoritesService.DeleteFavorite(favorite);
-            if (result.IsSuccess)
+            ApiResponse<Favorite?> result = await _favoritesService.DeleteFavorite(favorite);
+            if (result.Success)
             {
                 return Ok(result.Data);
             }
-            return Problem(
-                detail: string.Join(";", result.ErrorMessages),
-                statusCode: result.ProblemDetails.Status
-            );
+            return Problem(detail: string.Join(";", result.Errors));
         }
     }
 }
