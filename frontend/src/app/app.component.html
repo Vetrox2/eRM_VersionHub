@@ -1,0 +1,25 @@
+<div class="app-container" style="padding: 2.5px">
+  <header class="app-header">
+    <h3 class="app-title">eRM Management App</h3>
+    <div class="icon-container">
+      <button mat-icon-button>
+        <mat-icon>person</mat-icon>
+      </button>
+      <button mat-icon-button>
+        <mat-icon>notifications</mat-icon>
+      </button>
+    </div>
+  </header>
+  <mat-divider></mat-divider>
+  <div class="app-content" style="display: flex; margin-top: 1em">
+    <aside class="app-sidebar" style="width: min-content; margin-right: 10px">
+      <app-sidebar></app-sidebar>
+    </aside>
+    <main class="app-main" style="width: 100%">
+      <app-favorites-tab></app-favorites-tab>
+      <div>
+        <app-project-version-table></app-project-version-table>
+      </div>
+    </main>
+  </div>
+</div>

@@ -396,3 +396,4 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/eRM_VersionHub/eRM_VersionHub/Disc

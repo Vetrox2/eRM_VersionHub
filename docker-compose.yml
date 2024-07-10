@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  postgres: 
+    image: postgres:16.3-alpine3.20
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+     - "5432:5432"
+    deploy:
+      resources:
+        limits: 
+          cpus: "0.50"
+          memory: 400M
+        reservations:
+          cpus: "0.25"
+          memory: 200M 
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  
+  pgweb:
+    image: sosedoff/pgweb
+    restart: unless-stopped
+    ports:
+     - "8081:8081"
+    environment:
+     - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

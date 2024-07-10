@@ -1,0 +1,37 @@
+<ng-container *ngIf="apps$ | async as apps">
+  <ng-container *ngIf="apps.length > 0; else noApps">
+    <mat-nav-list>
+      <mat-list-item
+        *ngFor="let app of apps; trackBy: trackById"
+        (click)="selectItem(app)"
+        [ngClass]="{
+          selected: (selectedItem$ | async) === app,
+          'selected-hover': (selectedItem$ | async) === app
+        }"
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+          "
+        >
+          {{ app.Name }}
+          <app-menu-icons
+            [menuItems]="menuItems"
+            (menuSelection)="handleMenuSelection($event, app)"
+          ></app-menu-icons>
+        </div>
+      </mat-list-item>
+    </mat-nav-list>
+  </ng-container>
+</ng-container>
+
+<ng-template #noApps>
+  <div *ngIf="loading" class="loading">Loading apps...</div>
+  <div *ngIf="!loading && error" class="error">
+    {{ error }}
+  </div>
+  <div *ngIf="!loading && !error" class="no-apps">No apps available.</div>
+</ng-template>

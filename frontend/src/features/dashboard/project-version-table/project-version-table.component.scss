@@ -1,0 +1,66 @@
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+.element-detail {
+  overflow: hidden;
+}
+
+.element-row td {
+  border-bottom-width: 0;
+}
+
+tr.detail-row {
+  height: 0;
+}
+
+tr.element-row:not(.expanded-row):hover {
+  background: whitesmoke;
+}
+
+tr.element-row:not(.expanded-row):active {
+  background: #efefef;
+}
+
+.version-detail {
+  margin: 16px 0;
+  padding: 16px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+
+  strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1.1em;
+  }
+
+  ul {
+    padding-left: 20px;
+  }
+}
+
+.module-item {
+  list-style-type: none;
+  margin-bottom: 8px;
+
+  mat-checkbox {
+    margin-right: 8px;
+  }
+}
+
+.module-optional {
+  margin-left: 8px;
+  font-style: italic;
+  color: #666;
+  font-size: 0.9em;
+}
+
+.icon-container {
+  display: grid;
+  gap: 1em;
+}
