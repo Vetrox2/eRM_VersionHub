@@ -15,5 +15,10 @@
     <PackageReference Include="Npgsql" Version="8.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
+	
+	<ItemGroup>
+     <InternalsVisibleTo Include="eRM_VersionHub_Tester" />
+	</ItemGroup>
+
 
 </Project>

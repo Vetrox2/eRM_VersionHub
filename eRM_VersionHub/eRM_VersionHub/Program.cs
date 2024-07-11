@@ -56,3 +56,5 @@ app.MapControllers();
 PackagesGenerator.Generate(); //To delete
 
 app.Run();
+
+public partial class Program { }
