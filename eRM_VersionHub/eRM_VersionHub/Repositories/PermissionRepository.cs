@@ -1,5 +1,5 @@
 ﻿using eRM_VersionHub.Models;
-using eRM_VersionHub.Result;
+
 using eRM_VersionHub.Repositories.Interfaces;
 
 namespace eRM_VersionHub.Repositories.Database
@@ -8,23 +8,23 @@ namespace eRM_VersionHub.Repositories.Database
     {
         private readonly IDbRepository _dbRepository = dbRepository;
 
-        public async Task<Result<Permission?>> CreatePermission(Permission permission)
+        public async Task<ApiResponse<Permission?>> CreatePermission(Permission permission)
         {
-            Result<Permission?> CreatedPermission = await _dbRepository.EditData<Permission>(
+            ApiResponse<Permission?> CreatedPermission = await _dbRepository.EditData<Permission>(
                 "INSERT INTO permissions(username, app_id) VALUES (@Username, @AppID) RETURNING *", permission);
             return CreatedPermission;
         }
 
-        public async Task<Result<List<Permission>>> GetPermissionList(string Username)
+        public async Task<ApiResponse<List<Permission>>> GetPermissionList(string Username)
         {
-            Result<List<Permission>> PermissionList = await _dbRepository.GetAll<Permission>(
+            ApiResponse<List<Permission>> PermissionList = await _dbRepository.GetAll<Permission>(
                 "SELECT * FROM permissions WHERE username=@Username", new { Username });
             return PermissionList;
         }
 
-        public async Task<Result<Permission?>> DeletePermission(Permission permission)
+        public async Task<ApiResponse<Permission?>> DeletePermission(Permission permission)
         {
-            Result<Permission?> DeletedPermission = await _dbRepository.EditData<Permission>(
+            ApiResponse<Permission?> DeletedPermission = await _dbRepository.EditData<Permission>(
                 "DELETE FROM permissions WHERE username=@Username AND app_id=@AppID RETURNING *", permission);
             return DeletedPermission;
         }

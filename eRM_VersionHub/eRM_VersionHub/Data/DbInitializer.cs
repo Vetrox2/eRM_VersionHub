@@ -53,10 +53,10 @@ namespace eRM_VersionHub.Data
             };
 
             var result = await _dbRepository.CreateTable("permissions", columns);
-            if (!result.IsSuccess)
+            if (!result.Success)
             {
                 Console.WriteLine(
-                    $"Failed to create Permissions table: {string.Join(", ", result.ErrorMessages)}"
+                    $"Failed to create Permissions table: {string.Join(", ", result.Errors)}"
                 );
             }
         }
@@ -80,10 +80,10 @@ namespace eRM_VersionHub.Data
             };
 
             var result = await _dbRepository.CreateTable("favorites", columns);
-            if (!result.IsSuccess)
+            if (!result.Success)
             {
                 Console.WriteLine(
-                    $"Failed to create Favorites table: {string.Join(", ", result.ErrorMessages)}"
+                    $"Failed to create Favorites table: {string.Join(", ", result.Errors)}"
                 );
             }
         }
@@ -108,10 +108,10 @@ namespace eRM_VersionHub.Data
             };
 
             var result = await _dbRepository.CreateTable("users", columns);
-            if (!result.IsSuccess)
+            if (!result.Success)
             {
                 Console.WriteLine(
-                    $"Failed to create Users table: {string.Join(", ", result.ErrorMessages)}"
+                    $"Failed to create Users table: {string.Join(", ", result.Errors)}"
                 );
             }
         }

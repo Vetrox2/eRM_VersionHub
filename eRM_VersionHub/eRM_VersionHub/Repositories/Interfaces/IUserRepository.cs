@@ -1,14 +1,14 @@
 ﻿using eRM_VersionHub.Models;
-using eRM_VersionHub.Result;
+
 
 namespace eRM_VersionHub.Repositories.Interfaces
 {
     public interface IUserRepository
     {
-        Task<Result<User?>> CreateUser(User user);
-        Task<Result<List<User>>> GetUserList();
-        Task<Result<User?>> GetUser(string Username);
-        Task<Result<User?>> UpdateUser(User user);
-        Task<Result<User?>> DeleteUser(string Username);
+        Task<ApiResponse<User?>> CreateUser(User user);
+        Task<ApiResponse<List<User>>> GetUserList();
+        Task<ApiResponse<User?>> GetUser(string Username);
+        Task<ApiResponse<User?>> UpdateUser(User user);
+        Task<ApiResponse<User?>> DeleteUser(string Username);
     }
 }
