@@ -1,7 +1,6 @@
 ﻿using eRM_VersionHub.Models;
-using eRM_VersionHub.Result;
-using Microsoft.AspNetCore.Mvc;
 using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 
 namespace eRM_VersionHub.Controllers
 {
@@ -14,71 +13,56 @@ namespace eRM_VersionHub.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            Result<List<User>> result = await _userService.GetUserList();
-            if (result.IsSuccess)
+            ApiResponse<List<User>> result = await _userService.GetUserList();
+            if (result.Success)
             {
                 return Ok(result.Data);
             }
-            return Problem(
-                detail: string.Join(";", result.ErrorMessages),
-                statusCode: result.ProblemDetails.Status
-            );
+            return Problem(detail: string.Join(";", result.Errors));
         }
 
         [HttpGet("{Username}")]
         public async Task<IActionResult> GetUser(string Username)
         {
-            Result<User?> result = await _userService.GetUser(Username);
-            if (result.IsSuccess)
+            ApiResponse<User?> result = await _userService.GetUser(Username);
+            if (result.Success)
             {
                 return Ok(result.Data);
             }
-            return Problem(
-                detail: string.Join(";", result.ErrorMessages),
-                statusCode: result.ProblemDetails.Status
-            );
+            return Problem(detail: string.Join(";", result.Errors));
         }
 
         [HttpPost]
         public async Task<IActionResult> AddUser([FromBody] User user)
         {
-            Result<User?> result = await _userService.CreateUser(user);
-            if (result.IsSuccess)
+            ApiResponse<User?> result = await _userService.CreateUser(user);
+            if (result.Success)
             {
                 return Ok(result.Data);
             }
-            return Problem(
-                detail: string.Join(";", result.ErrorMessages),
-                statusCode: result.ProblemDetails.Status
-            );
+            return Problem(detail: string.Join(";", result.Errors));
         }
 
         [HttpPut]
         public async Task<IActionResult> UpdateUser([FromBody] User user)
         {
-            Result<User?> result = await _userService.UpdateUser(user);
-            if (result.IsSuccess)
+            ApiResponse<User?> result = await _userService.UpdateUser(user);
+            if (result.Success)
             {
                 return Ok(result.Data);
             }
-            return Problem(
-                detail: string.Join(";", result.ErrorMessages),
-                statusCode: result.ProblemDetails.Status
-            );
+            return Problem(detail: string.Join(";", result.Errors));
         }
 
         [HttpDelete("{Username}")]
         public async Task<IActionResult> DeleteUser(string Username)
         {
-            Result<User?> result = await _userService.DeleteUser(Username);
-            if (result.IsSuccess)
+            ApiResponse<User?> result = await _userService.DeleteUser(Username);
+            if (result.Success)
             {
                 return Ok(result.Data);
             }
-            return Problem(
-                detail: string.Join(";", result.ErrorMessages),
-                statusCode: result.ProblemDetails.Status
-            );
+            return Problem(detail: string.Join(";", result.Errors));
         }
     }
 }

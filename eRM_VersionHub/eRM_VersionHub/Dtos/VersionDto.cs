@@ -1,4 +1,7 @@
-﻿namespace eRM_VersionHub.Dtos
+﻿using System.Reflection;
+using eRM_VersionHub.Services;
+
+namespace eRM_VersionHub.Dtos
 {
     public class VersionDto
     {
@@ -11,18 +14,7 @@
         {
             ID = id;
             Modules = modules;
-            var index = ID.IndexOf('-');
-
-            if (index == -1)
-            {
-                Name = ID;
-                Tag = string.Empty;
-            }
-            else
-            {
-                Name = ID.Substring(0, index);
-                Tag = ID[(index + 1)..];
-            }
+            (Name, Tag) = TagService.SplitVersionID(id);
         }
     }
 }
