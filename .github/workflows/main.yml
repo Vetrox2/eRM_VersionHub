@@ -1,0 +1,26 @@
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+  
+jobs:
+  build_windows:
+      name: Buliding test on Windows
+      runs-on: windows-latest
+      steps:
+      - run: dotnet build
+      
+  build_linux:
+      name: Buliding test on Linux
+      runs-on: ubuntu-latest
+      steps:
+      - run: dotnet build
+
+  build_mac:
+      name: Buliding test on Mac
+      runs-on: macos-latest
+      steps:
+      - run: dotnet build
