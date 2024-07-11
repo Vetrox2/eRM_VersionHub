@@ -10,6 +10,14 @@ namespace eRM_VersionHub.Services
     {
         private IFavoriteService _favoriteService = favoriteService;
         private IPermissionService _permissionService = permissionService;
+        public static ApplicationJsonModel? GetAppJsonModel(string jsonFilePath)
+        {
+            if (!File.Exists(jsonFilePath))
+                return null;
+
+            string jsonString = File.ReadAllText(jsonFilePath);
+            return jsonString.Deserialize<ApplicationJsonModel>();
+        }
 
         public async Task<List<AppStructureDto>?> GetAppsStructure(string appsPath, string appJsonName, string internalPackagesPath, string externalPackagesPath, string userToken)
         {
@@ -61,11 +69,12 @@ namespace eRM_VersionHub.Services
         {
             var perms = await _permissionService.GetPermissionList(token);
             var favs = await _favoriteService.GetFavoriteList(token);
-            if (!perms.Success || perms.Data.Count == 0) return null;
+
+            if (perms == null || !perms.Success || perms.Data.Count == 0) return null;
 
             appsStructure = appsStructure.Where(app => perms.Data.Any(perm => perm.AppID == app.ID)).ToList();
 
-            if (favs.Success && favs.Data.Count > 0)
+            if (favs != null && favs.Success && favs.Data.Count > 0)
                 appsStructure.ForEach(app => app.IsFavourite = favs.Data.Any(fav => fav.AppID == app.ID));
 
             return appsStructure;
@@ -124,15 +133,6 @@ namespace eRM_VersionHub.Services
         {
             var info = new DirectoryInfo(path);
             return info.GetDirectories().ToList();
-        }
-
-        private ApplicationJsonModel? GetAppJsonModel(string jsonFilePath)
-        {
-            if (!File.Exists(jsonFilePath))
-                return null;
-
-            string jsonString = File.ReadAllText(jsonFilePath);
-            return jsonString.Deserialize<ApplicationJsonModel>();
         }
     }
 }
