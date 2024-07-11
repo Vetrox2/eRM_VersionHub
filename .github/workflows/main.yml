@@ -7,20 +7,12 @@ on:
     - main
   
 jobs:
-  build_windows:
-      name: Buliding test on Windows
-      runs-on: windows-latest
+  build:
+      name: Buliding test on ${{ matrix.os }}
+      runs-on: ${{ matrix.os }}
+      strategy:
+        matrix:
+          os: [ubuntu-latest, windows-latest, macos-latest]
       steps:
-      - run: dotnet build
-      
-  build_linux:
-      name: Buliding test on Linux
-      runs-on: ubuntu-latest
-      steps:
-      - run: dotnet build
-
-  build_mac:
-      name: Buliding test on Mac
-      runs-on: macos-latest
-      steps:
+      - uses: ./eRM_VersionHub
       - run: dotnet build
