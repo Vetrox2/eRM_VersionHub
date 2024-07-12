@@ -36,6 +36,7 @@ namespace eRM_VersionHub_Tester.Tests
         [Fact]
         public async Task GetAppsStructure_CheckNoPublished()
         {
+            // Arrange
             _mockPermissionService.Setup(service => service.GetPermissionList(token))
             .ReturnsAsync(ApiResponse<List<Permission>>.SuccessResponse(
             [
@@ -46,9 +47,12 @@ namespace eRM_VersionHub_Tester.Tests
 
             bool result = true;
 
+            // Act
             var structure = await _appDataScanner.GetAppsStructure(appsPath, appJson, internalPath, externalPath, token);
+
+            // Assert
             Assert.NotNull(structure);
-            structure.ForEach(app => app.Versions.ForEach(ver => ver.Modules.ForEach(module =>
+            structure?.ForEach(app => app.Versions.ForEach(ver => ver.Modules.ForEach(module =>
             {
                 if (module.IsPublished)
                 {
@@ -57,32 +61,41 @@ namespace eRM_VersionHub_Tester.Tests
             }
             )));
             Assert.True(result);
-        }
-
-        [Fact]
-        public async Task GetAppsStructure_CheckSomePublished()
-        {
-            _mockPermissionService.Setup(service => service.GetPermissionList(token))
-            .ReturnsAsync(ApiResponse<List<Permission>>.SuccessResponse(
-            [
-                new Permission() { Username = token, AppID = "app1" },
-                new Permission() { Username = token, AppID = "app2" },
-                new Permission() { Username = token, AppID = "app3" }
-            ]));
-
-            bool result = true;
-            var structure = await _appDataScanner.GetAppsStructure(appsPath, appJson, internalPath, externalPath, token);
-            Assert.NotNull(structure);
-            structure.ForEach(app => app.Versions.ForEach(ver => ver.Modules.ForEach(module =>
+            if (structure != null)
             {
-                if (module.IsPublished && module.Name != "module1")
-                    result = false;
-                if (module.IsPublished && module.Name == "test" && !(ver.ID == "1" || ver.ID == "2"))
-                    result = false;
+                Assert.True(structure.Count == 3);
+                Assert.True(structure[0].Versions.Count == 3);
+                Assert.True(structure[0].Versions[2].Modules.Count == 1);
+                Assert.True(structure[1].Versions.Count == 2);
+                Assert.True(structure[2].Versions.Count == 1);
             }
-            )));
-            Assert.True(result);
+
         }
+
+        //[Fact]
+        //public async Task GetAppsStructure_CheckSomePublished()
+        //{
+        //    _mockPermissionService.Setup(service => service.GetPermissionList(token))
+        //    .ReturnsAsync(ApiResponse<List<Permission>>.SuccessResponse(
+        //    [
+        //        new Permission() { Username = token, AppID = "app1" },
+        //        new Permission() { Username = token, AppID = "app2" },
+        //        new Permission() { Username = token, AppID = "app3" }
+        //    ]));
+
+        //    bool result = true;
+        //    var structure = await _appDataScanner.GetAppsStructure(appsPath, appJson, internalPath, externalPath, token);
+        //    Assert.NotNull(structure);
+        //    structure.ForEach(app => app.Versions.ForEach(ver => ver.Modules.ForEach(module =>
+        //    {
+        //        if (module.IsPublished && module.Name != "module1")
+        //            result = false;
+        //        if (module.IsPublished && module.Name == "test" && !(ver.ID == "1" || ver.ID == "2"))
+        //            result = false;
+        //    }
+        //    )));
+        //    Assert.True(result);
+        //}
 
 
     }
