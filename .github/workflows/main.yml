@@ -1,0 +1,27 @@
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+  
+jobs:
+  build:
+      name: Buliding test on ${{ matrix.os }}
+      runs-on: ${{ matrix.os }}
+      strategy:
+        matrix:
+          os: [ubuntu-latest, windows-latest, macos-latest]
+      steps:
+      - uses: actions/checkout@v4
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+      - name: Install dependencies
+        run: dotnet restore ./eRM_VersionHub
+      - name: Build
+        run: dotnet build ./eRM_VersionHub
+      - name: Test with the dotnet CLI
+        run: dotnet test ./eRM_VersionHub
