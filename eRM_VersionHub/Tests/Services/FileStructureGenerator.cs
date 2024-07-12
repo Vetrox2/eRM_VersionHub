@@ -12,16 +12,24 @@ namespace eRM_VersionHub_Tester.Services
         {
             PrepareDirectories();
             CreateAppJsons();
-            File.WriteAllText(Path.Combine(common, "packages.txt"),
+
+            string packagesFilePath = Path.Combine(common, "packages.txt");
+            string internalPackagesPath = Path.Combine(common, internalDisc, packages), externalPackagesPath = Path.Combine(common, externalDisc, packages);
+
+            File.WriteAllText(packagesFilePath,
                 "+module1\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   " +
                 "+0.2\r\n-   -       test.zip\r\n-   -   \r\n-   +0.3\r\n-   -       test.zip\r\n-   -    " +
                 "\r\n+module2\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   +0.2\r\n-   -       test.zip\r\n-   -     " +
                 "\r\n+module3\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   +0.2\r\n-   -       test.zip\r\n-   -     " +
                 "\r\n+module4\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       " +
                 "\r\n+module5\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   +0.2\r\n-   -       test.zip\r\n-   -    ");
+            PackagesGenerator.Generate(internalPackagesPath, packagesFilePath);
 
-            string internalPackagesPath = Path.Combine(common, internalDisc, packages), externalPackagesPath = Path.Combine(common, externalDisc, packages);
-            PackagesGenerator.Generate(internalPackagesPath, Path.Combine(common, "packages.txt"));
+            File.WriteAllText(packagesFilePath,
+                "\r\n+module2\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   +0.2\r\n-   -       test.zip\r\n-   -     " +
+                "\r\n+module3\r\n-   +0.2\r\n-   -       test.zip\r\n-   -     ");
+            PackagesGenerator.Generate(externalPackagesPath, packagesFilePath);
+
             return (Path.Combine(common, appsFolder), appJson, internalPackagesPath, externalPackagesPath);
         }
 
