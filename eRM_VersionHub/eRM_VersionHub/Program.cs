@@ -6,6 +6,7 @@ using eRM_VersionHub.Repositories.Interfaces;
 using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Database;
 using eRM_VersionHub.Services.Interfaces;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,7 +54,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-PackagesGenerator.Generate(); //To delete
+AppSettings? settings = app.Services.CreateScope().ServiceProvider.GetService<IOptions<AppSettings>>().Value ;
+if(settings != null)
+    PackagesGenerator.Generate(settings.MyAppSettings.InternalPackagesPath, Path.Combine(Directory.GetParent(settings.MyAppSettings.AppsPath).Name, "packages.txt")); //To delete
 
 app.Run();
 

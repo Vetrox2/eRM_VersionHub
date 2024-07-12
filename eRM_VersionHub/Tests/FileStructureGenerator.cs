@@ -5,7 +5,7 @@ namespace eRM_VersionHub_Tester
 {
     internal static class FileStructureGenerator
     {
-        private static readonly string common = "./Disc/", internalDisc = "eRMwewn", externalDisc = "eRMzewn", packages = "packages",
+        private static readonly string common = "./Disc1/", internalDisc = "eRMwewn", externalDisc = "eRMzewn", packages = "packages",
             appsFolder = "apps", appJson = "application.json";
 
         public static (string appsPath, string appJson, string internalPath, string externalPath) GenerateFileStructure()
@@ -20,7 +20,9 @@ namespace eRM_VersionHub_Tester
                 "\r\n+module4\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       " +
                 "\r\n+module5\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   +0.2\r\n-   -       test.zip\r\n-   -    ");
 
-            return (Path.Combine(common, appsFolder), appJson, Path.Combine(common, internalDisc, packages), Path.Combine(common, externalDisc, packages));
+            string internalPackagesPath = Path.Combine(common, internalDisc, packages), externalPackagesPath = Path.Combine(common, externalDisc, packages);
+            PackagesGenerator.Generate(internalPackagesPath, Path.Combine(common, "packages.txt"));
+            return (Path.Combine(common, appsFolder), appJson, internalPackagesPath, externalPackagesPath);
         }
 
         public static void DeleteFileStructure()
