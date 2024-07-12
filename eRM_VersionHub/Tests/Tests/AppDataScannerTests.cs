@@ -2,8 +2,9 @@ using Moq;
 using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Interfaces;
 using eRM_VersionHub.Models;
+using eRM_VersionHub_Tester.Services;
 
-namespace eRM_VersionHub_Tester
+namespace eRM_VersionHub_Tester.Tests
 {
     public class AppDataScannerTests : IAsyncLifetime
 
