@@ -5,24 +5,31 @@ using eRM_VersionHub.Models;
 
 namespace eRM_VersionHub_Tester
 {
-    public class AppDataScannerTests
+    public class AppDataScannerTests : IAsyncLifetime
+
     {
         private readonly Mock<IFavoriteService> _mockFavoriteService;
         private readonly Mock<IPermissionService> _mockPermissionService;
         private readonly AppDataScanner _appDataScanner;
 
-        private readonly string common = "./Disc/", packages = "packages", appJson = "application.json", token = "user";
-        private readonly string appsPath, internalPath, externalPath;
+        private string appsPath, internalPath, externalPath, appJson, token = "userToken";
 
         public AppDataScannerTests()
         {
             _mockFavoriteService = new Mock<IFavoriteService>();
             _mockPermissionService = new Mock<IPermissionService>();
             _appDataScanner = new AppDataScanner(_mockFavoriteService.Object, _mockPermissionService.Object);
+        }
+        public Task InitializeAsync()
+        {
+            (appsPath, appJson, internalPath, externalPath) = FileStructureGenerator.GenerateFileStructure();
+            return Task.CompletedTask;
+        }
 
-            appsPath = Path.Combine(common, "apps");
-            internalPath = Path.Combine(common, "eRMwewn", packages);
-            externalPath = Path.Combine(common, "eRMzewn", packages);
+        public Task DisposeAsync()
+        {
+            FileStructureGenerator.DeleteFileStructure();
+            return Task.CompletedTask;
         }
 
         [Fact]
@@ -31,9 +38,9 @@ namespace eRM_VersionHub_Tester
             _mockPermissionService.Setup(service => service.GetPermissionList(token))
             .ReturnsAsync(ApiResponse<List<Permission>>.SuccessResponse(
             [
-                new Permission() { Username = token, AppID = "adminxe" },
-                new Permission() { Username = token, AppID = "akcyza2" },
-                new Permission() { Username = token, AppID = "alerter2" }
+                new Permission() { Username = token, AppID = "app1" },
+                new Permission() { Username = token, AppID = "app2" },
+                new Permission() { Username = token, AppID = "app3" }
             ]));
 
             bool result = true;
@@ -57,9 +64,9 @@ namespace eRM_VersionHub_Tester
             _mockPermissionService.Setup(service => service.GetPermissionList(token))
             .ReturnsAsync(ApiResponse<List<Permission>>.SuccessResponse(
             [
-                new Permission() { Username = token, AppID = "1" },
-                new Permission() { Username = token, AppID = "2" },
-                new Permission() { Username = token, AppID = "3" }
+                new Permission() { Username = token, AppID = "app1" },
+                new Permission() { Username = token, AppID = "app2" },
+                new Permission() { Username = token, AppID = "app3" }
             ]));
 
             bool result = true;
@@ -67,7 +74,7 @@ namespace eRM_VersionHub_Tester
             Assert.NotNull(structure);
             structure.ForEach(app => app.Versions.ForEach(ver => ver.Modules.ForEach(module =>
             {
-                if (module.IsPublished && module.Name != "test")
+                if (module.IsPublished && module.Name != "module1")
                     result = false;
                 if (module.IsPublished && module.Name == "test" && !(ver.ID == "1" || ver.ID == "2"))
                     result = false;
@@ -75,5 +82,7 @@ namespace eRM_VersionHub_Tester
             )));
             Assert.True(result);
         }
+
+
     }
 }
