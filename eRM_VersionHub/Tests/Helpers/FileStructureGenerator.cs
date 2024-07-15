@@ -1,7 +1,7 @@
 ﻿using eRM_VersionHub.Models;
 using eRM_VersionHub.Services;
 
-namespace eRM_VersionHub_Tester.Services
+namespace eRM_VersionHub_Tester.Helpers
 {
     public class FileStructureGenerator : IDisposable
     {
