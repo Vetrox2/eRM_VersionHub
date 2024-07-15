@@ -5,21 +5,26 @@ using eRM_VersionHub.Services.Interfaces;
 using eRM_VersionHub_Tester.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Moq;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Text;
 
 namespace eRM_VersionHub_Tester.Tests
 {
-    public class ChangeTagIntegrationTests : IClassFixture<WebApplicationFactory<Program>>, IAsyncLifetime
+    public class ChangeTagIntegrationTests
+        : IClassFixture<WebApplicationFactory<Program>>,
+            IAsyncLifetime
     {
         private readonly WebApplicationFactory<Program> _factory;
         private readonly HttpClient _client;
         private readonly TagService _tagService;
         private readonly AppDataScanner _appDataScanner;
-        private string appsPath, appJson, internalPath, externalPath, userToken = "testUser";
+        private string appsPath,
+            appJson,
+            internalPath,
+            externalPath,
+            userToken = "testUser";
         private readonly Mock<IFavoriteService> _mockFavoriteService;
         private readonly Mock<IPermissionService> _mockPermissionService;
+        private readonly FileStructureGenerator _fileStructureGenerator =
+            new FileStructureGenerator();
 
         public ChangeTagIntegrationTests(WebApplicationFactory<Program> factory)
         {
@@ -28,18 +33,22 @@ namespace eRM_VersionHub_Tester.Tests
             _tagService = new TagService();
             _mockFavoriteService = new Mock<IFavoriteService>();
             _mockPermissionService = new Mock<IPermissionService>();
-            _appDataScanner = new AppDataScanner(_mockFavoriteService.Object, _mockPermissionService.Object);
+            _appDataScanner = new AppDataScanner(
+                _mockFavoriteService.Object,
+                _mockPermissionService.Object
+            );
         }
 
         public Task InitializeAsync()
         {
-            (appsPath, appJson, internalPath, externalPath) = FileStructureGenerator.GenerateFileStructure();
+            (appsPath, appJson, internalPath, externalPath) =
+                _fileStructureGenerator.GenerateFileStructure();
             return Task.CompletedTask;
         }
 
         public Task DisposeAsync()
         {
-            FileStructureGenerator.DeleteFileStructure();
+            _fileStructureGenerator.Dispose();
             return Task.CompletedTask;
         }
 
@@ -51,16 +60,25 @@ namespace eRM_VersionHub_Tester.Tests
             var versionID = "1.0";
             var newTag = "preview";
             var url = $"Tag?appID={appID}&versionID={versionID}&newTag={newTag}";
-            
-            _mockPermissionService.Setup(service => service.GetPermissionList(userToken))
-            .ReturnsAsync(ApiResponse<List<Permission>>.SuccessResponse(
-            [
-                new Permission() { Username = userToken, AppID = "app1" },
-                new Permission() { Username = userToken, AppID = "app2" },
-                new Permission() { Username = userToken, AppID = "app3" }
-            ]));
 
-            var requestBody = new { appID, versionID, newTag };
+            _mockPermissionService
+                .Setup(service => service.GetPermissionList(userToken))
+                .ReturnsAsync(
+                    ApiResponse<List<Permission>>.SuccessResponse(
+                        [
+                            new Permission() { Username = userToken, AppID = "app1" },
+                            new Permission() { Username = userToken, AppID = "app2" },
+                            new Permission() { Username = userToken, AppID = "app3" }
+                        ]
+                    )
+                );
+
+            var requestBody = new
+            {
+                appID,
+                versionID,
+                newTag
+            };
             var content = requestBody.Serialize();
 
             // Act
@@ -72,11 +90,22 @@ namespace eRM_VersionHub_Tester.Tests
             var apiResponse = responseContent.Deserialize<ApiResponse<string>>();
             Assert.True(apiResponse.Success);
 
-            var appStructure = await _appDataScanner.GetAppsStructure(appsPath, appJson, internalPath, externalPath, userToken);
+            var appStructure = await _appDataScanner.GetAppsStructure(
+                appsPath,
+                appJson,
+                internalPath,
+                externalPath,
+                userToken
+            );
             Assert.True(CheckIfTagIsChangedCorrectly(appStructure, appID, versionID, newTag));
         }
 
-        private bool CheckIfTagIsChangedCorrectly(List<AppStructureDto> appStructure, string appID, string versionID, string newTag)
+        private bool CheckIfTagIsChangedCorrectly(
+            List<AppStructureDto> appStructure,
+            string appID,
+            string versionID,
+            string newTag
+        )
         {
             var newVersionID = TagService.SwapVersionTags(versionID, newTag);
             var app = appStructure.FirstOrDefault(app => app.ID == appID);

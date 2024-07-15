@@ -7,7 +7,12 @@ namespace eRM_VersionHub_Tester.Tests
     public class TagServiceTests : IAsyncLifetime
     {
         private readonly TagService _tagService;
-        private string appsPath, appJson, internalPath, externalPath;
+        private readonly FileStructureGenerator _fileStructureGenerator =
+            new FileStructureGenerator();
+        private string appsPath,
+            appJson,
+            internalPath,
+            externalPath;
 
         public TagServiceTests()
         {
@@ -16,13 +21,14 @@ namespace eRM_VersionHub_Tester.Tests
 
         public Task InitializeAsync()
         {
-            (appsPath, appJson, internalPath, externalPath) = FileStructureGenerator.GenerateFileStructure();
+            (appsPath, appJson, internalPath, externalPath) =
+                _fileStructureGenerator.GenerateFileStructure();
             return Task.CompletedTask;
         }
 
         public Task DisposeAsync()
         {
-            FileStructureGenerator.DeleteFileStructure();
+            _fileStructureGenerator.Dispose();
             return Task.CompletedTask;
         }
 
@@ -46,7 +52,10 @@ namespace eRM_VersionHub_Tester.Tests
 
             // Assert
             Assert.True(response.Success);
-            Assert.Equal("Internal modules version modified: 2\nPublished modules version modified: 1", response.Data);
+            Assert.Equal(
+                "Internal modules version modified: 2\nPublished modules version modified: 1",
+                response.Data
+            );
         }
 
         [Fact]
