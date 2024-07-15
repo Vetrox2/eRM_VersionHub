@@ -1,10 +1,10 @@
 ﻿using eRM_VersionHub.Models;
-using eRM_VersionHub.Services;
+using eRM_VersionHub_Tester.Helpers;
 using System.Text.Json;
 
-namespace eRM_VersionHub_Tester.Tests
+namespace eRM_VersionHub_Tester.Endpoints
 {
-    public class BasicTests(TestFixture factory) : IClassFixture<TestFixture>
+    public class UserTests(TestFixture factory) : IClassFixture<TestFixture>
     {
         private readonly HttpClient _client = factory.CreateClient();
         private readonly static User user = new()
@@ -13,67 +13,100 @@ namespace eRM_VersionHub_Tester.Tests
             CreationDate = DateTime.Now,
         };
 
-        [Theory]
-        [InlineData("/User")]
-        public async Task GetUsers(string url)
+        [Fact]
+        public async Task GetUserList_ShouldReturnListOfUsers()
         {
-            HttpResponseMessage response = await _client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            string result = await response.Content.ReadAsStringAsync();
-            List<User>? array = JsonManager.Deserialize<List<User>?>(result);
-            Assert.NotNull(array);
-            Assert.NotEmpty(array);
+            HttpResponseMessage response = await _client.GetAsync("/User");
+            Func<List<User>?> fun = await RequestContent.GetRequestContent<List<User>>(response);
+            List<User>? deserialized = fun.Invoke();
+            Assert.NotNull(deserialized);
+            Assert.NotEmpty(deserialized);
         }
 
-        [Theory]
-        [InlineData("/User/admin")]
-        public async Task GetUser(string url)
+        [Fact]
+        public async Task GetUser_ShouldReturnUser()
         {
-            HttpResponseMessage response = await _client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            string result = await response.Content.ReadAsStringAsync();
-            User? returnedUser = JsonManager.Deserialize<User?>(result);
-            Assert.NotNull(returnedUser);
-            Assert.Equal("admin", returnedUser.Username);
+            HttpResponseMessage response = await _client.GetAsync("/User/admin");
+            Func<User?> fun = await RequestContent.GetRequestContent<User?>(response);
+            User? deserialized = fun.Invoke();
+            Assert.NotNull(deserialized);
+            Assert.Equal("admin", deserialized.Username);
         }
 
-        [Theory]
-        [InlineData("/User/#")]
-        public async Task GetNonExistentUser(string url)
+        [Fact]
+        public async Task GetUser_ShouldReturnErrorOnFailure()
         {
-            HttpResponseMessage response = await _client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            string result = await response.Content.ReadAsStringAsync();
-            Action action = new(() =>
+            HttpResponseMessage response = await _client.GetAsync("/User/#");
+            Func<User?> fun = await RequestContent.GetRequestContent<User?>(response);
+            Assert.Throws<JsonException>(fun);
+        }
+
+        [Fact]
+        public async Task CreateUser_ShouldReturnCreatedUser()
+        {
+            HttpResponseMessage response = await _client.PostAsJsonAsync<User>("/User", user);
+            Func<User?> fun = await RequestContent.GetRequestContent<User?>(response);
+            User? deserialized = fun.Invoke();
+            Assert.NotNull(deserialized);
+            Assert.Equal(user, deserialized);
+        }
+
+        [Fact]
+        public async Task CreateUser_ShouldReturnErrorOnFailure()
+        {
+            Favorite fav = new() 
             {
-                User? returnedUser = JsonManager.Deserialize<User?>(result);
-            });
-            Assert.Throws<JsonException>(action);
+                Username = "", AppID = ""
+            };
+            HttpResponseMessage response = await _client.PostAsJsonAsync<Favorite>("/User", fav);
+            Func<User?> fun = await RequestContent.GetRequestContent<User?>(response);
+            Assert.Throws<JsonException>(fun);
         }
 
-        [Theory]
-        [InlineData("/User/")]
-        public async Task AddUser(string url)
+        [Fact]
+        public async Task UpdateUser_ShouldReturnUpdatedUser()
         {
-            
-            HttpResponseMessage response = await _client.PostAsJsonAsync<User>(url, user);
-            response.EnsureSuccessStatusCode();
-            string result = await response.Content.ReadAsStringAsync();
-            User? returnedUser = JsonManager.Deserialize<User?>(result);
-            Assert.NotNull(returnedUser);
-            Assert.Equal(user, returnedUser);
+            User updatedUser = new()
+            {
+                Username = user.Username,
+                CreationDate = DateTime.MaxValue,
+            };
+            HttpResponseMessage response = await _client.PutAsJsonAsync<User>("/User", user);
+            Func<User?> fun = await RequestContent.GetRequestContent<User?>(response);
+            User? deserialized = fun.Invoke();
+            Assert.NotNull(deserialized);
+            Assert.Equal(user, deserialized);
         }
 
-        [Theory]
-        [InlineData("/User/test")]
-        public async Task DeleteUser(string url)
+        [Fact]
+        public async Task UpdateUser_ShouldReturnErrorOnFailure()
         {
-            HttpResponseMessage response = await _client.DeleteAsync(url);
-            response.EnsureSuccessStatusCode();
-            string result = await response.Content.ReadAsStringAsync();
-            User? returnedUser = JsonManager.Deserialize<User?>(result);
-            Assert.NotNull(returnedUser);
-            Assert.Equal(user, returnedUser);
+            Favorite fav = new()
+            {
+                Username = "",
+                AppID = ""
+            };
+            HttpResponseMessage response = await _client.PutAsJsonAsync<Favorite>("/User", fav);
+            Func<User?> fun = await RequestContent.GetRequestContent<User?>(response);
+            Assert.Throws<JsonException>(fun);
+        }
+
+        [Fact]
+        public async Task DeleteUser_ShouldReturnDeletedUser()
+        {
+            HttpResponseMessage response = await _client.DeleteAsync("/User/test");
+            Func<User?> fun = await RequestContent.GetRequestContent<User?>(response);
+            User? deserialized = fun.Invoke();
+            Assert.NotNull(deserialized);
+            Assert.Equal(user, deserialized);
+        }
+
+        [Fact]
+        public async Task DeleteUser_ShouldReturnErrorOnFailure()
+        {
+            HttpResponseMessage response = await _client.DeleteAsync("/User/#");
+            Func<User?> fun = await RequestContent.GetRequestContent<User?>(response);
+            Assert.Throws<JsonException>(fun);
         }
     }
 }

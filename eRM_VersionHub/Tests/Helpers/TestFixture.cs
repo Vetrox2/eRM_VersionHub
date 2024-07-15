@@ -2,7 +2,7 @@
 using eRM_VersionHub.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace eRM_VersionHub_Tester.Tests
+namespace eRM_VersionHub_Tester.Helpers
 {
     public class TestFixture : WebApplicationFactory<Program>
     {
@@ -27,8 +27,8 @@ namespace eRM_VersionHub_Tester.Tests
             {
                 // Remove the existing configuration options
                 config.Sources.Clear();
-                
-                config.AddJsonFile(Path.Combine(Directory.GetCurrentDirectory(),"appsettings.Test.json"), optional: true, reloadOnChange: true);
+
+                config.AddJsonFile(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.Test.json"), optional: true, reloadOnChange: true);
 
                 // Add any additional configuration here if necessary
                 config.AddEnvironmentVariables();
