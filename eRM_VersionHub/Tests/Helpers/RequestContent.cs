@@ -6,7 +6,6 @@ namespace eRM_VersionHub_Tester.Helpers
     {
         public static async Task<Func<T?>> GetRequestContent<T>(HttpResponseMessage httpResponseMessage)
         {
-            httpResponseMessage.EnsureSuccessStatusCode();
             string json = await httpResponseMessage.Content.ReadAsStringAsync();
             return delegate() {
                 return JsonManager.Deserialize<T>(json);

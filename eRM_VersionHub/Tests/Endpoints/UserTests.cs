@@ -4,14 +4,16 @@ using System.Text.Json;
 
 namespace eRM_VersionHub_Tester.Endpoints
 {
-    public class UserTests(TestFixture factory) : IClassFixture<TestFixture>
+    public class UserTests : IClassFixture<TestFixture>
     {
-        private readonly HttpClient _client = factory.CreateClient();
-        private readonly static User user = new()
+        private readonly HttpClient _client;
+        private readonly User user;
+
+        public UserTests(TestFixture factory)
         {
-            Username = "test",
-            CreationDate = DateTime.Now,
-        };
+            _client = factory.CreateClient();
+            user = new() { Username = "test", CreationDate = DateTime.Now };
+        }
 
         [Fact]
         public async Task GetUserList_ShouldReturnListOfUsers()
