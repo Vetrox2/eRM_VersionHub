@@ -8,12 +8,10 @@ using Moq;
 
 namespace eRM_VersionHub_Tester.Tests
 {
-    public class ChangeTagIntegrationTests
-        : IClassFixture<WebApplicationFactory<Program>>,
-            IAsyncLifetime
+    public class ChangeTagIntegrationTests : IClassFixture<TestFixture>, IAsyncLifetime
     {
-        private readonly WebApplicationFactory<Program> _factory;
-        private readonly HttpClient _client;
+        private readonly TestFixture _factory;
+        private HttpClient _client;
         private readonly TagService _tagService;
         private readonly AppDataScanner _appDataScanner;
         private string appsPath,
@@ -26,10 +24,9 @@ namespace eRM_VersionHub_Tester.Tests
         private readonly FileStructureGenerator _fileStructureGenerator =
             new FileStructureGenerator();
 
-        public ChangeTagIntegrationTests(WebApplicationFactory<Program> factory)
+        public ChangeTagIntegrationTests(TestFixture factory)
         {
             _factory = factory;
-            _client = _factory.CreateClient();
             _tagService = new TagService();
             _mockFavoriteService = new Mock<IFavoriteService>();
             _mockPermissionService = new Mock<IPermissionService>();
@@ -43,6 +40,9 @@ namespace eRM_VersionHub_Tester.Tests
         {
             (appsPath, appJson, internalPath, externalPath) =
                 _fileStructureGenerator.GenerateFileStructure();
+
+            TestFixture.SetNewAppSettings(appJson, appsPath, internalPath, externalPath);
+            _client = _factory.CreateClient();
             return Task.CompletedTask;
         }
 
@@ -57,9 +57,9 @@ namespace eRM_VersionHub_Tester.Tests
         {
             // Arrange
             var appID = "app1";
-            var versionID = "1.0";
+            var versionID = "0.1";
             var newTag = "preview";
-            var url = $"Tag?appID={appID}&versionID={versionID}&newTag={newTag}";
+            var url = $"/Tag?appID={appID}&versionID={versionID}&newTag={newTag}";
 
             _mockPermissionService
                 .Setup(service => service.GetPermissionList(userToken))
@@ -72,6 +72,7 @@ namespace eRM_VersionHub_Tester.Tests
                         ]
                     )
                 );
+
 
             var requestBody = new
             {

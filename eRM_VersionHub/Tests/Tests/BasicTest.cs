@@ -1,27 +1,50 @@
-﻿using Microsoft.AspNetCore.Mvc.Testing;
+﻿using eRM_VersionHub.Models;
+using eRM_VersionHub.Services;
+using Microsoft.AspNetCore.Hosting;
+using System.Text.Json;
 
 namespace eRM_VersionHub_Tester.Tests
 {
-    public class BasicTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+    public class BasicTests(TestFixture factory) : IClassFixture<TestFixture>
     {
-        private readonly WebApplicationFactory<Program> _factory = factory;
+        private readonly HttpClient _client = factory.CreateClient();
 
         [Theory]
-        [InlineData("")]
-
-        public async Task Get_EndpointsReturnSuccessAndCorrectContentType(string url)
+        [InlineData("/User")]
+        public async Task GetUsers(string url)
         {
-            // Arrange
-            Uri baseUrl = new("http://localhost:5204");
-            HttpClient client = _factory.CreateDefaultClient(baseUrl);
+            HttpResponseMessage response = await _client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            string result = await response.Content.ReadAsStringAsync();
+            List<User>? array = JsonManager.Deserialize<List<User>?>(result);
+            Assert.NotNull(array);
+            Assert.NotEmpty(array);
+        }
 
-            // Act
-            HttpResponseMessage response = await client.GetAsync(url);
+        [Theory]
+        [InlineData("/User/admin")]
+        public async Task GetUser(string url)
+        {
+            HttpResponseMessage response = await _client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            string result = await response.Content.ReadAsStringAsync();
+            User? user = JsonManager.Deserialize<User?>(result);
+            Assert.NotNull(user);
+            Assert.Equal("admin", user.Username);
+        }
 
-            // Assert
-            response.EnsureSuccessStatusCode(); // Status Code 200-299
-            Assert.Equal("text/html; charset=utf-8",
-                response.Content.Headers.ContentType.ToString());
+        [Theory]
+        [InlineData("/User/#")]
+        public async Task GetNonExistentUser(string url)
+        {
+            HttpResponseMessage response = await _client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            string result = await response.Content.ReadAsStringAsync();
+            Action action = new(() =>
+            {
+                User? user = JsonManager.Deserialize<User?>(result);
+            });
+            Assert.Throws<JsonException>(action);
         }
     }
 }
