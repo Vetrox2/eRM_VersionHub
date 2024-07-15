@@ -1,0 +1,28 @@
+name: Test Project
+
+on:
+  workflow_run:
+    workflows: [Build Project]
+    types: [completed]
+    branches:
+      - '*'
+ 
+jobs:
+  test_project:
+      name: Unit and integration test on ${{ matrix.os }}
+      if: ${{ github.event.workflow_run.conclusion == 'success' }}
+      runs-on: ${{ matrix.os }}
+      strategy:
+        matrix:
+          os: [ubuntu-latest, windows-latest, macos-latest]
+      steps:
+      - uses: actions/checkout@v4
+      - name: Test with the dotnet CLI
+        run: dotnet test ./eRM_VersionHub
+  on_build_fail:
+      name: Unit and integration test on ${{ matrix.os }}
+      if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+      runs-on: ${{ matrix.os }}
+      steps:
+      - run: echo 'Building failed, testing will be skipped'
+ 
