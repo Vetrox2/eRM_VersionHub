@@ -2,7 +2,7 @@
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Interfaces;
-using eRM_VersionHub_Tester.Services;
+using eRM_VersionHub_Tester.Helpers;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Moq;
 
