@@ -20,9 +20,9 @@ jobs:
       - name: Test with the dotnet CLI
         run: dotnet test ./eRM_VersionHub
   on_build_fail:
-      name: Unit and integration test on ${{ matrix.os }}
+      name: Fallback on build failure
       if: ${{ github.event.workflow_run.conclusion == 'failure' }}
-      runs-on: ${{ matrix.os }}
+      runs-on: ubuntu-latest
       steps:
       - run: echo 'Building failed, testing will be skipped'
  
