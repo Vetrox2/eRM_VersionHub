@@ -1,62 +1,91 @@
 ﻿using eRM_VersionHub.Dtos;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
-using static Dapper.SqlMapper;
+using System.IO.Compression;
+using System.Security.Cryptography;
 
 namespace eRM_VersionHub.Services
 {
     public class PublicationService : IPublicationService
     {
+        private static int _maxNumberOfAttempts = 5;
+        
         public void Publish(MyAppSettings settings, VersionDto version)
         {
-            version.Modules.ForEach(module =>
+            string internalZipPath = Path.Combine(settings.InternalPackagesPath, $"{version.Name}.zip");
+            
+            using (FileStream internalZipStream = File.Open(internalZipPath, FileMode.Create, FileAccess.ReadWrite))
+            using (ZipArchive internalZip = new(internalZipStream, ZipArchiveMode.Create, false))
+            {
+                version.Modules.ForEach(module =>
                 {
-                    var sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
-                    var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, version.ID);
-
-                    PrepareTargetPath(settings.ExternalPackagesPath, module.Name, targetPath);
-                    CopyContent(sourcePath, targetPath);
+                    string modulePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
+                    DirectoryInfo directoryInfo = new(modulePath);
+                    FileInfo[] fileList = directoryInfo.GetFiles("*");
+                    foreach (FileInfo file in fileList)
+                    {
+                        string sourcePath = Path.Combine(modulePath, file.Name);
+                        string targetPath = Path.Combine(module.Name, version.ID, file.Name);
+                        internalZip.CreateEntryFromFile(sourcePath, targetPath);
+                    }
                 });
+
+                internalZipStream.Flush();  // Ensure all data is written to the file before calculating the hash
+                string internalZipStringHash = StreamHashString(internalZipStream);
+                internalZipStream.Close();  // Close the stream before copying the content
+                CopyContent(internalZipPath, settings.ExternalPackagesPath, internalZipStringHash);
+            }
         }
 
         public void Unpublish(MyAppSettings settings, VersionDto version)
         {
             version.Modules.ForEach(module =>
             {
-                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, version.ID);
+                string targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, version.ID);
                 if (Directory.Exists(targetPath))
                     Directory.Delete(targetPath, true);
             });
         }
 
-        private void PrepareTargetPath(string ExternalPackagesPath, string module, string targetPath)
+        private static string StreamHashString(FileStream stream)
         {
-            var modulePath = Path.Combine(ExternalPackagesPath, module);
-            if (!Directory.Exists(modulePath))
-                Directory.CreateDirectory(modulePath);
-
-            if (Directory.Exists(targetPath))
-                Directory.Delete(targetPath, true);
-
-            Directory.CreateDirectory(targetPath);
+            stream.Seek(0, SeekOrigin.Begin);  // Ensure we are reading the stream from the beginning
+            byte[] byteHash = MD5.HashData(stream);
+            return BitConverter.ToString(byteHash).Replace("-", "");
         }
 
-        private void CopyContent(string sourcePath, string targetPath)
+        private static void CopyContent(string internalZipPath, string externalPackagesPath, string internalZipStringHash, int attempt = 0)
         {
-            foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+            string fileName = Path.GetFileName(internalZipPath);
+            string externalZipPath = Path.Combine(externalPackagesPath, fileName);
+
+            File.Copy(internalZipPath, externalZipPath, true);
+
+            using (FileStream externalZipStream = File.Open(externalZipPath, FileMode.Open, FileAccess.Read))
             {
-                var newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, dirPath));
-                if (!Directory.Exists(newPath))
-                    Directory.CreateDirectory(newPath);
+                string externalZipStringHash = StreamHashString(externalZipStream);
+                if (internalZipStringHash == externalZipStringHash)
+                {
+                    using (ZipArchive externalZip = new(externalZipStream, ZipArchiveMode.Read, false))
+                    {
+                        externalZip.ExtractToDirectory(externalPackagesPath);
+                    }
+                    
+                    File.Delete(externalZipPath);
+                    File.Delete(internalZipPath);
+                    return;
+                }
             }
 
-            foreach (string filePath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+            File.Delete(externalZipPath);
+            if (attempt < _maxNumberOfAttempts)
             {
-                var newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, filePath));
-                System.IO.File.Copy(filePath, newPath, true);
+                CopyContent(internalZipPath, externalPackagesPath, internalZipStringHash, attempt + 1);
             }
-
-            //add checksum
+            else
+            {
+                throw new Exception("Publishing failed");
+            }
         }
     }
 }
