@@ -2,9 +2,9 @@
 
 namespace eRM_VersionHub_Tester.Helpers
 {
-    public class RequestContent
+    public static class RequestContent
     {
-        public static async Task<Func<T?>> GetRequestContent<T>(HttpResponseMessage httpResponseMessage)
+        public static async Task<Func<T?>> GetRequestContent<T>(this HttpResponseMessage httpResponseMessage)
         {
             string json = await httpResponseMessage.Content.ReadAsStringAsync();
             return delegate() {
