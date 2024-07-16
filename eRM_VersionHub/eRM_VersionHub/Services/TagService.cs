@@ -17,6 +17,9 @@ namespace eRM_VersionHub.Services
             int internalModulesModified = 0, publishedModulesModified = 0;
             var newVersionID = SwapVersionTags(versionID, newTag);
 
+            if(newVersionID == versionID)
+                return ApiResponse<string>.ErrorResponse(["New tag is the same as the old one"]);
+
             appModel.Modules.ForEach(module =>
             {
                 internalModulesModified += ChangeTagOnPath(_settings.InternalPackagesPath, module.ModuleId, versionID, newVersionID) ? 1 : 0;
