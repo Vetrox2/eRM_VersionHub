@@ -12,29 +12,19 @@ namespace eRM_VersionHub.Services
         
         public void Publish(MyAppSettings settings, VersionDto version)
         {
-            string internalZipPath = Path.Combine(settings.InternalPackagesPath, $"{version.Name}.zip");
-            
-            using (FileStream internalZipStream = File.Open(internalZipPath, FileMode.Create, FileAccess.ReadWrite))
-            using (ZipArchive internalZip = new(internalZipStream, ZipArchiveMode.Create, false))
+            version.Modules.ForEach(module =>
             {
-                version.Modules.ForEach(module =>
+                string versionPath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
+                string internalZipPath = Path.Combine(settings.InternalPackagesPath, module.Name, $"{version.Name}.zip");
+                using (FileStream internalZipStream = File.Open(internalZipPath, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    string modulePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
-                    DirectoryInfo directoryInfo = new(modulePath);
-                    FileInfo[] fileList = directoryInfo.GetFiles("*");
-                    foreach (FileInfo file in fileList)
-                    {
-                        string sourcePath = Path.Combine(modulePath, file.Name);
-                        string targetPath = Path.Combine(module.Name, version.ID, file.Name);
-                        internalZip.CreateEntryFromFile(sourcePath, targetPath);
-                    }
-                });
-
-                internalZipStream.Flush();  // Ensure all data is written to the file before calculating the hash
-                string internalZipStringHash = StreamHashString(internalZipStream);
-                internalZipStream.Close();  // Close the stream before copying the content
-                CopyContent(internalZipPath, settings.ExternalPackagesPath, internalZipStringHash);
-            }
+                    ZipFile.CreateFromDirectory(versionPath, internalZipStream);
+                    internalZipStream.Flush();
+                    string internalZipStringHash = StreamHashString(internalZipStream);
+                    internalZipStream.Close();
+                    CopyContent(internalZipPath, settings.ExternalPackagesPath, module.Name, version.Name, internalZipStringHash);
+                }
+            });
         }
 
         public void Unpublish(MyAppSettings settings, VersionDto version)
@@ -49,15 +39,17 @@ namespace eRM_VersionHub.Services
 
         private static string StreamHashString(FileStream stream)
         {
-            stream.Seek(0, SeekOrigin.Begin);  // Ensure we are reading the stream from the beginning
+            stream.Seek(0, SeekOrigin.Begin);
             byte[] byteHash = MD5.HashData(stream);
             return BitConverter.ToString(byteHash).Replace("-", "");
         }
 
-        private static void CopyContent(string internalZipPath, string externalPackagesPath, string internalZipStringHash, int attempt = 0)
+        private static void CopyContent(string internalZipPath, string externalPackagesPath, string moduleName, string version, string internalZipStringHash, int attempt = 0)
         {
-            string fileName = Path.GetFileName(internalZipPath);
-            string externalZipPath = Path.Combine(externalPackagesPath, fileName);
+            string fileName = Path.GetFileName(externalPackagesPath);
+            string versionFolder = Path.Combine(externalPackagesPath, moduleName, version);
+            Directory.CreateDirectory(versionFolder);
+            string externalZipPath = Path.Combine(versionFolder, fileName);
 
             File.Copy(internalZipPath, externalZipPath, true);
 
@@ -68,7 +60,7 @@ namespace eRM_VersionHub.Services
                 {
                     using (ZipArchive externalZip = new(externalZipStream, ZipArchiveMode.Read, false))
                     {
-                        externalZip.ExtractToDirectory(externalPackagesPath);
+                        externalZip.ExtractToDirectory(versionFolder);
                     }
                     
                     File.Delete(externalZipPath);
@@ -80,7 +72,7 @@ namespace eRM_VersionHub.Services
             File.Delete(externalZipPath);
             if (attempt < _maxNumberOfAttempts)
             {
-                CopyContent(internalZipPath, externalPackagesPath, internalZipStringHash, attempt + 1);
+                CopyContent(internalZipPath, externalPackagesPath, moduleName, version, internalZipStringHash, attempt + 1);
             }
             else
             {
