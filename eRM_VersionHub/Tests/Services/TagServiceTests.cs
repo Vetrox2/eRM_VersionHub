@@ -2,13 +2,12 @@
 using eRM_VersionHub.Services;
 using eRM_VersionHub_Tester.Helpers;
 
-namespace eRM_VersionHub_Tester.Tests
+namespace eRM_VersionHub_Tester.Services
 {
     public class TagServiceTests : IAsyncLifetime
     {
         private readonly TagService _tagService;
-        private readonly FileStructureGenerator _fileStructureGenerator =
-            new FileStructureGenerator();
+        private readonly FileStructureGenerator _fileStructureGenerator = new FileStructureGenerator();
         private string appsPath,
             appJson,
             internalPath,
@@ -21,8 +20,7 @@ namespace eRM_VersionHub_Tester.Tests
 
         public Task InitializeAsync()
         {
-            (appsPath, appJson, internalPath, externalPath) =
-                _fileStructureGenerator.GenerateFileStructure();
+            (appsPath, appJson, internalPath, externalPath) = _fileStructureGenerator.GenerateFileStructure();
             return Task.CompletedTask;
         }
 

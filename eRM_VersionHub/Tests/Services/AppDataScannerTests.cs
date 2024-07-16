@@ -4,7 +4,7 @@ using eRM_VersionHub.Services.Interfaces;
 using eRM_VersionHub_Tester.Helpers;
 using Moq;
 
-namespace eRM_VersionHub_Tester.Tests
+namespace eRM_VersionHub_Tester.Services
 {
     [Collection("Sequential")]
     public class AppDataScannerTests : IAsyncLifetime
@@ -12,14 +12,9 @@ namespace eRM_VersionHub_Tester.Tests
         private readonly Mock<IFavoriteService> _mockFavoriteService;
         private readonly Mock<IPermissionService> _mockPermissionService;
         private readonly AppDataScanner _appDataScanner;
-        private readonly FileStructureGenerator _fileStructureGenerator =
-            new FileStructureGenerator();
+        private readonly FileStructureGenerator _fileStructureGenerator = new FileStructureGenerator();
 
-        private string appsPath,
-            internalPath,
-            externalPath,
-            appJson,
-            token = "userToken";
+        private string appsPath, internalPath, externalPath, appJson, token = "userToken";
 
         public AppDataScannerTests()
         {
