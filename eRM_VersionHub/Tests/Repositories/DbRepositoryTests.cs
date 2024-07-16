@@ -1,12 +1,12 @@
 ﻿using System.Reflection;
 using Dapper;
 using eRM_VersionHub.Models;
-using eRM_VersionHub.Repositories.Database;
+using eRM_VersionHub.Repositories;
 using Microsoft.Extensions.Options;
 using Moq;
 using Npgsql;
 
-namespace eRM_VersionHub.Tests.Repositories
+namespace eRM_VersionHub_Tester.Repositories
 {
     public class DbRepositoryTests : IAsyncLifetime
     {

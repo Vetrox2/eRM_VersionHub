@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Data;
 
-namespace eRM_VersionHub.Repositories.Database
+namespace eRM_VersionHub.Repositories
 {
     public class DbRepository : IDbRepository
     {

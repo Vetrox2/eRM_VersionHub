@@ -1,7 +1,7 @@
 using Dapper;
 using eRM_VersionHub.Data;
 using eRM_VersionHub.Models;
-using eRM_VersionHub.Repositories.Database;
+using eRM_VersionHub.Repositories;
 using eRM_VersionHub.Repositories.Interfaces;
 using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Database;

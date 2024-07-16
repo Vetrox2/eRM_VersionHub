@@ -3,7 +3,7 @@ using eRM_VersionHub.Repositories.Interfaces;
 using eRM_VersionHub.Services.Database;
 using Moq;
 
-namespace eRM_VersionHub.Tests.Services
+namespace eRM_VersionHub_Tester.Services
 {
     public class FavoriteServiceTests
     {

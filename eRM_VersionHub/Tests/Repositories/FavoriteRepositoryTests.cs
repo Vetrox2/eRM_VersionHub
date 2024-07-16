@@ -1,9 +1,9 @@
 ﻿using eRM_VersionHub.Models;
-using eRM_VersionHub.Repositories.Database;
+using eRM_VersionHub.Repositories;
 using eRM_VersionHub.Repositories.Interfaces;
 using Moq;
 
-namespace eRM_VersionHub.Tests.Repositories
+namespace eRM_VersionHub_Tester.Repositories
 {
     public class FavoriteRepositoryTests
     {
