@@ -11,7 +11,15 @@ namespace eRM_VersionHub.Services
         };
         public static T? Deserialize<T>(this string json)
         {
-            return JsonSerializer.Deserialize<T>(json, options);
+            try
+            {
+                return JsonSerializer.Deserialize<T>(json, options);
+
+            }
+            catch (Exception ex)
+            {
+                return default;
+            }
         }
 
         public static string Serialize<T>(this T json)
