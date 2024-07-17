@@ -18,7 +18,7 @@ namespace eRM_VersionHub.Controllers
             {
                 return Ok(result.Data);
             }
-            return Problem(detail: string.Join(";", result.Errors));
+            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
         }
 
         [HttpPost]
@@ -29,7 +29,7 @@ namespace eRM_VersionHub.Controllers
             {
                 return Ok(result.Data);
             }
-            return Problem(detail: string.Join(";", result.Errors));
+            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
         }
 
         [HttpDelete]
@@ -40,7 +40,7 @@ namespace eRM_VersionHub.Controllers
             {
                 return Ok(result.Data);
             }
-            return Problem(detail: string.Join(";", result.Errors));
+            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
         }
     }
 }

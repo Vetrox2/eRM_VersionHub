@@ -19,7 +19,7 @@ namespace eRM_VersionHub.Controllers
             {
                 return Ok(result.Data);
             }
-            return Problem(detail: string.Join(";", result.Errors));
+            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
         }
 
         [HttpPost("{UserName}/{app_id}")]
@@ -32,7 +32,7 @@ namespace eRM_VersionHub.Controllers
             {
                 return Ok(result.Data);
             }
-            return Problem(detail: string.Join(";", result.Errors));
+            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
         }
 
         [HttpDelete("{UserName}/{app_id}")]
@@ -56,7 +56,7 @@ namespace eRM_VersionHub.Controllers
             {
                 return Ok(result.Data);
             }
-            return Problem(detail: string.Join(";", result.Errors));
+            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
         }
 
         [HttpDelete]
@@ -67,7 +67,7 @@ namespace eRM_VersionHub.Controllers
             {
                 return Ok(result.Data);
             }
-            return Problem(detail: string.Join(";", result.Errors));
+            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
         }
     }
 }

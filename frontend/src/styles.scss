@@ -1,4 +1,151 @@
-/* You can add global styles to this file, and also import other style files */
+@use "@angular/material" as mat;
+@import "./styles/normalize";
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+@include mat.core();
+
+$m2-primary: mat.m2-define-palette(
+  (
+    50: #e6f2e7,
+    100: #c1dfc2,
+    200: #98ca9a,
+    300: #6fb572,
+    400: #50a553,
+    500: #319535,
+    600: #2c8d30,
+    700: #258228,
+    800: #1f7822,
+    900: #136716,
+    A100: #c4ffb7,
+    A200: #9aff84,
+    A400: #70ff51,
+    A700: #5cff37,
+    contrast: (
+      50: #000000,
+      100: #000000,
+      200: #000000,
+      300: #000000,
+      400: #000000,
+      500: #ffffff,
+      600: #ffffff,
+      700: #ffffff,
+      800: #ffffff,
+      900: #ffffff,
+      A100: #000000,
+      A200: #000000,
+      A400: #000000,
+      A700: #000000,
+    ),
+  )
+);
+
+$m2-accent: mat.m2-define-palette(
+  (
+    50: #e4efe4,
+    100: #bcd7bd,
+    200: #8fbc91,
+    300: #62a164,
+    400: #418c43,
+    500: #1f7822,
+    600: #1b701e,
+    700: #176519,
+    800: #125b14,
+    900: #0a480c,
+    A100: #abff90,
+    A200: #84ff5d,
+    A400: #5eff2a,
+    A700: #4bff10,
+    contrast: (
+      50: #000000,
+      100: #000000,
+      200: #000000,
+      300: #000000,
+      400: #ffffff,
+      500: #ffffff,
+      600: #ffffff,
+      700: #ffffff,
+      800: #ffffff,
+      900: #ffffff,
+      A100: #000000,
+      A200: #000000,
+      A400: #000000,
+      A700: #000000,
+    ),
+  )
+);
+
+$m2-warn: mat.m2-define-palette(
+  (
+    50: #fee8e8,
+    100: #fcc6c5,
+    200: #fba19e,
+    300: #f97b77,
+    400: #f75e5a,
+    500: #f6423d,
+    600: #f53c37,
+    700: #f3332f,
+    800: #f22b27,
+    900: #ef1d1a,
+    A100: #ffffff,
+    A200: #ffffff,
+    A400: #ffdfe3,
+    A700: #ffc6cd,
+    contrast: (
+      50: #000000,
+      100: #000000,
+      200: #000000,
+      300: #000000,
+      400: #000000,
+      500: #ffffff,
+      600: #ffffff,
+      700: #ffffff,
+      800: #ffffff,
+      900: #ffffff,
+      A100: #000000,
+      A200: #000000,
+      A400: #000000,
+      A700: #000000,
+    ),
+  )
+);
+
+$custom-theme: mat.m2-define-light-theme(
+  (
+    color: (
+      primary: $m2-primary,
+      accent: $m2-accent,
+      warn: $m2-warn,
+    ),
+    typography: mat.m2-define-typography-config(),
+    density: 0,
+  )
+);
+
+@include mat.all-component-themes($custom-theme);
+
+html,
+body {
+  // @include mat.all-component-themes($custom-theme);
+  // @include mat.checkbox-theme($custom-theme);
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  height: 100%;
+}
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-hue: 122;
+  --primary-saturation: 50%;
+  --primary-lightness: 39%;
+  --primary-color: hsl(
+    var(--primary-hue),
+    var(--primary-saturation),
+    var(--primary-lightness)
+  );
+
+  --bg-hue: 0;
+  --bg-saturation: 0%;
+  --bg-lightness: 87%;
+  --bg-color: hsl(var(--bg-hue), var(--bg-saturation), var(--bg-lightness));
+}
