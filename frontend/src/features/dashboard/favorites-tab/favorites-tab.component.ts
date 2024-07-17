@@ -30,8 +30,12 @@ import {
   template: `
     <p style="padding-left: 5px">Favorites:</p>
     <ng-container *ngIf="favoriteApps$ | async as favoriteApps">
-      <mat-chip-set>
-        <mat-chip *ngFor="let app of favoriteApps" style="margin: 5px">
+      <mat-chip-set style="padding: 5px; color: var(--primary-color);">
+        <mat-chip
+          *ngFor="let app of favoriteApps"
+          style="margin: 5px"
+          (click)="onChipClick(app)"
+        >
           <div
             style="display: flex; align-items: center; justify-content: space-between; width: 100%;"
           >
@@ -53,6 +57,9 @@ import {
       }
       app-menu-icons {
         margin-left: 8px;
+      }
+      mat-chip {
+        cursor: pointer;
       }
     `,
   ],
@@ -80,5 +87,9 @@ export class FavoritesTabComponent implements OnInit {
     if (action === 'remove_favorite') {
       this.appService.removeFromFavorite(app, 'admin');
     }
+  }
+
+  onChipClick(app: App) {
+    this.appService.setSelectedApp(app);
   }
 }
