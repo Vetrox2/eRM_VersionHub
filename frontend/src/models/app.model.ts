@@ -4,6 +4,5 @@ export interface App {
   ID: string;
   Name: string;
   Versions: Version[];
-  Description: string;
   IsFavourite: boolean;
 }
