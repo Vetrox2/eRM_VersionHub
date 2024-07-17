@@ -3,8 +3,6 @@ using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using System.IO;
-using System.Reflection;
 
 namespace eRM_VersionHub.Controllers
 {
@@ -17,16 +15,27 @@ namespace eRM_VersionHub.Controllers
 
 
         [HttpPost]
-        public void Post(List<VersionDto> versionDtos)
+        public ApiResponse<bool> Post(List<VersionDto> versionDtos)
         {
-            versionDtos.ForEach(version => _publicationService.Publish(_settings, version));
-
+            List<string> result = [];
+            foreach (VersionDto version in versionDtos)
+            {
+                List<string> errors = _publicationService.Publish(_settings, version).Errors;
+                result.AddRange(errors);
+            }
+            return ApiResponse<bool>.ErrorResponse(result);
         }
 
         [HttpDelete]
-        public void Delete(List<VersionDto> versionDtos)
+        public ApiResponse<bool> Delete(List<VersionDto> versionDtos)
         {
-            versionDtos.ForEach(version => _publicationService.Unpublish(_settings, version));
+            List<string> result = [];
+            foreach (VersionDto version in versionDtos)
+            {
+                List<string> modules = _publicationService.Unpublish(_settings, version).Errors;
+                result.AddRange(modules);
+            }
+            return ApiResponse<bool>.ErrorResponse(result);
         }
     }
 }
