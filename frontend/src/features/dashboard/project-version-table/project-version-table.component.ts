@@ -142,8 +142,33 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
     }
   }
   getPublicationIcon(version: FlattenedVersion): string {
-    const isPublished = this.getPublicationStatus(version) === 'published';
+    const isPublished = this.getPublicationStatus(version);
 
-    return isPublished ? 'check' : 'close';
+    if(isPublished=='published')
+    {
+      return 'check_circle'
+    }
+    if (isPublished=='not-published') {
+      return 'cancel'
+    } 
+    else {
+      return 'remove'
+    }
+
+  }
+  getPublicationColor(version: FlattenedVersion):string
+  {
+    const isPublished = this.getPublicationStatus(version);
+
+    if(isPublished=='published')
+      {
+        return '#1b701e'
+      }
+      if (isPublished=='not-published') {
+        return '#f53c37'
+      } 
+      else {
+        return 'orange'
+      }
   }
 }
