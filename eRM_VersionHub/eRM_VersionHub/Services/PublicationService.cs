@@ -17,7 +17,7 @@ namespace eRM_VersionHub.Services
                 string versionPath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
                 if (!Directory.Exists(versionPath))
                 {
-                    return ApiResponse<bool>.ErrorResponse([$"Module \"{module.Name}\" or version \"{version.ID}\" does not exist"]);
+                    return ApiResponse<bool>.ErrorResponse([$"Module \"{module.Name}\" version \"{version.ID}\" does not exist"]);
                 }
             }
 
@@ -35,7 +35,7 @@ namespace eRM_VersionHub.Services
                     if (!response)
                     {
                         Unpublish(settings, version);
-                        return ApiResponse<bool>.ErrorResponse([$"System could not publish module \"{module.Name} v{version.ID}\". Rollbacking publication of this version."]);
+                        return ApiResponse<bool>.ErrorResponse([$"System could not publish module \"{module.Name}\" version \"{version.ID}\". Rollbacking publication of this version."]);
                     }
                 }
             }
