@@ -16,7 +16,7 @@
         </button>
 
         } @if( column === 'Published') {
-        <mat-icon>{{ getPublicationIcon(element) }}</mat-icon>
+          <mat-icon [style.color]="getPublicationColor(element)">{{getPublicationIcon(element)}}</mat-icon> 
         } @if(column === 'Tag') {
         <app-chip-dropdown
           [options]="getTagOptions(element.Tag)"
