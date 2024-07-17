@@ -19,8 +19,8 @@ namespace eRM_VersionHub_Tester.Endpoints
         {
             (appsPath, appJson, internalPath, externalPath) = _fileStructureGenerator.GenerateFileStructure();
 
-            _factory.SetNewAppSettings(appJson, appsPath, internalPath, externalPath);
             _factory = new TestFixture();
+            _factory.SetNewAppSettings(appJson, appsPath, internalPath, externalPath);
             _client = _factory.CreateClient();
             Thread.Sleep(100);
             return Task.CompletedTask;
