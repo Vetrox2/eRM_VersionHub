@@ -8,11 +8,20 @@ namespace eRM_VersionHub.Services
 {
     public class PublicationService : IPublicationService
     {
-        private static int _maxNumberOfAttempts = 5;
+        private readonly static int _maxNumberOfAttempts = 5;
         
-        public void Publish(MyAppSettings settings, VersionDto version)
+        public ApiResponse<bool> Publish(MyAppSettings settings, VersionDto version)
         {
-            version.Modules.ForEach(module =>
+            foreach (ModuleDto module in version.Modules)
+            {
+                string versionPath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
+                if (!Directory.Exists(versionPath))
+                {
+                    return ApiResponse<bool>.ErrorResponse([$"Module \"{module.Name}\" or version \"{version.ID}\" does not exist"]);
+                }
+            }
+
+            foreach (ModuleDto module in version.Modules)
             {
                 string versionPath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
                 string internalZipPath = Path.Combine(settings.InternalPackagesPath, module.Name, $"{version.Name}.zip");
@@ -22,19 +31,29 @@ namespace eRM_VersionHub.Services
                     internalZipStream.Flush();
                     string internalZipStringHash = StreamHashString(internalZipStream);
                     internalZipStream.Close();
-                    CopyContent(internalZipPath, settings.ExternalPackagesPath, module.Name, version.Name, internalZipStringHash);
+                    bool response = CopyContent(internalZipPath, settings.ExternalPackagesPath, module.Name, version.Name, internalZipStringHash);
+                    if (!response)
+                    {
+                        Unpublish(settings, version);
+                        return ApiResponse<bool>.ErrorResponse([$"System could not publish module \"{module.Name} v{version.ID}\". Rollbacking publication of this version."]);
+                    }
                 }
-            });
+            }
+            return ApiResponse<bool>.ErrorResponse([]);
         }
 
-        public void Unpublish(MyAppSettings settings, VersionDto version)
+        public ApiResponse<bool> Unpublish(MyAppSettings settings, VersionDto version)
         {
-            version.Modules.ForEach(module =>
+            IEnumerable<string> skippedModules = version.Modules.Select(module => 
             {
                 string targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, version.ID);
                 if (Directory.Exists(targetPath))
+                {
                     Directory.Delete(targetPath, true);
+                }
+                return $"Module \"{module.Name}\" version \"{version.ID}\"";
             });
+            return ApiResponse<bool>.ErrorResponse(skippedModules.ToList());
         }
 
         private static string StreamHashString(FileStream stream)
@@ -44,7 +63,7 @@ namespace eRM_VersionHub.Services
             return BitConverter.ToString(byteHash).Replace("-", "");
         }
 
-        private static void CopyContent(string internalZipPath, string externalPackagesPath, string moduleName, string version, string internalZipStringHash, int attempt = 0)
+        private static bool CopyContent(string internalZipPath, string externalPackagesPath, string moduleName, string version, string internalZipStringHash, int attempt = 0)
         {
             string fileName = Path.GetFileName(externalPackagesPath);
             string versionFolder = Path.Combine(externalPackagesPath, moduleName, version);
@@ -65,18 +84,18 @@ namespace eRM_VersionHub.Services
                     
                     File.Delete(externalZipPath);
                     File.Delete(internalZipPath);
-                    return;
+                    return true;
                 }
             }
 
             File.Delete(externalZipPath);
             if (attempt < _maxNumberOfAttempts)
             {
-                CopyContent(internalZipPath, externalPackagesPath, moduleName, version, internalZipStringHash, attempt + 1);
+                return CopyContent(internalZipPath, externalPackagesPath, moduleName, version, internalZipStringHash, attempt + 1);
             }
             else
             {
-                throw new Exception("Publishing failed");
+                return false;
             }
         }
     }
