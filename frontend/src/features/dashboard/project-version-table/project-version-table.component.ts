@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy,Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -17,6 +17,7 @@ import { Subscription } from 'rxjs';
 import { MenuIconsComponent } from '../../../components/menu/menu.component';
 import { Version } from '../../../models/version.model';
 import { MatIcon } from '@angular/material/icon';
+import { ChipDropdownComponent } from '../../../components/chip-dropdown/chip-dropdown.component';
 
 interface FlattenedVersion {
   Version: string;
@@ -25,13 +26,13 @@ interface FlattenedVersion {
   ID: string;
   Modules: App['Versions'][0]['Modules'];
   ParentApp: App;
+  Tag: string;
 }
 export interface MenuItem {
   icon: string;
   label: string;
   action: string;
 }
-
 
 @Component({
   selector: 'app-project-version-table',
@@ -55,12 +56,13 @@ export interface MenuItem {
     StatusChipComponent,
     MatButtonModule,
     MenuIconsComponent,
-    MatIcon
+    MatIcon,
+    ChipDropdownComponent,
   ],
 })
 export class ProjectVersionTableComponent implements OnInit, OnDestroy {
   dataSource: FlattenedVersion[] = [];
-  columnsToDisplay = ['Actions','Published','Version', 'Description', 'Name', 'ID'];
+  columnsToDisplay = ['Actions', 'Published', 'Version', 'Tag', 'Name', 'ID'];
   expandedElement: FlattenedVersion | null = null;
   private selectedAppSubscription: Subscription | undefined;
 
@@ -88,11 +90,21 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
       this.selectedAppSubscription.unsubscribe();
     }
   }
+  dropdownOptions = ['Scoped', 'Preview', 'None'];
+  selectedOption = this.dropdownOptions[0];
+
+  onOptionSelected(option: string) {}
+  getTagOptions(tag: string): string[] {
+    return ['Scoped', 'Preview', 'None'];
+  }
+
+  onTagSelected(option: string, element: FlattenedVersion) {}
 
   flattenData(apps: App[]) {
     this.dataSource = apps.flatMap((app) =>
       app.Versions.map((version) => ({
-        Version: version.ID,
+        Version: version.Name,
+        Tag: version.Tag,
         Description: app.Description,
         Name: app.Name,
         ID: app.ID,
@@ -105,7 +117,6 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
   getPublicationStatus(
     version: FlattenedVersion
   ): 'published' | 'semi-published' | 'not-published' {
-    console.log(version);
     const publishedCount = version.Modules.filter((m) => m.IsPublished).length;
     if (publishedCount === version.Modules.length) {
       return 'published';
@@ -119,7 +130,6 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
     event.stopPropagation();
   }
   handleMenuSelection(action: string, version: Version) {
-    console.log(`Action ${action} selected for app ${version.ID}`);
     switch (action) {
       case 'publish':
         // Handle publish action
@@ -133,7 +143,7 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
   }
   getPublicationIcon(version: FlattenedVersion): string {
     const isPublished = this.getPublicationStatus(version) === 'published';
-    
+
     return isPublished ? 'check' : 'close';
   }
 }
