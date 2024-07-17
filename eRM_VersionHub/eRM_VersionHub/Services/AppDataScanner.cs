@@ -6,50 +6,104 @@ using eRM_VersionHub.Services.Interfaces;
 
 namespace eRM_VersionHub.Services
 {
-    public class AppDataScanner(IFavoriteService favoriteService, IPermissionService permissionService) : IAppDataScanner
+
+    public class AppDataScanner : IAppDataScanner
     {
-        private IFavoriteService _favoriteService = favoriteService;
-        private IPermissionService _permissionService = permissionService;
-        public static ApplicationJsonModel? GetAppJsonModel(string jsonFilePath)
-        {
-            if (!File.Exists(jsonFilePath))
-                return null;
+    private IFavoriteService _favoriteService;
+    private IPermissionService _permissionService;
 
-            string jsonString = File.ReadAllText(jsonFilePath);
-            return jsonString.Deserialize<ApplicationJsonModel>();
+    public AppDataScanner(IFavoriteService favoriteService, IPermissionService permissionService)
+    {
+        _favoriteService = favoriteService;
+        _permissionService = permissionService;
+    }
+
+    public static ApplicationJsonModel? GetAppJsonModel(string jsonFilePath)
+    {
+        if (!File.Exists(jsonFilePath))
+            return null;
+
+        string jsonString = File.ReadAllText(jsonFilePath);
+        return JsonSerializer.Deserialize<ApplicationJsonModel>(jsonString);
+    }
+
+    public async Task<List<AppStructureDto>?> GetAppsStructure(string appsPath, string appJsonName, string internalPackagesPath, string externalPackagesPath, string userToken)
+    {
+        var structure = GetInternalAppStructure(appsPath, appJsonName, internalPackagesPath);
+        structure = SetPublishedStatus(externalPackagesPath, structure);
+        var filteredStructure = await GetFilteredByPermsAndFav(structure, userToken);
+        return filteredStructure ?? structure;
+    }
+
+    private List<AppStructureDto> GetInternalAppStructure(string appsPath, string appJsonName, string internalPackagesPath)
+    {
+        var appsStructure = new List<AppStructureDto>();
+        var moduleModels = GetModuleModels(internalPackagesPath);
+        var appsNames = GetDirectoryInfo(appsPath);
+
+        foreach (var app in appsNames)
+        {
+            var appJSModel = GetAppJsonModel(Path.Combine(appsPath, app.Name, appJsonName));
+
+            if (appJSModel == null)
+                continue;
+
+            var appStructureDto = CreateAppStructureDto(appJSModel, moduleModels);
+
+            if (appStructureDto == null)
+                continue;
+
+            appsStructure.Add(appStructureDto);
         }
 
-        public async Task<List<AppStructureDto>?> GetAppsStructure(string appsPath, string appJsonName, string internalPackagesPath, string externalPackagesPath, string userToken)
-        {
-            var structure = GetInternalAppStructure(appsPath, appJsonName, internalPackagesPath);
-            structure = SetPublishedStatus(externalPackagesPath, structure);
-            structure = await GetFilteredByPermsAndFav(structure, userToken);
-            return structure;
-        }
+        return appsStructure;
+    }
 
-        private List<AppStructureDto> GetInternalAppStructure(string appsPath, string appJsonName, string internalPackagesPath)
-        {
-            var appsStructure = new List<AppStructureDto>();
-            var moduleModels = GetModuleModels(internalPackagesPath);
-            var appsNames = GetDirectoryInfo(appsPath);
 
-            foreach (var app in appsNames)
-            {
-                var appJSModel = GetAppJsonModel(Path.Combine(appsPath, app.Name, appJsonName));
+    // public class AppDataScanner(IFavoriteService favoriteService, IPermissionService permissionService) : IAppDataScanner
+    // {
+    //     private IFavoriteService _favoriteService = favoriteService;
+    //     private IPermissionService _permissionService = permissionService;
+    //     public static ApplicationJsonModel? GetAppJsonModel(string jsonFilePath)
+    //     {
+    //         if (!File.Exists(jsonFilePath))
+    //             return null;
 
-                if (appJSModel == null)
-                    continue;
+    //         string jsonString = File.ReadAllText(jsonFilePath);
+    //         return jsonString.Deserialize<ApplicationJsonModel>();
+    //     }
 
-                var appStructureDto = CreateAppStructureDto(appJSModel, moduleModels);
+    //     public async Task<List<AppStructureDto>?> GetAppsStructure(string appsPath, string appJsonName, string internalPackagesPath, string externalPackagesPath, string userToken)
+    //     {
+    //         var structure = GetInternalAppStructure(appsPath, appJsonName, internalPackagesPath);
+    //         structure = SetPublishedStatus(externalPackagesPath, structure);
+    //         structure = await GetFilteredByPermsAndFav(structure, userToken);
+    //         return structure;
+    //     }
 
-                if (appStructureDto == null)
-                    continue;
+    //     private List<AppStructureDto> GetInternalAppStructure(string appsPath, string appJsonName, string internalPackagesPath)
+    //     {
+    //         var appsStructure = new List<AppStructureDto>();
+    //         var moduleModels = GetModuleModels(internalPackagesPath);
+    //         var appsNames = GetDirectoryInfo(appsPath);
 
-                appsStructure.Add(appStructureDto);
-            }
+    //         foreach (var app in appsNames)
+    //         {
+    //             var appJSModel = GetAppJsonModel(Path.Combine(appsPath, app.Name, appJsonName));
 
-            return appsStructure;
-        }
+    //             if (appJSModel == null)
+    //                 continue;
+
+    //             var appStructureDto = CreateAppStructureDto(appJSModel, moduleModels);
+
+    //             if (appStructureDto == null)
+    //                 continue;
+
+    //             appsStructure.Add(appStructureDto);
+    //         }
+
+    //         return appsStructure;
+    //     }
 
         private List<AppStructureDto> SetPublishedStatus(string externalPackagesPath, List<AppStructureDto> appsStructure)
         {

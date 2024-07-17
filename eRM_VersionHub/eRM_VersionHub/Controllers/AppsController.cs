@@ -26,6 +26,7 @@ namespace eRM_VersionHub.Controllers
             );
             if (structure == null || structure.Count == 0)
                 return NotFound(ApiResponse<string>.ErrorResponse(["Some error"]).Serialize());
+                //api response!!
 
             return Ok(
                 ApiResponse<List<Dtos.AppStructureDto>>.SuccessResponse(structure).Serialize()
