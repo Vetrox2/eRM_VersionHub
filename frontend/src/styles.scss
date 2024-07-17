@@ -133,3 +133,19 @@ body {
 * {
   box-sizing: border-box;
 }
+
+:root {
+  --primary-hue: 122;
+  --primary-saturation: 50%;
+  --primary-lightness: 39%;
+  --primary-color: hsl(
+    var(--primary-hue),
+    var(--primary-saturation),
+    var(--primary-lightness)
+  );
+
+  --bg-hue: 0;
+  --bg-saturation: 0%;
+  --bg-lightness: 87%;
+  --bg-color: hsl(var(--bg-hue), var(--bg-saturation), var(--bg-lightness));
+}
