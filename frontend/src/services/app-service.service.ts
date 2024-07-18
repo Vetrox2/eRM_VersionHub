@@ -119,6 +119,14 @@ export class AppService {
     this.favoriteAppsSubject.next(favoriteApps);
   }
 
+  private sendPostRequest(
+    url: string,
+    body: any
+  ): Observable<ApiResponse<any>> {
+    return this.http
+      .post<ApiResponse<any>>(url, body)
+      .pipe(catchError(this.handleError));
+  }
   private handleError(error: any): Observable<ApiResponse<any>> {
     let errorMessage = 'An unknown error occurred';
     if (error.error instanceof ErrorEvent) {
