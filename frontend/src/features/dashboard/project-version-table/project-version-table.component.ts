@@ -150,39 +150,73 @@ export class ProjectVersionTableComponent
   }
 
   applyChanges(version: FlattenedVersion) {
-    // const changedModules = version.Modules.filter(
-    //   (module) =>
-    //     this.moduleChanges[module.Name] !== undefined &&
-    //     this.moduleChanges[module.Name] !== module.IsPublished
-    // );
+    const changedModules = version.Modules.filter(
+      (module) =>
+        this.moduleChanges[module.Name] !== undefined &&
+        this.moduleChanges[module.Name] !== module.IsPublished
+    );
+
+    if (changedModules.length === 0) {
+      // this.snackBar.open('No changes to apply', 'Close', { duration: 3000 });
+      // return;
+    }
+
     const dialogRef = this.dialog.open(DefaultModalComponent, {
       data: {
         title: 'Confirm Changes',
-        // message: `Are you sure you want to apply changes to ${changedModules.length} module(s)?`,
+        message: `Are you sure you want to apply changes to ${changedModules.length} module(s)?`,
       },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.isLoading = true;
-        const promises = version.Modules.map((module) => {
-          const updatedVersion: Version = {
-            ...this.flattenedVersionToDto(version),
-            Modules: [module],
-          };
-          if (this.moduleChanges[module.Name]) {
-            console.log('published', updatedVersion);
-            return this.appService.publishVersion(updatedVersion).toPromise();
-          } else {
-            console.log('unpublished', updatedVersion);
-            return this.appService.unPublishVersion(updatedVersion).toPromise();
-          }
-        });
+        const publishModules = changedModules.filter(
+          (module) => this.moduleChanges[module.Name]
+        );
+        const unpublishModules = changedModules.filter(
+          (module) => !this.moduleChanges[module.Name]
+        );
+
+        const publishVersion: Version | null =
+          publishModules.length > 0
+            ? {
+                ...this.flattenedVersionToDto(version),
+                Modules: publishModules,
+              }
+            : null;
+
+        const unpublishVersion: Version | null =
+          unpublishModules.length > 0
+            ? {
+                ...this.flattenedVersionToDto(version),
+                Modules: unpublishModules,
+              }
+            : null;
+
+        const promises: Promise<any>[] = [];
+
+        if (publishVersion) {
+          promises.push(
+            this.appService.publishVersion(publishVersion).toPromise()
+          );
+        }
+
+        if (unpublishVersion) {
+          promises.push(
+            this.appService.unPublishVersion(unpublishVersion).toPromise()
+          );
+        }
 
         Promise.all(promises)
           .then(() => {
             this.snackBar.open('Changes applied successfully', 'Close', {
               duration: 3000,
+            });
+            version.Modules.forEach((module) => {
+              if (this.moduleChanges[module.Name] !== undefined) {
+                module.IsPublished = this.moduleChanges[module.Name];
+              }
             });
             this.moduleChanges = {};
             this.refreshData();
@@ -240,12 +274,12 @@ export class ProjectVersionTableComponent
   }
 
   flattenedVersionToDto(flattenedVersion: FlattenedVersion): Version {
-    type tag = 'scoped' | 'preview' | 'none';
+    type tag = 'scoped' | 'preview' | 'none' | '';
     return {
       ID: flattenedVersion.orignalID,
       Modules: flattenedVersion.Modules,
       Name: flattenedVersion.Version,
-      Tag: flattenedVersion.Tag as tag,
+      Tag: flattenedVersion.Tag === 'none' ? '' : (flattenedVersion.Tag as tag),
     };
   }
 
