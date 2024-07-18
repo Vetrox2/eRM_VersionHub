@@ -15,7 +15,7 @@ namespace eRM_VersionHub.Services
                 return ApiResponse<string>.ErrorResponse(["App not found"]);
 
             int internalModulesModified = 0, publishedModulesModified = 0;
-            var newVersionID = SwapVersionTags(versionID, newTag);
+            var newVersionID = SwapVersionTag(versionID, newTag);
 
             if(newVersionID == versionID)
                 return ApiResponse<string>.ErrorResponse(["New tag is the same as the old one"]);
@@ -51,7 +51,7 @@ namespace eRM_VersionHub.Services
             return (Name, Tag);
         }
 
-        public static string SwapVersionTags(string versionID, string newTag)
+        public static string SwapVersionTag(string versionID, string newTag)
         {
             var (newVersionID, _) = SplitVersionID(versionID);
             if (!string.IsNullOrEmpty(newTag))

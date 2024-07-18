@@ -165,7 +165,7 @@ namespace eRM_VersionHub_Tester.Endpoints
             string newTag
         )
         {
-            var newVersionID = TagService.SwapVersionTags(versionID, newTag);
+            var newVersionID = TagService.SwapVersionTag(versionID, newTag);
             var app = appStructure.FirstOrDefault(app => app.ID == appID);
             if (app == null)
                 return false;
