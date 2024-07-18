@@ -60,10 +60,26 @@ namespace eRM_VersionHub.Services
             return newVersionID;
         }
 
-        private bool ChangeTagOnPath(string packagesPath, string moduleId, string versionID, string newVersionID)
+        public static bool ChangeTagOnPath(string packagesPath, string moduleId, string versionID, string newVersionID)
         {
-            var oldPath = Path.Combine(packagesPath, moduleId, versionID);
+            var oldPath = string.Empty;
             var newPath = Path.Combine(packagesPath, moduleId, newVersionID);
+
+            var info = new DirectoryInfo(Path.Combine(packagesPath, moduleId));
+            var allPublishedVersions = info.GetDirectories().ToList();
+            foreach (var publishedVersion in allPublishedVersions)
+            {
+                if (SwapVersionTag(publishedVersion.Name, "") == (SwapVersionTag(versionID, "")))
+                {
+                    oldPath = Path.Combine(packagesPath, moduleId, publishedVersion.Name);
+                    break;
+                }
+            }
+            if (string.IsNullOrEmpty(oldPath))
+                return false;
+
+            if (oldPath == newPath) 
+                return true;
 
             if (Directory.Exists(oldPath))
             {

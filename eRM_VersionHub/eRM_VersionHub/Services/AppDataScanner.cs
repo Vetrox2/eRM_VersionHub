@@ -58,7 +58,7 @@ namespace eRM_VersionHub.Services
             appsStructure.ForEach(app => app.Versions.ForEach(appVersion => appVersion.Modules.ForEach(module =>
             {
                 var publishedModule = publishedModules.FirstOrDefault(m => m.Name == module.Name);
-                if (publishedModule != null && publishedModule.Versions.Any(version => version == appVersion.ID))
+                if (publishedModule != null && publishedModule.Versions.Any(version => TagService.SwapVersionTag(version,"") == TagService.SwapVersionTag(appVersion.ID,"")))
                     module.IsPublished = true;
             })));
 

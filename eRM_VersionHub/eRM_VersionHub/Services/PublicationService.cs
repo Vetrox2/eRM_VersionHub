@@ -21,8 +21,19 @@ namespace eRM_VersionHub.Services
 
             foreach (var module in version.Modules)
             {
+                if (module.IsPublished)
+                {
+                    var success = TagService.ChangeTagOnPath(settings.ExternalPackagesPath, module.Name, version.ID, TagService.SwapVersionTag(version.ID, version.Tag));
+                    if(success)
+                        continue;
+
+                    Unpublish(settings, version);
+                    return ApiResponse<bool>.ErrorResponse(
+                        [$"System could not change published tag on module \"{module.Name}\" version \"{version.ID}\". Rollbacking publication of this version."]);
+                }
+
                 var sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
-                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID,version.Tag));//TODO
+                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID, version.Tag));
 
                 PrepareTargetPath(settings.ExternalPackagesPath, module.Name, targetPath);
                 var response = CopyContent(sourcePath, targetPath);
@@ -43,9 +54,19 @@ namespace eRM_VersionHub.Services
             List<string> errors = [];
             foreach (var module in version.Modules)
             {
-                //TODO - correct when rollbacking, uncorrect when unpublishing --------------------here
-                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID, version.Tag));
-                if (!Directory.Exists(targetPath))
+                string targetPath = string.Empty;
+                var info = new DirectoryInfo(Path.Combine(settings.ExternalPackagesPath, module.Name));
+                var allPublishedVersions = info.GetDirectories().ToList();
+                foreach (var publishedVersion in allPublishedVersions)
+                {
+                    if (TagService.SwapVersionTag(publishedVersion.Name, "") == (TagService.SwapVersionTag(version.ID, "")))
+                    {
+                        targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, publishedVersion.Name);
+                        break;
+                    }
+
+                }
+                if (string.IsNullOrEmpty(targetPath) && !Directory.Exists(targetPath))
                 {
                     errors.Add($"{module.Name} could not be unpublished, because was not found");
                     continue;
