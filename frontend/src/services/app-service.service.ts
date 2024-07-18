@@ -4,6 +4,11 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { App } from '../models/app.model';
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  errors: string[];
+}
 @Injectable({
   providedIn: 'root',
 })
