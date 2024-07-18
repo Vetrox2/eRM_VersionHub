@@ -119,6 +119,20 @@ export class AppService {
     this.favoriteAppsSubject.next(favoriteApps);
   }
 
+  private handleError(error: any): Observable<ApiResponse<any>> {
+    let errorMessage = 'An unknown error occurred';
+    if (error.error instanceof ErrorEvent) {
+      // Client-side error
+      errorMessage = `Error: ${error.error.message}`;
+    } else {
+      // Server-side error
+      errorMessage = `Error Code: ${error.status}\nMessage: ${error.message}`;
+    }
+    return new Observable((observer) => {
+      observer.next({ success: false, data: null, errors: [errorMessage] });
+      observer.complete();
+    });
+  }
   addToFavorites(userName: string, appId: string): Observable<any> {
     return this.http
       .post(`${this.apiFavoriteUrl}/${userName}/${appId}`, {})
