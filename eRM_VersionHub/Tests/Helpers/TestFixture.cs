@@ -1,4 +1,5 @@
 ﻿using eRM_VersionHub.Models;
+using eRM_VersionHub.Repositories.Interfaces;
 using eRM_VersionHub.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -14,7 +15,6 @@ namespace eRM_VersionHub_Tester.Helpers
         {
             _tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(_tempDir);
-
             _appSettingsPath = Path.Combine(_tempDir, "appsettings.Test.json");
         }
 
@@ -45,7 +45,6 @@ namespace eRM_VersionHub_Tester.Helpers
                 // Add any additional configuration here if necessary
                 config.AddEnvironmentVariables();
             });
-
             builder.UseEnvironment("Testing");
             base.ConfigureWebHost(builder);
         }
@@ -55,5 +54,9 @@ namespace eRM_VersionHub_Tester.Helpers
             Directory.Delete(_tempDir, true);
         }
 
+        public IDbRepository GetIDbRepository()
+        {
+             return Services.GetRequiredService<IDbRepository>();
+        }
     }
 }

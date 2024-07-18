@@ -1,4 +1,6 @@
 ﻿using eRM_VersionHub.Models;
+using eRM_VersionHub.Repositories;
+using eRM_VersionHub.Repositories.Interfaces;
 using eRM_VersionHub_Tester.Helpers;
 
 namespace eRM_VersionHub_Tester.Endpoints
@@ -7,10 +9,13 @@ namespace eRM_VersionHub_Tester.Endpoints
     {
         private readonly HttpClient _client;
         private readonly User user;
+        private UserRepository userRepository;
 
         public UserTests(TestFixture factory)
         {
             factory.SetNewAppSettings("","","","");
+            IDbRepository dbRepository = factory.GetIDbRepository();
+            userRepository = new UserRepository(dbRepository);
             _client = factory.CreateClient();
             user = new() { Username = "test", CreationDate = DateTime.MinValue };
         }
@@ -70,10 +75,11 @@ namespace eRM_VersionHub_Tester.Endpoints
                 Username = user.Username,
                 CreationDate = DateTime.MaxValue,
             };
+            await userRepository.CreateUser(user);
             HttpResponseMessage response = await _client.PutAsJsonAsync<User>("/User", updatedUser);
             User? deserialized = await response.GetRequestContent<User?>();
             Assert.NotNull(deserialized);
-            Assert.True(user.Equals(deserialized));
+            Assert.True(updatedUser.Equals(deserialized));
         }
 
         [Fact]
@@ -92,6 +98,7 @@ namespace eRM_VersionHub_Tester.Endpoints
         [Fact]
         public async Task DeleteUser_ShouldReturnDeletedUser()
         {
+            await userRepository.CreateUser(user);
             HttpResponseMessage response = await _client.DeleteAsync("/User/test");
             User? deserialized = await response.GetRequestContent<User?>();
             Assert.NotNull(deserialized);
