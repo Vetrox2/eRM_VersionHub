@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace eRM_VersionHub.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class FavoriteController(IFavoriteService favoritesService) : ControllerBase
     {
         private readonly IFavoriteService _favoritesService = favoritesService;

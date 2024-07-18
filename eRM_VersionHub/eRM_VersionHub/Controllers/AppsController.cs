@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 namespace eRM_VersionHub.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class AppsController(IOptions<AppSettings> appSettings, IAppDataScanner appDataScanner)
         : ControllerBase
     {
