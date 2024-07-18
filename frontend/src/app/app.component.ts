@@ -5,8 +5,9 @@ import { ProjectVersionTableComponent } from '../features/dashboard/project-vers
 import { CustomCheckboxChipComponent } from '../components/custom-checkbox-chip/custom-checkbox-chip.component';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
-import { MatIconModule } from '@angular/material/icon';
+import { MatIcon, MatIconModule } from '@angular/material/icon';
 import { FavoritesTabComponent } from '../features/dashboard/favorites-tab/favorites-tab.component';
+import { MatButton } from '@angular/material/button';
 
 @Component({
   selector: 'app-root',
@@ -20,6 +21,8 @@ import { FavoritesTabComponent } from '../features/dashboard/favorites-tab/favor
     MatDividerModule,
     MatIconModule,
     FavoritesTabComponent,
+    MatIcon,
+    MatButton,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',

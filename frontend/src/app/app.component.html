@@ -1,21 +1,37 @@
-<div class="app-container" style="padding: 2.5px">
+<div class="app-container">
   <header class="app-header">
-    <h3 class="app-title">eRM Management App</h3>
+    <div class="logo-container">
+      <span class="logo-wrapper">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 100 100"
+          class="logo-svg"
+        >
+          <path
+            d="M25 25 L50 35 L75 25 L75 75 L50 65 L25 75 Z"
+            fill="currentColor"
+          />
+        </svg>
+      </span>
+      <div class="title-container">
+        <h3 class="app-title">eRM</h3>
+        <p class="app-subtitle">EZD.JST</p>
+      </div>
+    </div>
     <div class="icon-container">
-      <button mat-icon-button>
-        <mat-icon>person</mat-icon>
+      <button mat-raised-button>
+        <span><mat-icon>person</mat-icon></span>
       </button>
-      <button mat-icon-button>
-        <mat-icon>notifications</mat-icon>
+      <button mat-raised-button>
+        <span><mat-icon>search</mat-icon></span>
       </button>
     </div>
   </header>
-  <mat-divider></mat-divider>
-  <div class="app-content" style="display: flex; margin-top: 1em">
-    <aside class="app-sidebar" style="width: min-content; margin-right: 10px">
+  <div class="app-content">
+    <aside class="app-sidebar">
       <app-sidebar></app-sidebar>
     </aside>
-    <main class="app-main" style="width: 100%">
+    <main class="app-main">
       <app-favorites-tab></app-favorites-tab>
       <div>
         <app-project-version-table></app-project-version-table>
