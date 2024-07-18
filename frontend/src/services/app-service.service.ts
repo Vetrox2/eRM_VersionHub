@@ -163,6 +163,11 @@ export class AppService {
     return this.sendPostRequest(this.apiPublicationUrl, requestDto);
   }
 
+  unPublishVersion(version: Version): Observable<ApiResponse<any>> {
+    const requestDto = [version];
+    return this.sendDeleteRequest(this.apiPublicationUrl, requestDto);
+  }
+
   addToFavorites(userName: string, appId: string): Observable<any> {
     return this.http
       .post(`${this.apiFavoriteUrl}/${userName}/${appId}`, {})
