@@ -14,8 +14,8 @@ interface ApiResponse<T> {
   providedIn: 'root',
 })
 export class AppService {
-  private apiAppsUrl = 'https://localhost:7125/Apps';
-  private apiFavoriteUrl = 'https://localhost:7125/Favorite';
+  private apiAppsUrl = 'https://localhost:7125/api/Apps';
+  private apiFavoriteUrl = 'https://localhost:7125/api/Favorite';
   private apiPublicationUrl = 'https://localhost:7125/api/Publication';
 
   private appsSubject = new BehaviorSubject<App[]>([]);
