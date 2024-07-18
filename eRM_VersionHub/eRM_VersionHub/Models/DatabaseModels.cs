@@ -16,5 +16,6 @@
     {
         public required string Username { get; set; }
         public required DateTime CreationDate { get; set; }
+        public virtual bool Equals(User user) => Username == user.Username && CreationDate == user.CreationDate;
     }
 }

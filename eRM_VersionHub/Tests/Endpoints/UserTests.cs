@@ -1,6 +1,5 @@
 ﻿using eRM_VersionHub.Models;
 using eRM_VersionHub_Tester.Helpers;
-using System.Text.Json;
 
 namespace eRM_VersionHub_Tester.Endpoints
 {
@@ -11,16 +10,16 @@ namespace eRM_VersionHub_Tester.Endpoints
 
         public UserTests(TestFixture factory)
         {
+            factory.SetNewAppSettings("","","","");
             _client = factory.CreateClient();
-            user = new() { Username = "test", CreationDate = DateTime.Now };
+            user = new() { Username = "test", CreationDate = DateTime.MinValue };
         }
 
         [Fact]
         public async Task GetUserList_ShouldReturnListOfUsers()
         {
             HttpResponseMessage response = await _client.GetAsync("/User");
-            Func<List<User>?> fun = await response.GetRequestContent<List<User>?>();
-            List<User>? deserialized = fun.Invoke();
+            List<User>? deserialized = await response.GetRequestContent<List<User>?>();
             Assert.NotNull(deserialized);
             Assert.NotEmpty(deserialized);
         }
@@ -29,8 +28,7 @@ namespace eRM_VersionHub_Tester.Endpoints
         public async Task GetUser_ShouldReturnUser()
         {
             HttpResponseMessage response = await _client.GetAsync("/User/admin");
-            Func<User?> fun = await response.GetRequestContent<User?>();
-            User? deserialized = fun.Invoke();
+            User? deserialized = await response.GetRequestContent<User?>();
             Assert.NotNull(deserialized);
             Assert.Equal("admin", deserialized.Username);
         }
@@ -39,18 +37,17 @@ namespace eRM_VersionHub_Tester.Endpoints
         public async Task GetUser_ShouldReturnErrorOnFailure()
         {
             HttpResponseMessage response = await _client.GetAsync("/User/#");
-            Func<User?> fun = await response.GetRequestContent<User?>();
-            Assert.Throws<JsonException>(fun);
+            User? deserialized = await response.GetRequestContent<User?>();
+            Assert.Null(deserialized);
         }
 
         [Fact]
         public async Task CreateUser_ShouldReturnCreatedUser()
         {
             HttpResponseMessage response = await _client.PostAsJsonAsync<User>("/User", user);
-            Func<User?> fun = await response.GetRequestContent<User?>();
-            User? deserialized = fun.Invoke();
+            User? deserialized = await response.GetRequestContent<User?>();
             Assert.NotNull(deserialized);
-            Assert.Equal(user, deserialized);
+            Assert.True(user.Equals(deserialized));
         }
 
         [Fact]
@@ -61,8 +58,8 @@ namespace eRM_VersionHub_Tester.Endpoints
                 Username = "", AppID = ""
             };
             HttpResponseMessage response = await _client.PostAsJsonAsync<Favorite>("/User", fav);
-            Func<User?> fun = await response.GetRequestContent<User?>();
-            Assert.Throws<JsonException>(fun);
+            User? deserialized = await response.GetRequestContent<User?>();
+            Assert.Null(deserialized);
         }
 
         [Fact]
@@ -73,11 +70,10 @@ namespace eRM_VersionHub_Tester.Endpoints
                 Username = user.Username,
                 CreationDate = DateTime.MaxValue,
             };
-            HttpResponseMessage response = await _client.PutAsJsonAsync<User>("/User", user);
-            Func<User?> fun = await response.GetRequestContent<User?>();
-            User? deserialized = fun.Invoke();
+            HttpResponseMessage response = await _client.PutAsJsonAsync<User>("/User", updatedUser);
+            User? deserialized = await response.GetRequestContent<User?>();
             Assert.NotNull(deserialized);
-            Assert.Equal(user, deserialized);
+            Assert.True(user.Equals(deserialized));
         }
 
         [Fact]
@@ -89,26 +85,25 @@ namespace eRM_VersionHub_Tester.Endpoints
                 AppID = ""
             };
             HttpResponseMessage response = await _client.PutAsJsonAsync<Favorite>("/User", fav);
-            Func<User?> fun = await response.GetRequestContent<User?>();
-            Assert.Throws<JsonException>(fun);
+            User? deserialized = await response.GetRequestContent<User?>();
+            Assert.Null(deserialized);
         }
 
         [Fact]
         public async Task DeleteUser_ShouldReturnDeletedUser()
         {
             HttpResponseMessage response = await _client.DeleteAsync("/User/test");
-            Func<User?> fun = await response.GetRequestContent<User?>();
-            User? deserialized = fun.Invoke();
+            User? deserialized = await response.GetRequestContent<User?>();
             Assert.NotNull(deserialized);
-            Assert.Equal(user, deserialized);
+            Assert.True(user.Equals(deserialized));
         }
 
         [Fact]
         public async Task DeleteUser_ShouldReturnErrorOnFailure()
         {
             HttpResponseMessage response = await _client.DeleteAsync("/User/#");
-            Func<User?> fun = await response.GetRequestContent<User?>();
-            Assert.Throws<JsonException>(fun);
+            User? deserialized = await response.GetRequestContent<User?>();
+            Assert.Null(deserialized);
         }
     }
 }

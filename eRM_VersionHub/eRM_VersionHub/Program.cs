@@ -56,8 +56,8 @@ app.UseAuthorization();
 app.MapControllers();
 
 AppSettings? settings = app.Services.CreateScope().ServiceProvider.GetService<IOptions<AppSettings>>().Value ;
-if(settings != null)
-    PackagesGenerator.Generate(settings.MyAppSettings.InternalPackagesPath, Path.Combine(Directory.GetParent(settings.MyAppSettings.AppsPath).Name, "packages.txt")); //To delete
+//if(settings != null)
+  // PackagesGenerator.Generate(settings.MyAppSettings.InternalPackagesPath, Path.Combine(Directory.GetParent(settings.MyAppSettings.AppsPath).Name, "packages.txt")); //To delete
 
 app.Run();
 

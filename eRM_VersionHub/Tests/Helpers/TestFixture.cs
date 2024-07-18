@@ -6,7 +6,7 @@ namespace eRM_VersionHub_Tester.Helpers
 {
     public class TestFixture : WebApplicationFactory<Program>, IDisposable
     {
-        private static readonly string _connectionString = "Host=localhost;Port=5433;Database=testdb;Username=postgres;Password=postgres_test";
+        private static readonly string _connectionString = "Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=postgres;";
         private string _tempDir;
         private string _appSettingsPath;
 
