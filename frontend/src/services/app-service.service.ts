@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { App } from '../models/app.model';
+import { Version } from '../models/version.model';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -15,6 +16,7 @@ interface ApiResponse<T> {
 export class AppService {
   private apiAppsUrl = 'https://localhost:7125/Apps';
   private apiFavoriteUrl = 'https://localhost:7125/Favorite';
+  private apiPublicationUrl = 'https://localhost:7125/api/Publication';
 
   private appsSubject = new BehaviorSubject<App[]>([]);
   private selectedAppSubject = new BehaviorSubject<App | null>(null);
@@ -155,6 +157,12 @@ export class AppService {
       observer.complete();
     });
   }
+
+  publishVersion(version: Version): Observable<ApiResponse<any>> {
+    const requestDto = [version];
+    return this.sendPostRequest(this.apiPublicationUrl, requestDto);
+  }
+
   addToFavorites(userName: string, appId: string): Observable<any> {
     return this.http
       .post(`${this.apiFavoriteUrl}/${userName}/${appId}`, {})
