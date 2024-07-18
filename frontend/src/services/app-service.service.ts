@@ -127,6 +127,20 @@ export class AppService {
       .post<ApiResponse<any>>(url, body)
       .pipe(catchError(this.handleError));
   }
+  private sendDeleteRequest(
+    url: string,
+    body: any
+  ): Observable<ApiResponse<any>> {
+    const options = {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: body,
+    };
+    return this.http
+      .delete<ApiResponse<any>>(url, options)
+      .pipe(catchError(this.handleError));
+  }
   private handleError(error: any): Observable<ApiResponse<any>> {
     let errorMessage = 'An unknown error occurred';
     if (error.error instanceof ErrorEvent) {
