@@ -17,7 +17,9 @@
           [disabled]="element.isLoading"
         >
           @if (!element.isLoading) {
-          <mat-icon>unpublished</mat-icon>
+          <ng-container>
+            <mat-icon>unpublished</mat-icon>
+          </ng-container>
           Unpublish } @else {
           <mat-spinner [diameter]="20"></mat-spinner>
           }
@@ -44,7 +46,9 @@
             [disabled]="element.isLoading"
           >
             @if (!element.isLoading) {
-            <mat-icon>unpublished</mat-icon>
+            <ng-container>
+              <mat-icon>unpublished</mat-icon>
+            </ng-container>
             } @else {
             <mat-spinner [diameter]="20"></mat-spinner>
             }
@@ -58,7 +62,9 @@
           [disabled]="element.isLoading"
         >
           @if (!element.isLoading) {
-          <mat-icon>publish</mat-icon>
+          <ng-container>
+            <mat-icon>unpublished</mat-icon>
+          </ng-container>
           Publish } @else {
           <mat-spinner [diameter]="20"></mat-spinner>
           }
