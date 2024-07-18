@@ -1,7 +1,19 @@
-import { Component, OnInit, OnDestroy, Input } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ViewChild,
+  AfterViewInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
 import {
   trigger,
   state,
@@ -9,23 +21,18 @@ import {
   transition,
   animate,
 } from '@angular/animations';
-import { App } from '../../../models/app.model';
-import { StatusChipComponent } from '../../../components/status-chip/status-chip.component';
-import { MatButtonModule } from '@angular/material/button';
-import { AppService } from '../../../services/app-service.service';
 import { Subscription } from 'rxjs';
-import { MenuIconsComponent } from '../../../components/menu/menu.component';
-import { Version } from '../../../models/version.model';
-import { MatIcon } from '@angular/material/icon';
-import { ChipDropdownComponent } from '../../../components/chip-dropdown/chip-dropdown.component';
-import { MatDividerModule } from '@angular/material/divider';
-import { Module } from '../../../models/module.model';
 import { MatDialog } from '@angular/material/dialog';
-import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+
+import { App } from '../../../models/app.model';
+import { Version } from '../../../models/version.model';
+import { Module } from '../../../models/module.model';
+import { AppService } from '../../../services/app-service.service';
+import { StatusChipComponent } from '../../../components/status-chip/status-chip.component';
+import { MenuIconsComponent } from '../../../components/menu/menu.component';
+import { ChipDropdownComponent } from '../../../components/chip-dropdown/chip-dropdown.component';
 import { DefaultModalComponent } from '../../../components/modals/default-modal/default-modal.component';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { response } from 'express';
 
 interface FlattenedVersion {
   Version: string;
@@ -35,11 +42,6 @@ interface FlattenedVersion {
   ParentApp: App;
   Tag: string;
   isLoading: boolean;
-}
-export interface MenuItem {
-  icon: string;
-  label: string;
-  action: string;
 }
 
 @Component({
@@ -64,20 +66,84 @@ export interface MenuItem {
     StatusChipComponent,
     MatButtonModule,
     MenuIconsComponent,
-    MatIcon,
+    MatIconModule,
     ChipDropdownComponent,
     MatDividerModule,
     MatProgressSpinnerModule,
+    MatSortModule,
   ],
 })
-export class ProjectVersionTableComponent implements OnInit, OnDestroy {
-  dataSource: FlattenedVersion[] = [];
+export class ProjectVersionTableComponent
+  implements OnInit, OnDestroy, AfterViewInit
+{
+  @ViewChild(MatSort) sort!: MatSort;
+  dataSource: MatTableDataSource<FlattenedVersion>;
+
   moduleChanges: { [key: string]: boolean } = {};
   isLoading: boolean = false;
 
-  columnsToDisplay = ['Actions', 'Published', 'Version', 'Tag', 'Name', 'ID'];
+  columnsToDisplay = ['Actions', 'Published', 'Version', 'Tag'];
   expandedElement: FlattenedVersion | null = null;
   private selectedAppSubscription: Subscription | undefined;
+  constructor(
+    private appService: AppService,
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar
+  ) {
+    this.dataSource = new MatTableDataSource<FlattenedVersion>([]);
+  }
+
+  ngOnInit() {
+    this.selectedAppSubscription = this.appService
+      .getSelectedApp()
+      .subscribe((selectedApp) => {
+        if (selectedApp) {
+          this.flattenData([selectedApp]);
+        } else {
+          this.dataSource.data = [];
+        }
+      });
+  }
+
+  ngAfterViewInit() {
+    if (this.dataSource) {
+      this.dataSource.sort = this.sort;
+      this.dataSource.sortingDataAccessor = (
+        item: FlattenedVersion,
+        property: string
+      ) => {
+        switch (property) {
+          case 'Published':
+            return this.getPublicationStatusValue(
+              this.getPublicationStatus(item)
+            );
+          default:
+            return (item as any)[property];
+        }
+      };
+    }
+  }
+  getPublicationStatusValue(
+    status: 'published' | 'semi-published' | 'not-published'
+  ): number {
+    switch (status) {
+      case 'published':
+        return 2;
+      case 'semi-published':
+        return 1;
+      case 'not-published':
+        return 0;
+      default:
+        return -1;
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.selectedAppSubscription) {
+      this.selectedAppSubscription.unsubscribe();
+    }
+  }
+
   onModuleCheckboxChange(module: Module, isChecked: boolean) {
     this.moduleChanges[module.Name] = isChecked;
   }
@@ -123,7 +189,7 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
               duration: 3000,
             });
             this.moduleChanges = {};
-            // Refresh data here if needed
+            this.refreshData();
           })
           .catch((error) => {
             this.snackBar.open('Error applying changes: ' + error, 'Close', {
@@ -137,45 +203,16 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
     });
   }
 
-  menuItems: MenuItem[] = [
-    { icon: 'publish', label: 'Publish', action: 'publish' },
-    { icon: 'cancel', label: 'Unpublish', action: 'unpublish' },
-  ];
-
-  constructor(
-    private appService: AppService,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar
-  ) {}
-  ngOnInit() {
-    this.selectedAppSubscription = this.appService
-      .getSelectedApp()
-      .subscribe((selectedApp) => {
-        if (selectedApp) {
-          this.flattenData([selectedApp]);
-        } else {
-          this.dataSource = [];
-        }
-      });
-  }
-
-  ngOnDestroy() {
-    if (this.selectedAppSubscription) {
-      this.selectedAppSubscription.unsubscribe();
-    }
-  }
-  dropdownOptions = ['Scoped', 'Preview', 'None'];
-  selectedOption = this.dropdownOptions[0];
-
-  onOptionSelected(option: string) {}
   getTagOptions(tag: string): string[] {
     return ['Scoped', 'Preview', 'None'];
   }
 
-  onTagSelected(option: string, element: FlattenedVersion) {}
+  onTagSelected(option: string, element: FlattenedVersion) {
+    // Implement tag selection logic here
+  }
 
   flattenData(apps: App[]) {
-    this.dataSource = apps.flatMap((app) =>
+    const flattenedData = apps.flatMap((app) =>
       app.Versions.map((version) => ({
         Version: version.Name,
         Tag: version.Tag,
@@ -183,9 +220,13 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
         ID: app.ID,
         Modules: version.Modules,
         ParentApp: app,
-        isLoading: false, // Initialize isLoading here
+        isLoading: false,
       }))
     );
+    this.dataSource = new MatTableDataSource<FlattenedVersion>(flattenedData);
+    if (this.sort) {
+      this.dataSource.sort = this.sort;
+    }
   }
 
   getPublicationStatus(
@@ -198,21 +239,6 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
       return 'semi-published';
     } else {
       return 'not-published';
-    }
-  }
-  stopPropagation(event: Event) {
-    event.stopPropagation();
-  }
-  handleMenuSelection(action: string, version: Version) {
-    switch (action) {
-      case 'publish':
-        // Handle publish action
-        break;
-      case 'unpublish':
-        // Handle unpublish action
-        break;
-      default:
-        console.warn(`Unknown action: ${action}`);
     }
   }
 
@@ -249,11 +275,10 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
               this.snackBar.open('Version published successfully', 'Close', {
                 duration: 3000,
               });
-              // Update local state
               flattenedVersion.Modules.forEach((module) => {
                 module.IsPublished = true;
               });
-              this.updateDataSource();
+              this.refreshData();
             } else {
               this.snackBar.open(
                 'Error publishing version: ' + response.errors.join(', '),
@@ -269,7 +294,7 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
           },
           complete: () => {
             flattenedVersion.isLoading = false;
-            this.updateDataSource();
+            this.refreshData();
           },
         });
       }
@@ -294,11 +319,10 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
               this.snackBar.open('Version unpublished successfully', 'Close', {
                 duration: 3000,
               });
-              // Update local state
               flattenedVersion.Modules.forEach((module) => {
                 module.IsPublished = false;
               });
-              this.updateDataSource();
+              this.refreshData();
             } else {
               this.snackBar.open(
                 'Error unpublishing version: ' + response.errors.join(', '),
@@ -316,16 +340,17 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
           },
           complete: () => {
             flattenedVersion.isLoading = false;
-            this.updateDataSource();
+            this.refreshData();
           },
         });
       }
     });
   }
 
-  private updateDataSource() {
-    // Create a new reference to trigger change detection
-    this.dataSource = [...this.dataSource];
+  private refreshData() {
+    if (this.dataSource) {
+      this.dataSource.data = [...this.dataSource.data];
+    }
   }
 
   private showConfirmationDialog(
@@ -340,27 +365,26 @@ export class ProjectVersionTableComponent implements OnInit, OnDestroy {
   }
 
   getPublicationIcon(version: FlattenedVersion): string {
-    const isPublished = this.getPublicationStatus(version);
-
-    if (isPublished == 'published') {
-      return 'check_circle';
-    }
-    if (isPublished == 'not-published') {
-      return 'cancel';
-    } else {
-      return 'remove';
+    const status = this.getPublicationStatus(version);
+    switch (status) {
+      case 'published':
+        return 'check_circle';
+      case 'not-published':
+        return 'cancel';
+      default:
+        return 'remove';
     }
   }
-  getPublicationColor(version: FlattenedVersion): string {
-    const isPublished = this.getPublicationStatus(version);
 
-    if (isPublished == 'published') {
-      return '#1b701e';
-    }
-    if (isPublished == 'not-published') {
-      return '#f53c37';
-    } else {
-      return 'orange';
+  getPublicationColor(version: FlattenedVersion): string {
+    const status = this.getPublicationStatus(version);
+    switch (status) {
+      case 'published':
+        return '#1b701e';
+      case 'not-published':
+        return '#f53c37';
+      default:
+        return 'orange';
     }
   }
 }
