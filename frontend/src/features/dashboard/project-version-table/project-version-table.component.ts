@@ -42,6 +42,7 @@ interface FlattenedVersion {
   ParentApp: App;
   Tag: string;
   isLoading: boolean;
+  orignalID: string;
 }
 
 @Component({
@@ -149,36 +150,31 @@ export class ProjectVersionTableComponent
   }
 
   applyChanges(version: FlattenedVersion) {
-    const changedModules = version.Modules.filter(
-      (module) =>
-        this.moduleChanges[module.Name] !== undefined &&
-        this.moduleChanges[module.Name] !== module.IsPublished
-    );
-
-    if (changedModules.length === 0) {
-      this.snackBar.open('No changes to apply', 'Close', { duration: 3000 });
-      return;
-    }
-
+    // const changedModules = version.Modules.filter(
+    //   (module) =>
+    //     this.moduleChanges[module.Name] !== undefined &&
+    //     this.moduleChanges[module.Name] !== module.IsPublished
+    // );
     const dialogRef = this.dialog.open(DefaultModalComponent, {
       data: {
         title: 'Confirm Changes',
-        message: `Are you sure you want to apply changes to ${changedModules.length} module(s)?`,
+        // message: `Are you sure you want to apply changes to ${changedModules.length} module(s)?`,
       },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.isLoading = true;
-        const promises = changedModules.map((module) => {
+        const promises = version.Modules.map((module) => {
           const updatedVersion: Version = {
             ...this.flattenedVersionToDto(version),
             Modules: [module],
           };
-
           if (this.moduleChanges[module.Name]) {
+            console.log('published', updatedVersion);
             return this.appService.publishVersion(updatedVersion).toPromise();
           } else {
+            console.log('unpublished', updatedVersion);
             return this.appService.unPublishVersion(updatedVersion).toPromise();
           }
         });
@@ -208,7 +204,7 @@ export class ProjectVersionTableComponent
   }
 
   onTagSelected(option: string, element: FlattenedVersion) {
-    // Implement tag selection logic here
+    element.Tag = option;
   }
 
   flattenData(apps: App[]) {
@@ -221,6 +217,7 @@ export class ProjectVersionTableComponent
         Modules: version.Modules,
         ParentApp: app,
         isLoading: false,
+        orignalID: version.ID,
       }))
     );
     this.dataSource = new MatTableDataSource<FlattenedVersion>(flattenedData);
@@ -245,11 +242,7 @@ export class ProjectVersionTableComponent
   flattenedVersionToDto(flattenedVersion: FlattenedVersion): Version {
     type tag = 'scoped' | 'preview' | 'none';
     return {
-      ID: `${
-        flattenedVersion.Tag === ''
-          ? flattenedVersion.Version
-          : flattenedVersion.Version + '-' + flattenedVersion.Tag
-      }`,
+      ID: flattenedVersion.orignalID,
       Modules: flattenedVersion.Modules,
       Name: flattenedVersion.Version,
       Tag: flattenedVersion.Tag as tag,
@@ -264,12 +257,8 @@ export class ProjectVersionTableComponent
       if (confirmed) {
         flattenedVersion.isLoading = true;
         const versionDto = this.flattenedVersionToDto(flattenedVersion);
-        const versionDtoFiltered: Version = {
-          ...versionDto,
-          Modules: versionDto.Modules.filter((mod) => !mod.IsPublished),
-        };
-
-        this.appService.publishVersion(versionDtoFiltered).subscribe({
+        console.log(versionDto);
+        this.appService.publishVersion(versionDto).subscribe({
           next: (response) => {
             if (response.success) {
               this.snackBar.open('Version published successfully', 'Close', {
@@ -309,11 +298,8 @@ export class ProjectVersionTableComponent
       if (confirmed) {
         flattenedVersion.isLoading = true;
         const versionDto = this.flattenedVersionToDto(flattenedVersion);
-        const versionDtoFiltered: Version = {
-          ...versionDto,
-          Modules: versionDto.Modules.filter((mod) => mod.IsPublished),
-        };
-        this.appService.unPublishVersion(versionDtoFiltered).subscribe({
+
+        this.appService.unPublishVersion(versionDto).subscribe({
           next: (response) => {
             if (response.success) {
               this.snackBar.open('Version unpublished successfully', 'Close', {
