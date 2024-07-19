@@ -8,6 +8,9 @@ namespace eRM_VersionHub.Services
     {
         public ApiResponse<bool> Publish(MyAppSettings settings, VersionDto version)
         {
+            if (version == null || version.Modules == null)
+                return ApiResponse<bool>.ErrorResponse(["Empty collection of modules to publish"]);
+
             List<string> errors = [];
             foreach (var module in version.Modules)
             {
@@ -21,9 +24,11 @@ namespace eRM_VersionHub.Services
 
             foreach (var module in version.Modules)
             {
-                if (module.IsPublished)
+                var publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
+                var publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
+                if (!string.IsNullOrEmpty(publishedVersionID))
                 {
-                    var success = TagService.ChangeTagOnPath(settings.ExternalPackagesPath, module.Name, version.ID, TagService.SwapVersionTag(version.ID, version.Tag));
+                    var success = TagService.ChangeTagOnPath(settings.ExternalPackagesPath, module.Name, publishedVersionID, TagService.SwapVersionTag(version.ID, version.PublishedTag));
                     if(success)
                         continue;
 
@@ -33,7 +38,7 @@ namespace eRM_VersionHub.Services
                 }
 
                 var sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
-                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID, version.Tag));
+                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID, version.PublishedTag));
 
                 PrepareTargetPath(settings.ExternalPackagesPath, module.Name, targetPath);
                 var response = CopyContent(sourcePath, targetPath);
@@ -42,7 +47,7 @@ namespace eRM_VersionHub.Services
                 {
                     Unpublish(settings, version);
                     response.Errors.Add($"System could not publish module \"{module.Name}\" version \"{version.ID}\". Rollbacking publication of this version.");
-                    return ApiResponse<bool>.ErrorResponse(response.Errors);//Returning basic error from try catch, check if there is some sensitive data
+                    return ApiResponse<bool>.ErrorResponse(response.Errors);
                 }
             }
 
@@ -51,31 +56,24 @@ namespace eRM_VersionHub.Services
 
         public ApiResponse<bool> Unpublish(MyAppSettings settings, VersionDto version)
         {
-            List<string> errors = [];
+            if (version == null || version.Modules == null)
+                return ApiResponse<bool>.ErrorResponse(["Empty collection of modules to unpublish"]);
+
             foreach (var module in version.Modules)
             {
-                string targetPath = string.Empty;
-                var info = new DirectoryInfo(Path.Combine(settings.ExternalPackagesPath, module.Name));
-                var allPublishedVersions = info.GetDirectories().ToList();
-                foreach (var publishedVersion in allPublishedVersions)
-                {
-                    if (TagService.SwapVersionTag(publishedVersion.Name, "") == (TagService.SwapVersionTag(version.ID, "")))
-                    {
-                        targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, publishedVersion.Name);
-                        break;
-                    }
+                var publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
+                var publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
 
-                }
-                if (string.IsNullOrEmpty(targetPath) && !Directory.Exists(targetPath))
-                {
-                    errors.Add($"{module.Name} could not be unpublished, because was not found");
+                if (string.IsNullOrEmpty(publishedVersionID))
                     continue;
-                }
 
-                Directory.Delete(targetPath, true);
-            };
+                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, publishedVersionID);
 
-            return ApiResponse<bool>.ErrorResponse(errors);
+                if (Directory.Exists(targetPath))
+                    Directory.Delete(targetPath, true);
+            }
+
+            return ApiResponse<bool>.SuccessResponse(true);
         }
 
         private void PrepareTargetPath(string ExternalPackagesPath, string module, string targetPath)
@@ -107,9 +105,9 @@ namespace eRM_VersionHub.Services
                     System.IO.File.Copy(filePath, newPath, true);
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                return ApiResponse<bool>.ErrorResponse([ex.Message]);
+                return ApiResponse<bool>.ErrorResponse([]);
             }
 
             return ApiResponse<bool>.SuccessResponse(true);
