@@ -17,13 +17,7 @@ namespace eRM_VersionHub.Controllers
         [HttpGet("{UserName}")]
         public async Task<IActionResult> GetStructure(string UserName)
         {
-            var structure = await _appDataScanner.GetAppsStructure(
-                _settings.AppsPath,
-                _settings.ApplicationConfigFile,
-                _settings.InternalPackagesPath,
-                _settings.ExternalPackagesPath,
-                UserName
-            );
+            var structure = await _appDataScanner.GetAppsStructure(_settings, UserName);
             if (structure == null || structure.Count == 0)
                 return NotFound(ApiResponse<string>.ErrorResponse(["Some error"]).Serialize());
 
