@@ -8,6 +8,9 @@
           selected: (selectedItem$ | async) === app,
           'selected-hover': (selectedItem$ | async) === app
         }"
+        [style.background-color]="
+          (selectedItem$ | async) === app ? 'var(--primary-color)' : ''
+        "
       >
         <div
           style="
@@ -16,6 +19,7 @@
             justify-content: space-between;
             width: 100%;
           "
+          [style.color]="(selectedItem$ | async) === app ? 'white' : ''"
         >
           {{ app.Name }}
           <app-menu-icons

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace eRM_VersionHub.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class UserController(IUserService userService) : ControllerBase
     {
         private readonly IUserService _userService = userService;

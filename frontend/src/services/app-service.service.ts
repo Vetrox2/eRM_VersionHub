@@ -1,15 +1,22 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { App } from '../models/app.model';
+import { Version } from '../models/version.model';
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  errors: string[];
+}
 @Injectable({
   providedIn: 'root',
 })
 export class AppService {
-  private apiAppsUrl = 'https://localhost:7125/Apps';
-  private apiFavoriteUrl = 'https://localhost:7125/Favorite';
+  private apiAppsUrl = 'https://localhost:7125/api/Apps';
+  private apiFavoriteUrl = 'https://localhost:7125/api/Favorite';
+  private apiPublicationUrl = 'https://localhost:7125/api/Publication';
 
   private appsSubject = new BehaviorSubject<App[]>([]);
   private selectedAppSubject = new BehaviorSubject<App | null>(null);
@@ -112,6 +119,53 @@ export class AppService {
     const allApps = this.appsSubject.value;
     const favoriteApps = allApps.filter((app) => app.IsFavourite);
     this.favoriteAppsSubject.next(favoriteApps);
+  }
+
+  private sendPostRequest(
+    url: string,
+    body: any
+  ): Observable<ApiResponse<any>> {
+    return this.http
+      .post<ApiResponse<any>>(url, body)
+      .pipe(catchError(this.handleError));
+  }
+  private sendDeleteRequest(
+    url: string,
+    body: any
+  ): Observable<ApiResponse<any>> {
+    const options = {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: body,
+    };
+    return this.http
+      .delete<ApiResponse<any>>(url, options)
+      .pipe(catchError(this.handleError));
+  }
+  private handleError(error: any): Observable<ApiResponse<any>> {
+    let errorMessage = 'An unknown error occurred';
+    if (error.error instanceof ErrorEvent) {
+      // Client-side error
+      errorMessage = `Error: ${error.error.message}`;
+    } else {
+      // Server-side error
+      errorMessage = `Error Code: ${error.status}\nMessage: ${error.message}`;
+    }
+    return new Observable((observer) => {
+      observer.next({ success: false, data: null, errors: [errorMessage] });
+      observer.complete();
+    });
+  }
+
+  publishVersion(version: Version): Observable<ApiResponse<any>> {
+    const requestDto = [version];
+    return this.sendPostRequest(this.apiPublicationUrl, requestDto);
+  }
+
+  unPublishVersion(version: Version): Observable<ApiResponse<any>> {
+    const requestDto = [version];
+    return this.sendDeleteRequest(this.apiPublicationUrl, requestDto);
   }
 
   addToFavorites(userName: string, appId: string): Observable<any> {

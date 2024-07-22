@@ -2,6 +2,7 @@
 using eRM_VersionHub.Models;
 using System.Text.Json;
 using eRM_VersionHub.Services.Interfaces;
+using System.ComponentModel;
 
 
 namespace eRM_VersionHub.Services
@@ -10,6 +11,7 @@ namespace eRM_VersionHub.Services
     {
         private IFavoriteService _favoriteService = favoriteService;
         private IPermissionService _permissionService = permissionService;
+
         public static ApplicationJsonModel? GetAppJsonModel(string jsonFilePath)
         {
             if (!File.Exists(jsonFilePath))
@@ -19,27 +21,64 @@ namespace eRM_VersionHub.Services
             return jsonString.Deserialize<ApplicationJsonModel>();
         }
 
-        public async Task<List<AppStructureDto>?> GetAppsStructure(string appsPath, string appJsonName, string internalPackagesPath, string externalPackagesPath, string userToken)
+        /// <summary>
+        /// Return list with every name from modulesNames, if module doesn't exist or is empty than Versions will be an empty list.
+        /// </summary>
+        public static List<ModuleModel> GetModuleModels(string path, List<string> modulesNames)
         {
-            var structure = GetInternalAppStructure(appsPath, appJsonName, internalPackagesPath);
-            structure = SetPublishedStatus(externalPackagesPath, structure);
-            structure = await GetFilteredByPermsAndFav(structure, userToken);
+            var modules = new List<ModuleModel>();
+
+            foreach (var moduleName in modulesNames)
+            {
+                string moduleFilePath = Path.Combine(path, moduleName);
+                var versionsNames = GetDirectoryInfo(moduleFilePath);
+
+                var versions = new List<string>();
+                versionsNames?.ForEach(version => { versions.Add(version.Name); });
+
+                modules.Add(new ModuleModel() { Name = moduleName, Versions = versions });
+            }
+
+            return modules;
+        }
+
+        public static List<DirectoryInfo>? GetDirectoryInfo(string path)
+        {
+            if (!Directory.Exists(path))
+                return null;
+
+            var info = new DirectoryInfo(path);
+            return info.GetDirectories()?.ToList();
+        }
+
+        public async Task<List<AppStructureDto>?> GetAppsStructure(MyAppSettings settings, string userToken)
+        {
+            var structure = await GetInternalAppStructure(settings.AppsPath, settings.ApplicationConfigFile, settings.InternalPackagesPath, userToken);
+            if (structure == null)
+                return null;
+
+            structure = await SetFavorites(structure, userToken);
+            structure = SetPublished(settings.ExternalPackagesPath, structure);
             return structure;
         }
 
-        private List<AppStructureDto> GetInternalAppStructure(string appsPath, string appJsonName, string internalPackagesPath)
+        private async Task<List<AppStructureDto>?> GetInternalAppStructure(string appsPath, string appJsonName, string internalPackagesPath, string token)
         {
+            var perms = await _permissionService.GetPermissionList(token);
             var appsStructure = new List<AppStructureDto>();
-            var moduleModels = GetModuleModels(internalPackagesPath);
             var appsNames = GetDirectoryInfo(appsPath);
+
+            if(appsNames == null || perms == null || !perms.Success || perms.Data.Count == 0) 
+                return null;
 
             foreach (var app in appsNames)
             {
                 var appJSModel = GetAppJsonModel(Path.Combine(appsPath, app.Name, appJsonName));
 
-                if (appJSModel == null)
+                if (appJSModel == null || !perms.Data.Any(perm => perm.AppID == appJSModel.UniqueIdentifier))
                     continue;
 
+                var moduleModels = GetModuleModels(internalPackagesPath, appJSModel.GetModulesNames());
                 var appStructureDto = CreateAppStructureDto(appJSModel, moduleModels);
 
                 if (appStructureDto == null)
@@ -51,28 +90,34 @@ namespace eRM_VersionHub.Services
             return appsStructure;
         }
 
-        private List<AppStructureDto> SetPublishedStatus(string externalPackagesPath, List<AppStructureDto> appsStructure)
+        private List<AppStructureDto> SetPublished(string externalPackagesPath, List<AppStructureDto> appsStructure)
         {
-            var publishedModules = GetModuleModels(externalPackagesPath);
-
-            appsStructure.ForEach(app => app.Versions.ForEach(appVersion => appVersion.Modules.ForEach(module =>
+            foreach (var app in appsStructure)
             {
-                var publishedModule = publishedModules.FirstOrDefault(m => m.Name == module.Name);
-                if (publishedModule != null && publishedModule.Versions.Any(version => version == appVersion.ID))
-                    module.IsPublished = true;
-            })));
+                foreach (var appVersion in app.Versions)
+                {
+                    var modulesUnderVersion = appVersion.Modules.Select(module => module.Name).ToList();
+                    var publishedModules = GetModuleModels(externalPackagesPath, modulesUnderVersion);
+
+                    foreach (var module in appVersion.Modules)
+                    {
+                        var publishedModule = publishedModules.FirstOrDefault(m => m.Name == module.Name);
+                        var publishedVersion = publishedModule?.Versions.FirstOrDefault(version => TagService.CompareVersions(version, appVersion.ID));
+                        if (!string.IsNullOrEmpty(publishedVersion))
+                        {
+                            module.IsPublished = true;
+                            appVersion.PublishedTag = TagService.GetTag(publishedVersion);
+                        }
+                    }
+                }
+            }
 
             return appsStructure;
         }
 
-        private async Task<List<AppStructureDto>?> GetFilteredByPermsAndFav(List<AppStructureDto> appsStructure, string token)
+        private async Task<List<AppStructureDto>> SetFavorites(List<AppStructureDto> appsStructure, string token)
         {
-            var perms = await _permissionService.GetPermissionList(token);
             var favs = await _favoriteService.GetFavoriteList(token);
-
-            if (perms == null || !perms.Success || perms.Data.Count == 0) return null;
-
-            appsStructure = appsStructure.Where(app => perms.Data.Any(perm => perm.AppID == app.ID)).ToList();
 
             if (favs != null && favs.Success && favs.Data.Count > 0)
                 appsStructure.ForEach(app => app.IsFavourite = favs.Data.Any(fav => fav.AppID == app.ID));
@@ -80,36 +125,16 @@ namespace eRM_VersionHub.Services
             return appsStructure;
         }
 
-        private List<ModuleModel> GetModuleModels(string path)
-        {
-            var modules = new List<ModuleModel>();
-            var modulesNames = GetDirectoryInfo(path);
-
-            foreach (var module in modulesNames)
-            {
-                string moduleFilePath = Path.Combine(path, module.Name);
-                var versionsInfo = new DirectoryInfo(moduleFilePath);
-                var versionsNames = versionsInfo.GetDirectories().ToList();
-
-                var versions = new List<string>();
-                versionsNames?.ForEach(version => { versions.Add(version.Name); });
-
-                modules.Add(new ModuleModel() { Name = module.Name, Versions = versions });
-            }
-
-            return modules;
-        }
-
         private AppStructureDto? CreateAppStructureDto(ApplicationJsonModel appJSModel, List<ModuleModel> moduleModels)
         {
             var appStructureDto = new AppStructureDto() { ID = appJSModel.UniqueIdentifier, Name = appJSModel.Name, Versions = [] };
 
-            //Jeśli nie ma nieopcjonalnego modułu, uznajemy za wyznacznik wersji aplikacji pierwszy opcjonalny moduł
+            //If there is no non-optional module, we consider the first optional module as the determinant of the application version
             var mainModuleID = appJSModel.Modules.FindIndex(module => module.Optional == false);
             if (mainModuleID == -1)
                 mainModuleID = 0;
 
-            //Jeśli nie istnieje moduł wyznaczający wersję aplikacji lub nie ma on żadnych wersji, to aplikacja nie znajdzie się w spisie
+            //If there is no module that determines the version of the application, or it has no versions, the application will not be in the inventory
             var appMainModule = moduleModels.FirstOrDefault(module => module.Name == appJSModel.Modules[mainModuleID].ModuleId);
             if (appMainModule == null || appMainModule.Versions == null || appMainModule.Versions.Count == 0)
                 return null;
@@ -127,12 +152,6 @@ namespace eRM_VersionHub.Services
             }
 
             return appStructureDto;
-        }
-
-        private List<DirectoryInfo> GetDirectoryInfo(string path)
-        {
-            var info = new DirectoryInfo(path);
-            return info.GetDirectories().ToList();
         }
     }
 }

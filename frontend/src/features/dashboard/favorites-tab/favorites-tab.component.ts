@@ -28,15 +28,17 @@ import {
     MatChipsModule,
   ],
   template: `
-    <p style="padding-left: 5px">Favorites:</p>
+    <p>Favorites:</p>
     <ng-container *ngIf="favoriteApps$ | async as favoriteApps">
-      <mat-chip-set style="padding: 5px; color: var(--primary-color);">
+      <mat-chip-set style="padding: 5px;">
         <mat-chip
+          [style.background-color]="'var(--primary-color)'"
           *ngFor="let app of favoriteApps"
-          style="margin: 5px"
+          style="margin: 5px;"
           (click)="onChipClick(app)"
         >
           <div
+            [style.color]="'white'"
             style="display: flex; align-items: center; justify-content: space-between; width: 100%;"
           >
             <span>{{ app.Name }}</span>

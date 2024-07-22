@@ -2,36 +2,12 @@
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
 using System;
+using System.ComponentModel;
 
 namespace eRM_VersionHub.Services
 {
-    public class TagService : ITagService
+    public static class TagService
     {
-
-        public ApiResponse<string> SetTag(MyAppSettings _settings, string appID, string versionID, string newTag = "")
-        {
-            var appModel = AppDataScanner.GetAppJsonModel(Path.Combine(_settings.AppsPath, appID, _settings.ApplicationConfigFile));
-            if (appModel == null || appModel.Modules.Count == 0)
-                return ApiResponse<string>.ErrorResponse(["App not found"]);
-
-            int internalModulesModified = 0, publishedModulesModified = 0;
-            var newVersionID = SwapVersionTags(versionID, newTag);
-
-            if(newVersionID == versionID)
-                return ApiResponse<string>.ErrorResponse(["New tag is the same as the old one"]);
-
-            appModel.Modules.ForEach(module =>
-            {
-                internalModulesModified += ChangeTagOnPath(_settings.InternalPackagesPath, module.ModuleId, versionID, newVersionID) ? 1 : 0;
-                publishedModulesModified += ChangeTagOnPath(_settings.ExternalPackagesPath, module.ModuleId, versionID, newVersionID) ? 1 : 0;
-            });
-
-            if (internalModulesModified == 0)
-                return ApiResponse<string>.ErrorResponse(["Version for none module was modified"]);
-
-            return ApiResponse<string>.SuccessResponse(
-                $"Internal modules version modified: {internalModulesModified}\nPublished modules version modified: {publishedModulesModified}");
-        }
 
         public static (string Name, string Tag) SplitVersionID(string versionID)
         {
@@ -51,7 +27,19 @@ namespace eRM_VersionHub.Services
             return (Name, Tag);
         }
 
-        public static string SwapVersionTags(string versionID, string newTag)
+        public static string GetVersionWithoutTag(string versionID)
+        {
+            var index = versionID.IndexOf('-');
+            return index == -1 ? versionID : versionID.Substring(0, index);
+        }
+
+        public static string GetTag(string versionID)
+        {
+            var index = versionID.IndexOf('-');
+            return index == -1 ? "" : versionID.Substring(index + 1);
+        }
+
+        public static string SwapVersionTag(string versionID, string newTag)
         {
             var (newVersionID, _) = SplitVersionID(versionID);
             if (!string.IsNullOrEmpty(newTag))
@@ -60,10 +48,32 @@ namespace eRM_VersionHub.Services
             return newVersionID;
         }
 
-        private bool ChangeTagOnPath(string packagesPath, string moduleId, string versionID, string newVersionID)
+        /// <summary>
+        /// Compares version numbers without their tags.
+        /// </summary>
+        public static bool CompareVersions(string versionID1, string versionID2)
+            => GetVersionWithoutTag(versionID1) == GetVersionWithoutTag(versionID2);
+
+        public static bool ChangeTagOnPath(string packagesPath, string moduleId, string versionID, string newVersionID)
         {
-            var oldPath = Path.Combine(packagesPath, moduleId, versionID);
+            var oldPath = string.Empty;
             var newPath = Path.Combine(packagesPath, moduleId, newVersionID);
+
+            var info = new DirectoryInfo(Path.Combine(packagesPath, moduleId));
+            var allPublishedVersions = info.GetDirectories().ToList();
+            foreach (var publishedVersion in allPublishedVersions)
+            {
+                if (SwapVersionTag(publishedVersion.Name, "") == (SwapVersionTag(versionID, "")))
+                {
+                    oldPath = Path.Combine(packagesPath, moduleId, publishedVersion.Name);
+                    break;
+                }
+            }
+            if (string.IsNullOrEmpty(oldPath))
+                return false;
+
+            if (oldPath == newPath) 
+                return true;
 
             if (Directory.Exists(oldPath))
             {
