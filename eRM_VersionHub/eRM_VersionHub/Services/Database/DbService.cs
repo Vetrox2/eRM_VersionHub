@@ -12,25 +12,28 @@ namespace eRM_VersionHub.Services.Database
 
         public async Task<ApiResponse<T?>> GetAsync<T>(string command, object parms)
         {
-            _logger.LogDebug(AppLogEvents.Service, "Invoked GetAsync of type {T} with query: {command}, {parms}", nameof(T), command, parms);
+            string type = typeof(T).Name;
+            _logger.LogDebug(AppLogEvents.Service, "Invoked GetAsync of type {type} with query: {command}, {parms}", type, command, parms);
             ApiResponse<T?> result = await _repository.GetAsync<T>(command, parms);
-            _logger.LogInformation(AppLogEvents.Service, "GetAsync returned: {result}", result);
+            _logger.LogInformation(AppLogEvents.Service, "GetAsync of type {type} returned: {result}", type, result);
             return result;
         }
 
         public async Task<ApiResponse<List<T>>> GetAll<T>(string command, object parms)
         {
-            _logger.LogDebug(AppLogEvents.Service, "Invoked GetAll of type List<{T}> with query: {command}, {parms}", nameof(T), command, parms);
+            string type = typeof(T).Name;
+            _logger.LogDebug(AppLogEvents.Service, "Invoked GetAll of type {type} with query: {command}, {parms}", type, command, parms);
             ApiResponse<List<T>> result = await _repository.GetAll<T>(command, parms);
-            _logger.LogInformation(AppLogEvents.Service, "GetAll returned: {result}", result);
+            _logger.LogInformation(AppLogEvents.Service, "GetAll of type {type} returned: {result}", type, result);
             return result;
         }
 
         public async Task<ApiResponse<T?>> EditData<T>(string command, object parms)
         {
-            _logger.LogDebug(AppLogEvents.Service, "Invoked EditData of type {T} with query: {command}, {parms}", nameof(T), command, parms);
+            string type = typeof(T).Name;
+            _logger.LogDebug(AppLogEvents.Service, "Invoked EditData of type {type} with query: {command}, {parms}", type, command, parms);
             ApiResponse<T?> result = await _repository.EditData<T>(command, parms);
-            _logger.LogInformation(AppLogEvents.Service, "EditData returned: {result}", result);
+            _logger.LogInformation(AppLogEvents.Service, "EditData of type {type} returned: {result}", type, result);
             return result;
         }
     }

@@ -9,6 +9,8 @@ using eRM_VersionHub.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddHttpLogging(o => { });
+
 builder.Services.AddLogging(config =>
 {
     config.AddConsole();
@@ -16,7 +18,6 @@ builder.Services.AddLogging(config =>
 });
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -40,6 +41,8 @@ builder.Services.AddScoped<IPublicationService, PublicationService>();
 builder.Services.AddScoped<IAppDataScanner, AppDataScanner>();
 
 var app = builder.Build();
+app.UseHttpLogging();
+
 app.UseCors(builder =>
 {
     builder.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod();

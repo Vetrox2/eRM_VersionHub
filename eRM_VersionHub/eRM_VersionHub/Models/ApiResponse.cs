@@ -1,4 +1,6 @@
-﻿namespace eRM_VersionHub.Models
+﻿using eRM_VersionHub.Services;
+
+namespace eRM_VersionHub.Models
 {
     public class ApiResponse<T>
     {
@@ -26,5 +28,7 @@
                 Errors = errors
             };
         }
+
+        public override string ToString() => JsonManager.Serialize<ApiResponse<T>>(this);
     }
 }

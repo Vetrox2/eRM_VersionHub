@@ -86,7 +86,7 @@ namespace eRM_VersionHub.Repositories.Database
 
         public async Task<ApiResponse<T?>> GetAsync<T>(string command, object parms)
         {
-            string type = nameof(T);
+            string type = typeof(T).Name;
             _logger.LogDebug(AppLogEvents.Repository, "Invoked GetAsync of type {type} with query: {command}, {parms}", type, command, parms);
             try
             {
@@ -113,7 +113,7 @@ namespace eRM_VersionHub.Repositories.Database
 
         public async Task<ApiResponse<List<T>>> GetAll<T>(string command, object parms)
         {
-            string type = nameof(T);
+            string type = typeof(T).Name;
             _logger.LogDebug(AppLogEvents.Repository, "Invoked GetAll of type {type} with query: {command}, {parms}", type, command, parms);
             try
             {
@@ -140,7 +140,7 @@ namespace eRM_VersionHub.Repositories.Database
 
         public async Task<ApiResponse<T?>> EditData<T>(string command, object parms)
         {
-            string type = nameof(T);
+            string type = typeof(T).Name;
             _logger.LogDebug(AppLogEvents.Repository, "Invoked EditData of type {type} with query: {command}, {parms}", type, command, parms);
             try
             {
