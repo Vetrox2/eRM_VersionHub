@@ -56,14 +56,22 @@ namespace eRM_VersionHub.Services
 
         public static bool ChangeTagOnPath(string packagesPath, string moduleId, string versionID, string newVersionID)
         {
+
+            if (!TagService.CompareVersions(versionID, newVersionID))
+                return false;
+
             var oldPath = string.Empty;
             var newPath = Path.Combine(packagesPath, moduleId, newVersionID);
+            var publishedModulePath = Path.Combine(packagesPath, moduleId);
 
-            var info = new DirectoryInfo(Path.Combine(packagesPath, moduleId));
+            if (!Directory.Exists(publishedModulePath))
+                return false;
+
+            var info = new DirectoryInfo(publishedModulePath);
             var allPublishedVersions = info.GetDirectories().ToList();
             foreach (var publishedVersion in allPublishedVersions)
             {
-                if (SwapVersionTag(publishedVersion.Name, "") == (SwapVersionTag(versionID, "")))
+                if (GetVersionWithoutTag(publishedVersion.Name) == (GetVersionWithoutTag(versionID)))
                 {
                     oldPath = Path.Combine(packagesPath, moduleId, publishedVersion.Name);
                     break;
