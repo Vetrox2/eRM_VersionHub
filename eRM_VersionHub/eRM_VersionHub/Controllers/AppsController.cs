@@ -7,9 +7,8 @@ using Microsoft.Extensions.Options;
 namespace eRM_VersionHub.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
-    public class AppsController(IOptions<AppSettings> appSettings, IAppDataScanner appDataScanner)
-        : ControllerBase
+    [Route("api/[controller]")]
+    public class AppsController(IOptions<AppSettings> appSettings, IAppDataScanner appDataScanner) : ControllerBase
     {
         private readonly MyAppSettings _settings = appSettings.Value.MyAppSettings;
         private readonly IAppDataScanner _appDataScanner = appDataScanner;
@@ -17,19 +16,11 @@ namespace eRM_VersionHub.Controllers
         [HttpGet("{UserName}")]
         public async Task<IActionResult> GetStructure(string UserName)
         {
-            var structure = await _appDataScanner.GetAppsStructure(
-                _settings.AppsPath,
-                _settings.ApplicationConfigFile,
-                _settings.InternalPackagesPath,
-                _settings.ExternalPackagesPath,
-                UserName
-            );
-            if (structure == null || structure.Count == 0)
-                return NotFound(ApiResponse<string>.ErrorResponse(["Some error"]).Serialize());
+            var response = await _appDataScanner.GetAppsStructure(_settings, UserName);
+            if (response.Data == null || response.Data.Count == 0)
+                return NotFound(response.Serialize());
 
-            return Ok(
-                ApiResponse<List<Dtos.AppStructureDto>>.SuccessResponse(structure).Serialize()
-            );
+            return Ok(response.Serialize());
         }
     }
 }

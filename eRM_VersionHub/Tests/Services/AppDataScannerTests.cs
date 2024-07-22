@@ -39,6 +39,102 @@ namespace eRM_VersionHub_Tester.Services
             _fileStructureGenerator.Dispose();
         }
 
+
+        [Fact]
+        public async Task GetAppsStructure_CheckWrongAppsPath()
+        {
+            // Arrange
+            _mockPermissionService
+                .Setup(service => service.GetPermissionList(token))
+                .ReturnsAsync(
+                    ApiResponse<List<Permission>>.SuccessResponse(
+                        [
+                            new Permission() { Username = token, AppID = "app1" },
+                            new Permission() { Username = token, AppID = "app2" },
+                            new Permission() { Username = token, AppID = "app3" }
+                        ]
+                    )
+                );
+            var settings = GetAppSettings();
+            settings.AppsPath = "abc";
+
+            // Act
+            var structure = await _appDataScanner.GetAppsStructure(settings, token);
+
+            // Assert
+            Assert.False(structure.Success);
+            Assert.True(structure.Errors?.Contains("Fatal error"));
+        }
+
+        [Fact]
+        public async Task GetAppsStructure_CheckWrongInternalPath()
+        {
+            // Arrange
+            _mockPermissionService
+                .Setup(service => service.GetPermissionList(token))
+                .ReturnsAsync(
+                    ApiResponse<List<Permission>>.SuccessResponse(
+                        [
+                            new Permission() { Username = token, AppID = "app1" },
+                            new Permission() { Username = token, AppID = "app2" },
+                            new Permission() { Username = token, AppID = "app3" }
+                        ]
+                    )
+                );
+            var settings = GetAppSettings();
+            settings.InternalPackagesPath = "abc";
+
+            // Act
+            var structure = await _appDataScanner.GetAppsStructure(settings, token);
+
+            // Assert
+            Assert.False(structure.Success);
+            Assert.True(structure.Errors?.Contains("Fatal error"));
+        }
+
+        [Fact]
+        public async Task GetAppsStructure_CheckWrongExternalPath()
+        {
+            // Arrange
+            _mockPermissionService
+                .Setup(service => service.GetPermissionList(token))
+                .ReturnsAsync(
+                    ApiResponse<List<Permission>>.SuccessResponse(
+                        [
+                            new Permission() { Username = token, AppID = "app1" },
+                            new Permission() { Username = token, AppID = "app2" },
+                            new Permission() { Username = token, AppID = "app3" }
+                        ]
+                    )
+                );
+            var settings = GetAppSettings();
+            settings.ExternalPackagesPath = "abc";
+
+            // Act
+            var structure = await _appDataScanner.GetAppsStructure(settings, token);
+
+            // Assert
+            Assert.False(structure.Success);
+            Assert.True(structure.Errors?.Contains("Fatal error"));
+        }
+
+        [Fact]
+        public async Task GetAppsStructure_CheckNoPermissions()
+        {
+            // Arrange
+            _mockPermissionService
+                .Setup(service => service.GetPermissionList(token))
+                .ReturnsAsync(
+                    ApiResponse<List<Permission>>.SuccessResponse([]));
+
+            // Act
+            var structure = await _appDataScanner.GetAppsStructure(GetAppSettings(), token);
+
+            // Assert
+            Assert.False(structure.Success);
+            Assert.True(structure.Errors?.Contains("User permissions not found"));
+        }
+
         [Fact]
         public async Task GetAppsStructure_CheckStructure()
         {
@@ -56,13 +152,8 @@ namespace eRM_VersionHub_Tester.Services
                 );
 
             // Act
-            var structure = await _appDataScanner.GetAppsStructure(
-                appsPath,
-                appJson,
-                internalPath,
-                externalPath,
-                token
-            );
+            var response = await _appDataScanner.GetAppsStructure(GetAppSettings(),token);
+            var structure = response.Data;
 
             // Assert
             Assert.NotNull(structure);
@@ -70,7 +161,7 @@ namespace eRM_VersionHub_Tester.Services
             if (structure != null)
             {
                 Assert.True(structure.Count == 3);
-                Assert.True(structure.FirstOrDefault(app => app.ID == "app1")?.Versions.Count == 3);
+                Assert.True(structure.FirstOrDefault(app => app.ID == "app1")?.Versions.Count == 4);
                 Assert.True(
                     structure
                         .FirstOrDefault(app => app.ID == "app1")
@@ -88,6 +179,12 @@ namespace eRM_VersionHub_Tester.Services
                         .FirstOrDefault(app => app.ID == "app1")
                         ?.Versions.FirstOrDefault(version => version.ID == "0.3")
                         ?.Modules.Count == 1
+                );
+                Assert.True(
+                    structure
+                        .FirstOrDefault(app => app.ID == "app1")
+                        ?.Versions.FirstOrDefault(version => version.ID == "0.4-prefix")
+                        ?.Modules.Count == 2
                 );
 
                 Assert.True(structure[1].Versions.Count == 2);
@@ -133,13 +230,8 @@ namespace eRM_VersionHub_Tester.Services
                 );
 
             // Act
-            var structure = await _appDataScanner.GetAppsStructure(
-                appsPath,
-                appJson,
-                internalPath,
-                externalPath,
-                token
-            );
+            var response = await _appDataScanner.GetAppsStructure(GetAppSettings(), token);
+            var structure = response.Data;
 
             // Assert
             Assert.NotNull(structure);
@@ -147,7 +239,7 @@ namespace eRM_VersionHub_Tester.Services
                 app.Versions.ForEach(ver =>
                     ver.Modules.ForEach(module =>
                     {
-                        if (module.Name == "module2" && (ver.ID == "0.1" || ver.ID == "0.2"))
+                        if (module.Name == "module2" && (ver.ID == "0.1" || ver.ID == "0.2" || ver.ID == "0.4-prefix"))
                             Assert.True(module.IsPublished);
                         else if (module.Name == "module3" && ver.ID == "0.2")
                             Assert.True(module.IsPublished);
@@ -173,16 +265,9 @@ namespace eRM_VersionHub_Tester.Services
                     )
                 );
 
-            bool result = true;
-
             // Act
-            var structure = await _appDataScanner.GetAppsStructure(
-                appsPath,
-                appJson,
-                internalPath,
-                externalPath,
-                token
-            );
+            var response = await _appDataScanner.GetAppsStructure(GetAppSettings(), token);
+            var structure = response.Data;
 
             // Assert
             Assert.NotNull(structure);
@@ -219,19 +304,28 @@ namespace eRM_VersionHub_Tester.Services
                 );
 
             // Act
-            var structure = await _appDataScanner.GetAppsStructure(
-                appsPath,
-                appJson,
-                internalPath,
-                externalPath,
-                token
-            );
+            var response = await _appDataScanner.GetAppsStructure(GetAppSettings(), token);
+            var structure = response.Data;
 
             // Assert
             Assert.NotNull(structure);
             Assert.True(structure?.FirstOrDefault(app => app.ID == "app2")?.IsFavourite);
             Assert.True(structure?.FirstOrDefault(app => app.ID == "app3")?.IsFavourite);
             Assert.False(structure?.FirstOrDefault(app => app.ID == "app1")?.IsFavourite);
+        }
+
+
+
+        private MyAppSettings GetAppSettings()
+        {
+            var appSettings = new MyAppSettings()
+            {
+                ApplicationConfigFile = appJson,
+                AppsPath = appsPath,
+                InternalPackagesPath = internalPath,
+                ExternalPackagesPath = externalPath
+            };
+            return appSettings;
         }
     }
 }

@@ -42,6 +42,7 @@ interface FlattenedVersion {
   ParentApp: App;
   Tag: string;
   isLoading: boolean;
+  orignalID: string;
 }
 
 @Component({
@@ -156,8 +157,8 @@ export class ProjectVersionTableComponent
     );
 
     if (changedModules.length === 0) {
-      this.snackBar.open('No changes to apply', 'Close', { duration: 3000 });
-      return;
+      // this.snackBar.open('No changes to apply', 'Close', { duration: 3000 });
+      // return;
     }
 
     const dialogRef = this.dialog.open(DefaultModalComponent, {
@@ -170,23 +171,52 @@ export class ProjectVersionTableComponent
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.isLoading = true;
-        const promises = changedModules.map((module) => {
-          const updatedVersion: Version = {
-            ...this.flattenedVersionToDto(version),
-            Modules: [module],
-          };
+        const publishModules = changedModules.filter(
+          (module) => this.moduleChanges[module.Name]
+        );
+        const unpublishModules = changedModules.filter(
+          (module) => !this.moduleChanges[module.Name]
+        );
 
-          if (this.moduleChanges[module.Name]) {
-            return this.appService.publishVersion(updatedVersion).toPromise();
-          } else {
-            return this.appService.unPublishVersion(updatedVersion).toPromise();
-          }
-        });
+        const publishVersion: Version | null =
+          publishModules.length > 0
+            ? {
+                ...this.flattenedVersionToDto(version),
+                Modules: publishModules,
+              }
+            : null;
+
+        const unpublishVersion: Version | null =
+          unpublishModules.length > 0
+            ? {
+                ...this.flattenedVersionToDto(version),
+                Modules: unpublishModules,
+              }
+            : null;
+
+        const promises: Promise<any>[] = [];
+
+        if (publishVersion) {
+          promises.push(
+            this.appService.publishVersion(publishVersion).toPromise()
+          );
+        }
+
+        if (unpublishVersion) {
+          promises.push(
+            this.appService.unPublishVersion(unpublishVersion).toPromise()
+          );
+        }
 
         Promise.all(promises)
           .then(() => {
             this.snackBar.open('Changes applied successfully', 'Close', {
               duration: 3000,
+            });
+            version.Modules.forEach((module) => {
+              if (this.moduleChanges[module.Name] !== undefined) {
+                module.IsPublished = this.moduleChanges[module.Name];
+              }
             });
             this.moduleChanges = {};
             this.refreshData();
@@ -208,7 +238,7 @@ export class ProjectVersionTableComponent
   }
 
   onTagSelected(option: string, element: FlattenedVersion) {
-    // Implement tag selection logic here
+    element.Tag = option;
   }
 
   flattenData(apps: App[]) {
@@ -221,6 +251,7 @@ export class ProjectVersionTableComponent
         Modules: version.Modules,
         ParentApp: app,
         isLoading: false,
+        orignalID: version.ID,
       }))
     );
     this.dataSource = new MatTableDataSource<FlattenedVersion>(flattenedData);
@@ -243,16 +274,12 @@ export class ProjectVersionTableComponent
   }
 
   flattenedVersionToDto(flattenedVersion: FlattenedVersion): Version {
-    type tag = 'scoped' | 'preview' | 'none';
+    type tag = 'scoped' | 'preview' | 'none' | '';
     return {
-      ID: `${
-        flattenedVersion.Tag === ''
-          ? flattenedVersion.Version
-          : flattenedVersion.Version + '-' + flattenedVersion.Tag
-      }`,
+      ID: flattenedVersion.orignalID,
       Modules: flattenedVersion.Modules,
       Name: flattenedVersion.Version,
-      Tag: flattenedVersion.Tag as tag,
+      Tag: flattenedVersion.Tag === 'none' ? '' : (flattenedVersion.Tag as tag),
     };
   }
 
@@ -264,12 +291,8 @@ export class ProjectVersionTableComponent
       if (confirmed) {
         flattenedVersion.isLoading = true;
         const versionDto = this.flattenedVersionToDto(flattenedVersion);
-        const versionDtoFiltered: Version = {
-          ...versionDto,
-          Modules: versionDto.Modules.filter((mod) => !mod.IsPublished),
-        };
-
-        this.appService.publishVersion(versionDtoFiltered).subscribe({
+        console.log(versionDto);
+        this.appService.publishVersion(versionDto).subscribe({
           next: (response) => {
             if (response.success) {
               this.snackBar.open('Version published successfully', 'Close', {
@@ -309,11 +332,8 @@ export class ProjectVersionTableComponent
       if (confirmed) {
         flattenedVersion.isLoading = true;
         const versionDto = this.flattenedVersionToDto(flattenedVersion);
-        const versionDtoFiltered: Version = {
-          ...versionDto,
-          Modules: versionDto.Modules.filter((mod) => mod.IsPublished),
-        };
-        this.appService.unPublishVersion(versionDtoFiltered).subscribe({
+
+        this.appService.unPublishVersion(versionDto).subscribe({
           next: (response) => {
             if (response.success) {
               this.snackBar.open('Version unpublished successfully', 'Close', {

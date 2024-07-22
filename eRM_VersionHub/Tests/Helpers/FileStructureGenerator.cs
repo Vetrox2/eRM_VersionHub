@@ -125,15 +125,18 @@ namespace eRM_VersionHub_Tester.Helpers
             if (isInternal)
             {
                 return "+module1\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   "
-                    + "+0.2\r\n-   -       test.zip\r\n-   -   \r\n-   +0.3\r\n-   -       test.zip\r\n-   -    "
-                    + "\r\n+module2\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   +0.2\r\n-   -       test.zip\r\n-   -     "
+                    + "+0.2\r\n-   -       test.zip\r\n-   -   \r\n-   +0.3\r\n-   -       test.zip\r\n-   -   \r\n-   " +
+                    "+0.4-prefix\r\n-   -       test.zip\r\n-   -    "
+                    + "\r\n+module2\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   +0.2\r\n-   -       test.zip\r\n-   -   " +
+                    "\r\n-   +0.4-prefix\r\n-   -       test.zip\r\n-   -     "
                     + "\r\n+module3\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   +0.2\r\n-   -       test.zip\r\n-   -     "
                     + "\r\n+module4\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       "
                     + "\r\n+module5\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   +0.2\r\n-   -       test.zip\r\n-   -    ";
             }
             else
             {
-                return "\r\n+module2\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   +0.2\r\n-   -       test.zip\r\n-   -     "
+                return "\r\n+module2\r\n-   +0.1\r\n-   -       test.zip\r\n-   -       \r\n-   +0.2\r\n-   -       test.zip\r\n" +
+                    "-   -   \r\n-   +0.4-prefix\r\n-   -       test.zip\r\n-   -     "
                     + "\r\n+module3\r\n-   +0.2\r\n-   -       test.zip\r\n-   -     ";
             }
         }

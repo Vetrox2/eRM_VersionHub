@@ -36,7 +36,6 @@ builder.Services.AddScoped<IDbService, DbService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
-builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<IPublicationService, PublicationService>();
 
 builder.Services.AddScoped<IAppDataScanner, AppDataScanner>();

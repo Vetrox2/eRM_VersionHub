@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace eRM_VersionHub.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
-    public class PermissionController(IPermissionService permissionService, ILogger<PermissionController> logger) : ControllerBase
+    [Route("api/[controller]")]
+    public class PermissionController(IPermissionService permissionService) : ControllerBase
     {
         private readonly ILogger<PermissionController> _logger = logger;
         private readonly IPermissionService _permissionService = permissionService;
