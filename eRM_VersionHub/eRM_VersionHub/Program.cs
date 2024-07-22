@@ -9,6 +9,12 @@ using eRM_VersionHub.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddLogging(config =>
+{
+    config.AddConsole();
+    config.AddDebug();
+});
+
 // Add services to the container.
 
 builder.Services.AddControllers();
