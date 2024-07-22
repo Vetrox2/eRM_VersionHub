@@ -11,6 +11,7 @@ namespace eRM_VersionHub.Services
     {
         private IFavoriteService _favoriteService = favoriteService;
         private IPermissionService _permissionService = permissionService;
+        private ApiResponse<List<AppStructureDto>> response;
 
         public static ApplicationJsonModel? GetAppJsonModel(string jsonFilePath)
         {
@@ -51,15 +52,23 @@ namespace eRM_VersionHub.Services
             return info.GetDirectories()?.ToList();
         }
 
-        public async Task<List<AppStructureDto>?> GetAppsStructure(MyAppSettings settings, string userToken)
+        public async Task<ApiResponse<List<AppStructureDto>>> GetAppsStructure(MyAppSettings settings, string userToken)
         {
+            response = new();
+            if(!Directory.Exists(settings.InternalPackagesPath) || !Directory.Exists(settings.ExternalPackagesPath) || !Directory.Exists(settings.AppsPath))
+            {
+                response.Errors.Add("Fatal error");
+                return response;
+            }
+
             var structure = await GetInternalAppStructure(settings.AppsPath, settings.ApplicationConfigFile, settings.InternalPackagesPath, userToken);
             if (structure == null)
-                return null;
+                return response;
 
             structure = await SetFavorites(structure, userToken);
             structure = SetPublished(settings.ExternalPackagesPath, structure);
-            return structure;
+            response.Data = structure;
+            return response;
         }
 
         private async Task<List<AppStructureDto>?> GetInternalAppStructure(string appsPath, string appJsonName, string internalPackagesPath, string token)
@@ -68,13 +77,23 @@ namespace eRM_VersionHub.Services
             var appsStructure = new List<AppStructureDto>();
             var appsNames = GetDirectoryInfo(appsPath);
 
-            if(appsNames == null || perms == null || !perms.Success || perms.Data.Count == 0) 
+            if(appsNames == null)
+            {
+                response.Errors.Add("Applications data not found");
                 return null;
+            }
+
+            if (perms == null || !perms.Success || perms.Data.Count == 0)
+            {
+                response.Errors.Add("User permissions not found");
+                return null;
+            }
 
             foreach (var app in appsNames)
             {
                 var appJSModel = GetAppJsonModel(Path.Combine(appsPath, app.Name, appJsonName));
 
+                //If null add info to logs
                 if (appJSModel == null || !perms.Data.Any(perm => perm.AppID == appJSModel.UniqueIdentifier))
                     continue;
 
@@ -82,7 +101,10 @@ namespace eRM_VersionHub.Services
                 var appStructureDto = CreateAppStructureDto(appJSModel, moduleModels);
 
                 if (appStructureDto == null)
+                {
+                    response.Errors.Add($"Something went wrong during data creation for the application: {appJSModel.Name}");
                     continue;
+                }
 
                 appsStructure.Add(appStructureDto);
             }
