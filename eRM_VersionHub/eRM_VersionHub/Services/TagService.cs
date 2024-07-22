@@ -1,6 +1,7 @@
 ﻿using eRM_VersionHub.Dtos;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
+using System;
 
 namespace eRM_VersionHub.Services
 {
@@ -13,25 +14,23 @@ namespace eRM_VersionHub.Services
             if (appModel == null || appModel.Modules.Count == 0)
                 return ApiResponse<string>.ErrorResponse(["App not found"]);
 
+            int internalModulesModified = 0, publishedModulesModified = 0;
+            var newVersionID = SwapVersionTags(versionID, newTag);
+
+            if(newVersionID == versionID)
+                return ApiResponse<string>.ErrorResponse(["New tag is the same as the old one"]);
+
             appModel.Modules.ForEach(module =>
             {
-                var (newName, _) = SplitVersionID(versionID);
-                if (!string.IsNullOrEmpty(newTag))
-                    newName += $"-{newTag}";
-
-                var internalPath = Path.Combine(_settings.InternalPackagesPath, module.ModuleId, versionID);
-                var externalPath = Path.Combine(_settings.ExternalPackagesPath, module.ModuleId, versionID);
-
-                var newInternalPath = Path.Combine(_settings.InternalPackagesPath, module.ModuleId, newName);
-                var newExternalPath = Path.Combine(_settings.ExternalPackagesPath, module.ModuleId, newName);
-
-                if (Directory.Exists(internalPath))
-                    Directory.Move(internalPath, newInternalPath);
-                if (Directory.Exists(externalPath))
-                    Directory.Move(externalPath, newExternalPath);
+                internalModulesModified += ChangeTagOnPath(_settings.InternalPackagesPath, module.ModuleId, versionID, newVersionID) ? 1 : 0;
+                publishedModulesModified += ChangeTagOnPath(_settings.ExternalPackagesPath, module.ModuleId, versionID, newVersionID) ? 1 : 0;
             });
 
-            return ApiResponse<string>.SuccessResponse("Success");
+            if (internalModulesModified == 0)
+                return ApiResponse<string>.ErrorResponse(["Version for none module was modified"]);
+
+            return ApiResponse<string>.SuccessResponse(
+                $"Internal modules version modified: {internalModulesModified}\nPublished modules version modified: {publishedModulesModified}");
         }
 
         public static (string Name, string Tag) SplitVersionID(string versionID)
@@ -50,6 +49,29 @@ namespace eRM_VersionHub.Services
                 Tag = versionID[(index + 1)..];
             }
             return (Name, Tag);
+        }
+
+        public static string SwapVersionTags(string versionID, string newTag)
+        {
+            var (newVersionID, _) = SplitVersionID(versionID);
+            if (!string.IsNullOrEmpty(newTag))
+                newVersionID += $"-{newTag}";
+
+            return newVersionID;
+        }
+
+        private bool ChangeTagOnPath(string packagesPath, string moduleId, string versionID, string newVersionID)
+        {
+            var oldPath = Path.Combine(packagesPath, moduleId, versionID);
+            var newPath = Path.Combine(packagesPath, moduleId, newVersionID);
+
+            if (Directory.Exists(oldPath))
+            {
+                Directory.Move(oldPath, newPath);
+                return true;
+            }
+
+            return false;
         }
     }
 }

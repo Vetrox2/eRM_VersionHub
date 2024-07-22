@@ -18,7 +18,25 @@ services:
           memory: 200M 
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  
+
+  postgres_test:
+    image: postgres:16.3-alpine3.20
+    environment:
+      - POSTGRES_PASSWORD=postgres_test
+      - POSTGRES_DB=testdb
+    ports:
+     - "5433:5432"
+    deploy:
+      resources:
+        limits: 
+          cpus: "0.50"
+          memory: 400M
+        reservations:
+          cpus: "0.25"
+          memory: 200M 
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+
   pgweb:
     image: sosedoff/pgweb
     restart: unless-stopped
@@ -29,5 +47,16 @@ services:
     depends_on:
       - postgres
 
+  pgweb_test:
+    image: sosedoff/pgweb
+    restart: unless-stopped
+    ports:
+     - "8082:8081"
+    environment:
+     - DATABASE_URL=postgres://postgres:postgres_test@postgres_test:5432/testdb?sslmode=disable
+    depends_on:
+      - postgres_test
+
 volumes:
   postgres_data:
+  postgres_test_data:

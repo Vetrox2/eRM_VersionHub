@@ -2,12 +2,10 @@
 {
     public static class PackagesGenerator
     {
-        public static void Generate()
+        public static void Generate(string basePath = @"Disc\eRMwewn\packages", string packagesInfoPath = @"Disc\packages.txt")
         {
             string currentFolder = "";
             string subfolderPath = "";
-            string basePath = @"Disc\eRMwewn\packages";
-            string packagesInfoPath = @"Disc\packages.txt";
             Random r = new();
 
             if (!Directory.Exists(basePath))

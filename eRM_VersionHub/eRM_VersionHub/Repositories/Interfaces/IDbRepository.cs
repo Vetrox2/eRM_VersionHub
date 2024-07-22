@@ -1,5 +1,5 @@
 ﻿using eRM_VersionHub.Models;
-using static eRM_VersionHub.Repositories.Database.DbRepository;
+using static eRM_VersionHub.Repositories.DbRepository;
 
 namespace eRM_VersionHub.Repositories.Interfaces
 {

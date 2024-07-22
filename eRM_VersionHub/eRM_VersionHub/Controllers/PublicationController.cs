@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 namespace eRM_VersionHub.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     public class PublicationController(IOptions<AppSettings> appSettings, IPublicationService publicationService) : ControllerBase
     {
         private readonly MyAppSettings _settings = appSettings.Value.MyAppSettings;

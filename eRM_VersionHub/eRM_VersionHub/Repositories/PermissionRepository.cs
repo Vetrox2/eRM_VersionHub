@@ -1,7 +1,7 @@
 ﻿using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories.Interfaces;
 
-namespace eRM_VersionHub.Repositories.Database
+namespace eRM_VersionHub.Repositories
 {
     public class PermissionRepository(IDbRepository dbRepository, ILogger<PermissionRepository> logger) : IPermissionRepository
     {

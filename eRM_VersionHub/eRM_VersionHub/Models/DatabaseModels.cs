@@ -21,5 +21,6 @@ namespace eRM_VersionHub.Models
         public required string Username { get; set; }
         public required DateTime CreationDate { get; set; }
         public override string ToString() => JsonManager.Serialize<User>(this);
+        public virtual bool Equals(User user) => Username == user.Username && CreationDate == user.CreationDate;
     }
 }
