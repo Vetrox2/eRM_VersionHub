@@ -26,13 +26,14 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { App } from '../../../models/app.model';
-import { Version } from '../../../models/version.model';
+import { Tag, Version } from '../../../models/version.model';
 import { Module } from '../../../models/module.model';
 import { AppService } from '../../../services/app-service.service';
 import { StatusChipComponent } from '../../../components/status-chip/status-chip.component';
 import { MenuIconsComponent } from '../../../components/menu/menu.component';
 import { ChipDropdownComponent } from '../../../components/chip-dropdown/chip-dropdown.component';
 import { DefaultModalComponent } from '../../../components/modals/default-modal/default-modal.component';
+import { app } from '../../../../server';
 
 interface FlattenedVersion {
   Version: string;
@@ -79,9 +80,9 @@ export class ProjectVersionTableComponent
 {
   @ViewChild(MatSort) sort!: MatSort;
   dataSource: MatTableDataSource<FlattenedVersion>;
-
   moduleChanges: { [key: string]: boolean } = {};
   isLoading: boolean = false;
+  selectedTag: Tag = '';
 
   columnsToDisplay = ['Actions', 'Published', 'Version', 'Tag'];
   expandedElement: FlattenedVersion | null = null;
@@ -109,6 +110,7 @@ export class ProjectVersionTableComponent
   ngAfterViewInit() {
     if (this.dataSource) {
       this.dataSource.sort = this.sort;
+      console.log(this.dataSource);
       this.dataSource.sortingDataAccessor = (
         item: FlattenedVersion,
         property: string
@@ -155,21 +157,23 @@ export class ProjectVersionTableComponent
         this.moduleChanges[module.Name] !== undefined &&
         this.moduleChanges[module.Name] !== module.IsPublished
     );
-
+  
     if (changedModules.length === 0) {
-      // this.snackBar.open('No changes to apply', 'Close', { duration: 3000 });
-      // return;
+      this.snackBar.open('No changes to apply', 'Close', { duration: 3000 });
+      return;
     }
-
+  
     const dialogRef = this.dialog.open(DefaultModalComponent, {
       data: {
         title: 'Confirm Changes',
         message: `Are you sure you want to apply changes to ${changedModules.length} module(s)?`,
+        selectedTag: version.Tag || 'none'
       },
     });
-
+  
     dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
+      if (result && result.selectedTag) {
+        this.selectedTag = result.selectedTag;
         this.isLoading = true;
         const publishModules = changedModules.filter(
           (module) => this.moduleChanges[module.Name]
@@ -177,7 +181,7 @@ export class ProjectVersionTableComponent
         const unpublishModules = changedModules.filter(
           (module) => !this.moduleChanges[module.Name]
         );
-
+  
         const publishVersion: Version | null =
           publishModules.length > 0
             ? {
@@ -185,7 +189,7 @@ export class ProjectVersionTableComponent
                 Modules: publishModules,
               }
             : null;
-
+  
         const unpublishVersion: Version | null =
           unpublishModules.length > 0
             ? {
@@ -193,21 +197,22 @@ export class ProjectVersionTableComponent
                 Modules: unpublishModules,
               }
             : null;
-
+  
         const promises: Promise<any>[] = [];
-
+        
         if (publishVersion) {
+          publishVersion.PublishedTag = this.selectedTag as unknown as Tag;
           promises.push(
             this.appService.publishVersion(publishVersion).toPromise()
           );
         }
-
+  
         if (unpublishVersion) {
           promises.push(
             this.appService.unPublishVersion(unpublishVersion).toPromise()
           );
         }
-
+  
         Promise.all(promises)
           .then(() => {
             this.snackBar.open('Changes applied successfully', 'Close', {
@@ -218,6 +223,7 @@ export class ProjectVersionTableComponent
                 module.IsPublished = this.moduleChanges[module.Name];
               }
             });
+            version.Tag = this.selectedTag;
             this.moduleChanges = {};
             this.refreshData();
           })
@@ -228,10 +234,12 @@ export class ProjectVersionTableComponent
           })
           .finally(() => {
             this.isLoading = false;
+            this.refreshData();
           });
       }
     });
   }
+    
 
   getTagOptions(tag: string): string[] {
     return ['Scoped', 'Preview', 'None'];
@@ -243,23 +251,29 @@ export class ProjectVersionTableComponent
 
   flattenData(apps: App[]) {
     const flattenedData = apps.flatMap((app) =>
-      app.Versions.map((version) => ({
-        Version: version.Name,
-        Tag: version.Tag,
+      app.Versions.map((version) => {
+        console.log(version);
+        return {
+        Version: version.Number,
+        Tag: version.PublishedTag,
         Name: app.Name,
         ID: app.ID,
         Modules: version.Modules,
         ParentApp: app,
         isLoading: false,
         orignalID: version.ID,
-      }))
+      }
+    })
     );
+    
+    console.log(flattenedData);
     this.dataSource = new MatTableDataSource<FlattenedVersion>(flattenedData);
     if (this.sort) {
       this.dataSource.sort = this.sort;
     }
   }
 
+  
   getPublicationStatus(
     version: FlattenedVersion
   ): 'published' | 'semi-published' | 'not-published' {
@@ -274,23 +288,29 @@ export class ProjectVersionTableComponent
   }
 
   flattenedVersionToDto(flattenedVersion: FlattenedVersion): Version {
-    type tag = 'scoped' | 'preview' | 'none' | '';
     return {
       ID: flattenedVersion.orignalID,
+      Number: flattenedVersion.Version,
       Modules: flattenedVersion.Modules,
       Name: flattenedVersion.Version,
-      Tag: flattenedVersion.Tag === 'none' ? '' : (flattenedVersion.Tag as tag),
+      PublishedTag: flattenedVersion.Tag === 'none' ? '' : (flattenedVersion.Tag as Tag),
     };
   }
 
-  handlePublishVersion(flattenedVersion: FlattenedVersion) {
-    this.showConfirmationDialog(
-      'Publish Version',
-      'Are you sure you want to publish this version?'
-    ).then((confirmed) => {
-      if (confirmed) {
-        flattenedVersion.isLoading = true;
-        const versionDto = this.flattenedVersionToDto(flattenedVersion);
+  handlePublishVersion(version: FlattenedVersion) {
+    const dialogRef = this.dialog.open(DefaultModalComponent, {
+      data: {
+        title: 'Publish Version',
+        message: 'Are you sure you want to publish this version?',
+        selectedTag: version.Tag || 'none'
+      },
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result && result.selectedTag) {
+        this.selectedTag = result.selectedTag;
+        this.isLoading = true;
+        version.isLoading = true;
+        const versionDto = this.flattenedVersionToDto(version);
         console.log(versionDto);
         this.appService.publishVersion(versionDto).subscribe({
           next: (response) => {
@@ -298,9 +318,13 @@ export class ProjectVersionTableComponent
               this.snackBar.open('Version published successfully', 'Close', {
                 duration: 3000,
               });
-              flattenedVersion.Modules.forEach((module) => {
+              version.Modules.forEach((module) => {
                 module.IsPublished = true;
               });
+              // Update the tag if it's returned in the response
+              if (response.success) {
+                version.Tag = this.selectedTag;
+              }
               this.refreshData();
             } else {
               this.snackBar.open(
@@ -316,23 +340,26 @@ export class ProjectVersionTableComponent
             });
           },
           complete: () => {
-            flattenedVersion.isLoading = false;
+            version.isLoading = false;
             this.refreshData();
           },
         });
-      }
-    });
+      }})
   }
 
   handleUnPublishVersion(flattenedVersion: FlattenedVersion) {
-    this.showConfirmationDialog(
-      'Unpublish Version',
-      'Are you sure you want to unpublish this version?'
-    ).then((confirmed) => {
+    const dialogRef = this.dialog.open(DefaultModalComponent, {
+      data: {
+        title: 'Unpublish Version',
+        message: 'Are you sure you want to unpublish this version?',
+        selectedTag: ''
+      },
+    });
+    dialogRef.afterClosed().subscribe((confirmed) => {
       if (confirmed) {
         flattenedVersion.isLoading = true;
+        flattenedVersion.Tag = '';
         const versionDto = this.flattenedVersionToDto(flattenedVersion);
-
         this.appService.unPublishVersion(versionDto).subscribe({
           next: (response) => {
             if (response.success) {
@@ -406,5 +433,9 @@ export class ProjectVersionTableComponent
       default:
         return 'orange';
     }
+  }
+  handleData(element: Tag) {
+    this.selectedTag=element;
+    console.log(this.selectedTag)
   }
 }

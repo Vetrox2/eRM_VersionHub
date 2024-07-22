@@ -5,6 +5,7 @@ import { map, catchError, tap } from 'rxjs/operators';
 import { App } from '../models/app.model';
 import { Version } from '../models/version.model';
 
+
 interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -21,12 +22,18 @@ export class AppService {
   private appsSubject = new BehaviorSubject<App[]>([]);
   private selectedAppSubject = new BehaviorSubject<App | null>(null);
   private favoriteAppsSubject = new BehaviorSubject<App[]>([]);
+  private TagSubject = new BehaviorSubject<string>('');
+  selectedTag$: Observable<string> = this.TagSubject.asObservable();
 
   apps$ = this.appsSubject.asObservable();
   selectedApp$ = this.selectedAppSubject.asObservable();
   favoriteApps$ = this.favoriteAppsSubject.asObservable();
 
   constructor(private http: HttpClient) {}
+
+  setSelectedTag(tag: string) {
+    this.TagSubject.next(tag);
+  }
 
   loadApps(): void {
     console.log('AppService: Loading apps...');

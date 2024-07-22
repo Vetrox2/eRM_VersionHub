@@ -94,11 +94,10 @@
     <ng-container matColumnDef="Tag">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>Tag</th>
       <td mat-cell *matCellDef="let element">
-        <app-chip-dropdown
-          [options]="getTagOptions(element.Tag)"
-          [selectedOption]="element.Tag === '' ? 'None' : element.Tag"
-          (optionSelected)="onTagSelected($event, element)"
-        ></app-chip-dropdown>
+      <div (tagSelected)="handleData(element.Tag)">
+        <span *ngIf="element.Tag ==='' ">none</span>
+        <span *ngIf="element.Tag !==''">{{element.Tag}}</span>
+      </div>
       </td>
     </ng-container>
 
