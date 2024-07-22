@@ -48,7 +48,7 @@ app.UseCors(builder =>
     builder.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod();
 });
 
-var db = new DbInitializer(app);
+// var db = new DbInitializer(app);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

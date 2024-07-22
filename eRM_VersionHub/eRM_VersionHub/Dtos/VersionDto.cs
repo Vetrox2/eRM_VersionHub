@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using eRM_VersionHub.Services;
+﻿using eRM_VersionHub.Services;
 
 namespace eRM_VersionHub.Dtos
 {
@@ -17,5 +16,6 @@ namespace eRM_VersionHub.Dtos
             Number = TagService.GetVersionWithoutTag(ID);
             PublishedTag = "";
         }
+        public override string ToString() => JsonManager.Serialize(this);
     }
 }

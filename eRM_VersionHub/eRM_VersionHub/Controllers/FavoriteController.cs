@@ -7,7 +7,7 @@ namespace eRM_VersionHub.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class FavoriteController(IFavoriteService favoritesService) : ControllerBase
+    public class FavoriteController(IFavoriteService favoritesService, ILogger<FavoriteController> logger) : ControllerBase
     {
         private readonly ILogger<FavoriteController> _logger = logger;
         private readonly IFavoriteService _favoritesService = favoritesService;

@@ -6,7 +6,7 @@ namespace eRM_VersionHub.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PermissionController(IPermissionService permissionService) : ControllerBase
+    public class PermissionController(IPermissionService permissionService, ILogger<PermissionController> logger) : ControllerBase
     {
         private readonly ILogger<PermissionController> _logger = logger;
         private readonly IPermissionService _permissionService = permissionService;
