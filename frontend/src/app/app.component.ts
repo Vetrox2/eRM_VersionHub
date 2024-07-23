@@ -9,6 +9,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { FavoritesTabComponent } from '../features/dashboard/favorites-tab/favorites-tab.component';
 import { MatButtonModule } from '@angular/material/button';
 import { SearchComponent } from '../components/search/search.component';
+import { MatInputModule } from '@angular/material/input';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-root',
@@ -23,6 +25,8 @@ import { SearchComponent } from '../components/search/search.component';
     MatIconModule,
     FavoritesTabComponent,
     MatButtonModule,
+    MatInputModule,
+    FormsModule,
     SearchComponent,
   ],
   templateUrl: './app.component.html',
