@@ -5,8 +5,7 @@ import { map, catchError, tap } from 'rxjs/operators';
 import { App } from '../models/app.model';
 import { Version } from '../models/version.model';
 
-
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   success: boolean;
   data: T;
   errors: string[];

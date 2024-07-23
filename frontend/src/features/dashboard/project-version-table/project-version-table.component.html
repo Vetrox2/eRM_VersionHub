@@ -94,10 +94,10 @@
     <ng-container matColumnDef="Tag">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>Tag</th>
       <td mat-cell *matCellDef="let element">
-      <div (tagSelected)="handleData(element.Tag)">
-        <span *ngIf="element.Tag ==='' ">none</span>
-        <span *ngIf="element.Tag !==''">{{element.Tag}}</span>
-      </div>
+        <div>
+          <span *ngIf="element.Tag === ''">none</span>
+          <span *ngIf="element.Tag !== ''">{{ element.Tag }}</span>
+        </div>
       </td>
     </ng-container>
 
@@ -146,7 +146,9 @@
               <li class="module-item">
                 <mat-checkbox
                   [checked]="module.IsPublished"
-                  (change)="onModuleCheckboxChange(module, $event.checked)"
+                  (change)="
+                    onModuleCheckboxChange(element, module, $event.checked)
+                  "
                   [disabled]="element.isLoading"
                 >
                   {{ module.Name }}
