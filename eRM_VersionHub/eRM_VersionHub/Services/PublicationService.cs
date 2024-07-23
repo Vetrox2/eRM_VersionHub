@@ -17,7 +17,7 @@ namespace eRM_VersionHub.Services
             }
 
             List<string> errors = [];
-            foreach (ModuleDto module in version.Modules)
+            foreach (var module in version.Modules)
             {
                 string sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
                 _logger.LogDebug(AppLogEvents.Service, "Checking version in: {sourcePath}", sourcePath);
@@ -34,14 +34,14 @@ namespace eRM_VersionHub.Services
                 return ApiResponse<bool>.ErrorResponse(errors);
             }
 
-            foreach (ModuleDto module in version.Modules)
+            foreach (var module in version.Modules)
             {
-                List<ModuleModel> publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
-                string? publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
+                var publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
+                var publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
                 _logger.LogDebug(AppLogEvents.Service, "Publishing module: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
                 if (!string.IsNullOrEmpty(publishedVersionID))
                 {
-                    bool success = TagService.ChangeTagOnPath(settings.ExternalPackagesPath, module.Name, publishedVersionID, TagService.SwapVersionTag(version.ID, version.PublishedTag));
+                    var success = TagService.ChangeTagOnPath(settings.ExternalPackagesPath, module.Name, publishedVersionID, TagService.SwapVersionTag(version.ID, version.PublishedTag));
                     _logger.LogDebug(AppLogEvents.Service, "ChangeTagOnPath returned: {success}", success);
                     if (success)
                     {
@@ -53,11 +53,11 @@ namespace eRM_VersionHub.Services
                     return ApiResponse<bool>.ErrorResponse([$"System could not change published tag on module \"{module.Name}\" version \"{version.ID}\". Rollbacking publication of this version."]);
                 }
 
-                string sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
-                string targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID, version.PublishedTag));
+                var sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
+                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID, version.PublishedTag));
                 
                 PrepareTargetPath(settings.ExternalPackagesPath, module.Name, targetPath);
-                ApiResponse<bool> response = CopyContent(sourcePath, targetPath);
+                var response = CopyContent(sourcePath, targetPath);
                 _logger.LogDebug(AppLogEvents.Service, "CopyContent returned: {response}", response);
                 if (!response.Success)
                 {
@@ -81,17 +81,17 @@ namespace eRM_VersionHub.Services
                 return ApiResponse<bool>.ErrorResponse(["Empty collection of modules to unpublish"]);
             }
 
-            foreach (ModuleDto module in version.Modules)
+            foreach (var module in version.Modules)
             {
-                List<ModuleModel> publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
-                string? publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
+                var publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
+                var publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
                 _logger.LogDebug(AppLogEvents.Service, "Unpublishing module: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
                 if (string.IsNullOrEmpty(publishedVersionID))
                 {
                     _logger.LogWarning(AppLogEvents.Service, "This module doesn't exist: {publishedVersionID}", publishedVersionID);
                     continue;
                 }
-                string targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, publishedVersionID);
+                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, publishedVersionID);
                 if (Directory.Exists(targetPath))
                 {
                     _logger.LogDebug(AppLogEvents.Service, "Deleting folder: {targetPath}", targetPath);
@@ -106,7 +106,7 @@ namespace eRM_VersionHub.Services
         {
             _logger.LogDebug(AppLogEvents.Service, "Preparing target path with data: {ExternalPackagesPath}, {module}, {targetPath}",
                 ExternalPackagesPath, module, targetPath);
-            string modulePath = Path.Combine(ExternalPackagesPath, module);
+            var modulePath = Path.Combine(ExternalPackagesPath, module);
             if (!Directory.Exists(modulePath))
             {
                 _logger.LogWarning(AppLogEvents.Service, "Creating directory that doesn't exist: {modulePath}", modulePath);
@@ -129,7 +129,7 @@ namespace eRM_VersionHub.Services
             {
                 foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
                 {
-                    string newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, dirPath));
+                    var newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, dirPath));
                     _logger.LogDebug(AppLogEvents.Service, "Copying {dirPath} to {newPath}", dirPath, newPath);
                     if (!Directory.Exists(newPath))
                     {
@@ -140,7 +140,7 @@ namespace eRM_VersionHub.Services
 
                 foreach (string filePath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
                 {
-                    string newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, filePath));
+                    var newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, filePath));
                     _logger.LogDebug(AppLogEvents.Service, "Copying {filePath} to {newPath}", filePath, newPath);
                     File.Copy(filePath, newPath, true);
                 }

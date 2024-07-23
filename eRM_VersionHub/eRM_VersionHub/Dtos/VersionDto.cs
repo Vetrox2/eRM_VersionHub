@@ -16,6 +16,6 @@ namespace eRM_VersionHub.Dtos
             Number = TagService.GetVersionWithoutTag(ID);
             PublishedTag = "";
         }
-        public override string ToString() => JsonManager.Serialize(this);
+        public override string ToString() => this.Serialize();
     }
 }

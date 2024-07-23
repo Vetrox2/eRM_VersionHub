@@ -56,5 +56,31 @@ namespace eRM_VersionHub.Controllers
             _logger.LogWarning(AppLogEvents.Controller, "DeleteFavorite returned error(s): {Errors}", result.Errors);
             return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
         }
+
+        [HttpPost("{UserName}/{app_id}")]
+        public async Task<IActionResult> AddToFavorites(string UserName, string app_id)
+        {
+            var result = await _favoritesService.CreateFavorite(
+                new Favorite { Username = UserName, AppID = app_id }
+            );
+            if (result.Success)
+            {
+                return Ok(result.Data);
+            }
+            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
+        }
+
+        [HttpDelete("{UserName}/{app_id}")]
+        public async Task<IActionResult> RemoveFromFavorites(string UserName, string app_id)
+        {
+            var result = await _favoritesService.DeleteFavorite(
+                new Favorite { Username = UserName, AppID = app_id }
+            );
+            if (result.Success)
+            {
+                return Ok(result.Data);
+            }
+            return Problem(detail: string.Join(";", result.Errors));
+        }
     }
 }

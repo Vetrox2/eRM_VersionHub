@@ -15,7 +15,7 @@ namespace eRM_VersionHub.Services
             {
                 return JsonSerializer.Deserialize<T>(json, options);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return default;
             }

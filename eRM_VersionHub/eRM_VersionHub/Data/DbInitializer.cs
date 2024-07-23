@@ -6,28 +6,28 @@ namespace eRM_VersionHub.Data
 {
     public class DbInitializer
     {
-        private IDbRepository? _dbRepository;
-        private IFavoriteRepository? _favoriteRepository;
-        private IPermissionRepository? _permissionRepository;
-        private IUserRepository? _userRepository;
+        private IDbRepository _dbRepository;
+        private IFavoriteRepository _favoriteRepository;
+        private IPermissionRepository _permissionRepository;
+        private IUserRepository _userRepository;
         private readonly ILogger<DbInitializer> _logger;
 
         public DbInitializer(WebApplication app, ILogger<DbInitializer> logger)
         {
             _logger = logger;
             _logger.LogDebug(AppLogEvents.Database, "Initializing database");
-            using IServiceScope scope = app.Services.CreateAsyncScope();
-            InitDb(scope);
+            InitDb(app);
         }
 
-        public async void InitDb(IServiceScope scope)
+        public void InitDb(WebApplication app)
         {
+            using var scope = app.Services.CreateScope();
             _dbRepository = scope.ServiceProvider.GetService<IDbRepository>();
             _favoriteRepository = scope.ServiceProvider.GetService<IFavoriteRepository>();
             _permissionRepository = scope.ServiceProvider.GetService<IPermissionRepository>();
             _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
             _logger.LogDebug(AppLogEvents.Database, "Getting needed services (DbRepository, FavoriteRepository, PermissionRepository, UserRepository)");
-            await CreateTables();
+            CreateTables();
         }
 
         private async Task CreateTables()
@@ -42,13 +42,13 @@ namespace eRM_VersionHub.Data
         {
             var columns = new List<ColumnDefinition>
             {
-                new()
+                new ColumnDefinition
                 {
                     Name = "username",
                     Type = "VARCHAR(255)",
                     IsNullable = false
                 },
-                new()
+                new ColumnDefinition
                 {
                     Name = "app_id",
                     Type = "VARCHAR(255)",
@@ -61,7 +61,9 @@ namespace eRM_VersionHub.Data
             if (!result.Success)
             {
                 _logger.LogError(AppLogEvents.Database, "CreatePermissionTable returned: {Errors}", result.Errors);
-                Console.WriteLine($"Failed to create Permissions table: {string.Join(", ", result.Errors)}");
+                Console.WriteLine(
+                    $"Failed to create Permissions table: {string.Join(", ", result.Errors)}"
+                );
             }
             _logger.LogInformation(AppLogEvents.Database, "CreatePermissionTable returned: {result}", result.Data);
         }
@@ -70,13 +72,13 @@ namespace eRM_VersionHub.Data
         {
             var columns = new List<ColumnDefinition>
             {
-                new()
+                new ColumnDefinition
                 {
                     Name = "username",
                     Type = "VARCHAR(255)",
                     IsNullable = false
                 },
-                new()
+                new ColumnDefinition
                 {
                     Name = "app_id",
                     Type = "VARCHAR(255)",
@@ -89,7 +91,9 @@ namespace eRM_VersionHub.Data
             if (!result.Success)
             {
                 _logger.LogError(AppLogEvents.Database, "CreateFavoriteTable returned: {Errors}", result.Errors);
-                Console.WriteLine($"Failed to create Favorites table: {string.Join(", ", result.Errors)}");
+                 Console.WriteLine(
+                    $"Failed to create Favorites table: {string.Join(", ", result.Errors)}"
+                );
             }
             _logger.LogInformation(AppLogEvents.Database, "CreateFavoriteTable returned: {result}", result.Data);
         }
@@ -98,13 +102,14 @@ namespace eRM_VersionHub.Data
         {
             var columns = new List<ColumnDefinition>
             {
-                new() {
+                new ColumnDefinition
+                {
                     Name = "username",
                     Type = "VARCHAR(255)",
                     IsNullable = false,
                     IsPrimaryKey = true
                 },
-                new()
+                new ColumnDefinition
                 {
                     Name = "creation_date",
                     Type = "TIMESTAMP",
@@ -117,7 +122,9 @@ namespace eRM_VersionHub.Data
             if (!result.Success)
             {
                 _logger.LogError(AppLogEvents.Database, "CreateUserTable returned: {Errors}", result.Errors);
-                Console.WriteLine($"Failed to create Users table: {string.Join(", ", result.Errors)}");
+                Console.WriteLine(
+                    $"Failed to create Users table: {string.Join(", ", result.Errors)}"
+                );
             }
             _logger.LogInformation(AppLogEvents.Database, "CreateUserTable returned: {result}", result.Data);
         }
