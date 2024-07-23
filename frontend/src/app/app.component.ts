@@ -8,7 +8,6 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { FavoritesTabComponent } from '../features/dashboard/favorites-tab/favorites-tab.component';
 import { MatButtonModule } from '@angular/material/button';
-import { StatusSearchComponent } from '../components/status-search/status-search.component';
 import { SearchComponent } from '../components/search/search.component';
 
 @Component({
@@ -24,8 +23,7 @@ import { SearchComponent } from '../components/search/search.component';
     MatIconModule,
     FavoritesTabComponent,
     MatButtonModule,
-    StatusSearchComponent,
-    SearchComponent
+    SearchComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
