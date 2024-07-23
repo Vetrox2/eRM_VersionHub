@@ -8,12 +8,14 @@ namespace eRM_VersionHub_Tester.Services
     public class FavoriteServiceTests
     {
         private readonly Mock<IFavoriteRepository> _mockRepository;
+        private readonly Mock<ILogger<FavoriteService>> _mockLogger;
         private readonly FavoriteService _favoriteService;
 
         public FavoriteServiceTests()
         {
             _mockRepository = new Mock<IFavoriteRepository>();
-            _favoriteService = new FavoriteService(_mockRepository.Object);
+            _mockLogger = new Mock<ILogger<FavoriteService>>();
+            _favoriteService = new FavoriteService(_mockRepository.Object, _mockLogger.Object);
         }
 
         [Fact]

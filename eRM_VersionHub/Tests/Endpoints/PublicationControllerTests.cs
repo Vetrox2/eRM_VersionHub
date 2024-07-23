@@ -5,6 +5,8 @@ using Moq;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Dtos;
 using System.Text;
+using Xunit.Sdk;
+using System;
 
 namespace eRM_VersionHub_Tester.Endpoints
 {
@@ -33,7 +35,7 @@ namespace eRM_VersionHub_Tester.Endpoints
         }
 
         [Fact]
-        public async Task Publish_ShouldReturnSuccess()
+        public async Task Publish_ShouldPublishNotPublishedVersion()
         {
             // Arrange
             List<VersionDto> versions =
@@ -42,7 +44,7 @@ namespace eRM_VersionHub_Tester.Endpoints
                     [
                         new ModuleDto() { Name = "module4" },
                         new ModuleDto() { Name = "module5" }
-                    ])
+                    ]) {PublishedTag = "" }
                 ];
 
             // Act
@@ -50,9 +52,10 @@ namespace eRM_VersionHub_Tester.Endpoints
 
             // Assert
             var responseContent = await response.Content.ReadAsStringAsync();
-            var apiResponse = responseContent.Deserialize<ApiResponse<string>>();
+            var apiResponse = responseContent.Deserialize<ApiResponse<bool>>();
 
-            Assert.True(apiResponse.Success);
+            Assert.True(apiResponse?.Success);
+            Assert.True(apiResponse?.Errors.Count == 0);
         }
 
         [Fact]
@@ -73,13 +76,13 @@ namespace eRM_VersionHub_Tester.Endpoints
 
             // Assert
             var responseContent = await response.Content.ReadAsStringAsync();
-            var apiResponse = responseContent.Deserialize<ApiResponse<string>>();
+            var apiResponse = responseContent.Deserialize<ApiResponse<bool>>();
 
-            Assert.False(apiResponse.Success);
+            Assert.False(apiResponse?.Success);
         }
 
         [Fact]
-        public async Task Publish_VersionIsAlreadyFullyPublished()
+        public async Task Publish_ChangeTagOfPublished()
         {
             // Arrange
             List<VersionDto> versions =
@@ -88,7 +91,7 @@ namespace eRM_VersionHub_Tester.Endpoints
                     [
                         new ModuleDto() { Name = "module2" },
                         new ModuleDto() { Name = "module3" }
-                    ])
+                    ]) {PublishedTag = "tag"}
                 ];
 
             // Act
@@ -96,9 +99,9 @@ namespace eRM_VersionHub_Tester.Endpoints
 
             // Assert
             var responseContent = await response.Content.ReadAsStringAsync();
-            var apiResponse = responseContent.Deserialize<ApiResponse<string>>();
+            var apiResponse = responseContent.Deserialize<ApiResponse<bool>>();
 
-            Assert.False(apiResponse.Success);
+            Assert.True(apiResponse?.Success);
         }
 
         [Fact]
@@ -119,9 +122,9 @@ namespace eRM_VersionHub_Tester.Endpoints
 
             // Assert
             var responseContent = await response.Content.ReadAsStringAsync();
-            var apiResponse = responseContent.Deserialize<ApiResponse<string>>();
+            var apiResponse = responseContent.Deserialize<ApiResponse<bool>>();
 
-            Assert.False(apiResponse.Success);
+            Assert.True(apiResponse?.Success);
         }
 
         [Fact]
@@ -142,9 +145,9 @@ namespace eRM_VersionHub_Tester.Endpoints
 
             // Assert
             var responseContent = await response.Content.ReadAsStringAsync();
-            var apiResponse = responseContent.Deserialize<ApiResponse<string>>();
+            var apiResponse = responseContent.Deserialize<ApiResponse<bool>>();
 
-            Assert.False(apiResponse.Success);
+            Assert.False(apiResponse?.Success);
         }
 
         [Fact]
@@ -172,9 +175,9 @@ namespace eRM_VersionHub_Tester.Endpoints
 
             // Assert
             var responseContent = await response.Content.ReadAsStringAsync();
-            var apiResponse = responseContent.Deserialize<ApiResponse<string>>();
+            var apiResponse = responseContent.Deserialize<ApiResponse<bool>>();
 
-            Assert.True(apiResponse.Success);
+            Assert.True(apiResponse?.Success);
         }
 
         [Fact]
@@ -202,9 +205,9 @@ namespace eRM_VersionHub_Tester.Endpoints
 
             // Assert
             var responseContent = await response.Content.ReadAsStringAsync();
-            var apiResponse = responseContent.Deserialize<ApiResponse<string>>();
+            var apiResponse = responseContent.Deserialize<ApiResponse<bool>>();
 
-            Assert.False(apiResponse.Success);
+            Assert.True(apiResponse?.Success);
         }
 
         [Fact]
@@ -232,12 +235,12 @@ namespace eRM_VersionHub_Tester.Endpoints
 
             // Assert
             var responseContent = await response.Content.ReadAsStringAsync();
-            var apiResponse = responseContent.Deserialize<ApiResponse<string>>();
+            var apiResponse = responseContent.Deserialize<ApiResponse<bool>>();
 
-            Assert.False(apiResponse.Success);
+            Assert.True(apiResponse?.Success);
         }
 
-        private string GetUrl() => "/Publication";
+        private string GetUrl() => "api/Publication";
 
     }
 }

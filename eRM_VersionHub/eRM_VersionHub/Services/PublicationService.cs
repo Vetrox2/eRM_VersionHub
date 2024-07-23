@@ -39,15 +39,18 @@ namespace eRM_VersionHub.Services
                 var publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
                 var publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
                 _logger.LogDebug(AppLogEvents.Service, "Publishing module: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
+
                 if (!string.IsNullOrEmpty(publishedVersionID))
                 {
                     var success = TagService.ChangeTagOnPath(settings.ExternalPackagesPath, module.Name, publishedVersionID, TagService.SwapVersionTag(version.ID, version.PublishedTag));
                     _logger.LogDebug(AppLogEvents.Service, "ChangeTagOnPath returned: {success}", success);
+
                     if (success)
                     {
                         _logger.LogInformation(AppLogEvents.Service, "Successfully changing tag for: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
                         continue;
                     }
+
                     _logger.LogWarning(AppLogEvents.Service, "Unpublishing due to failure of changing tag in module: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
                     Unpublish(settings, version);
                     return ApiResponse<bool>.ErrorResponse([$"System could not change published tag on module \"{module.Name}\" version \"{version.ID}\". Rollbacking publication of this version."]);
@@ -59,6 +62,7 @@ namespace eRM_VersionHub.Services
                 PrepareTargetPath(settings.ExternalPackagesPath, module.Name, targetPath);
                 var response = CopyContent(sourcePath, targetPath);
                 _logger.LogDebug(AppLogEvents.Service, "CopyContent returned: {response}", response);
+
                 if (!response.Success)
                 {
                     _logger.LogWarning(AppLogEvents.Service, "Unpublishing due to failure of copying {sourcePath} to {targetPath}", sourcePath, targetPath);
@@ -68,6 +72,7 @@ namespace eRM_VersionHub.Services
                     return ApiResponse<bool>.ErrorResponse(response.Errors);
                 }
             }
+
             _logger.LogInformation(AppLogEvents.Service, "Successfully publishing: {version}", version);
             return ApiResponse<bool>.SuccessResponse(true);
         }
@@ -86,11 +91,13 @@ namespace eRM_VersionHub.Services
                 var publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
                 var publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
                 _logger.LogDebug(AppLogEvents.Service, "Unpublishing module: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
+
                 if (string.IsNullOrEmpty(publishedVersionID))
                 {
                     _logger.LogWarning(AppLogEvents.Service, "This module doesn't exist: {publishedVersionID}", publishedVersionID);
                     continue;
                 }
+
                 var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, publishedVersionID);
                 if (Directory.Exists(targetPath))
                 {
