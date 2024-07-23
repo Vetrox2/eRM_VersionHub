@@ -11,6 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { SearchComponent } from '../components/search/search.component';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
+import { MatSidenavModule } from '@angular/material/sidenav';
 
 @Component({
   selector: 'app-root',
@@ -28,8 +29,15 @@ import { FormsModule } from '@angular/forms';
     MatInputModule,
     FormsModule,
     SearchComponent,
+    MatSidenavModule,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent {}
+export class AppComponent {
+  isSidebarActive = false;
+
+  toggleSidebar() {
+    this.isSidebarActive = !this.isSidebarActive;
+  }
+}
