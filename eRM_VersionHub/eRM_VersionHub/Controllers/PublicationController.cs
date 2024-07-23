@@ -19,6 +19,7 @@ namespace eRM_VersionHub.Controllers
         public IActionResult PublishVersions(List<VersionDto> versionDtos)
         {
             _logger.LogDebug(AppLogEvents.Controller, "PublishVersions invoked with data: {versionDtos}", versionDtos);
+
             if (versionDtos == null || versionDtos.Count == 0)
             {
                 _logger.LogWarning(AppLogEvents.Controller, "Data list for PublishVersions is empty");
@@ -46,6 +47,7 @@ namespace eRM_VersionHub.Controllers
         public IActionResult UnpublishVersions(List<VersionDto> versionDtos)
         {
             _logger.LogDebug(AppLogEvents.Controller, "UnpublishVersions invoked with data: {versionDtos}", versionDtos);
+
             if (versionDtos == null || versionDtos.Count == 0)
             {
                 _logger.LogWarning(AppLogEvents.Controller, "Data list for UnpublishVersions is empty");

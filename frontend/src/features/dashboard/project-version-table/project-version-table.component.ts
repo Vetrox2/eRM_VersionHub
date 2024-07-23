@@ -5,6 +5,7 @@ import {
   ViewChild,
   AfterViewInit,
   ChangeDetectorRef,
+  Input,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
@@ -35,6 +36,8 @@ import { MenuIconsComponent } from '../../../components/menu/menu.component';
 import { ChipDropdownComponent } from '../../../components/chip-dropdown/chip-dropdown.component';
 import { DefaultModalComponent } from '../../../components/modals/default-modal/default-modal.component';
 import { app } from '../../../../server';
+import { SearchService } from '../../../services/search-service.service';
+import { SearchComponent } from '../../../components/search/search.component';
 
 interface FlattenedVersion {
   Version: string;
@@ -74,6 +77,7 @@ interface FlattenedVersion {
     MatDividerModule,
     MatProgressSpinnerModule,
     MatSortModule,
+    SearchComponent,
   ],
 })
 export class ProjectVersionTableComponent
@@ -84,15 +88,19 @@ export class ProjectVersionTableComponent
   moduleChanges: { [key: string]: boolean } = {};
   isLoading: boolean = false;
   selectedTag: Tag = '';
+  @Input() searchTerm: string = '';
 
   columnsToDisplay = ['Actions', 'Published', 'Version', 'Tag'];
   expandedElement: FlattenedVersion | null = null;
   private selectedAppSubscription: Subscription | undefined;
+  private searchSubscription: Subscription | undefined;
+
   constructor(
     private appService: AppService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private searchService: SearchService
   ) {
     this.dataSource = new MatTableDataSource<FlattenedVersion>([]);
   }
@@ -107,8 +115,20 @@ export class ProjectVersionTableComponent
           this.dataSource.data = [];
         }
       });
-  }
 
+    // Subscribe to search text changes
+    this.searchSubscription = this.searchService.searchText$.subscribe(
+      (searchText) => {
+        console.log('Search Text Changed:', searchText);
+        this.applyFilter(searchText); // Apply filter based on search text
+      }
+    );
+  }
+  applyFilter(searchText: string) {
+    if (this.dataSource) {
+      this.dataSource.filter = searchText.trim().toLowerCase();
+    }
+  }
   ngAfterViewInit() {
     if (this.dataSource) {
       this.dataSource.sort = this.sort;
@@ -125,8 +145,25 @@ export class ProjectVersionTableComponent
             return (item as any)[property];
         }
       };
+
+      // Set custom filter predicate
+      this.dataSource.filterPredicate = (
+        data: FlattenedVersion,
+        filter: string
+      ): boolean => {
+        if (!filter) {
+          return true; // Show all data when filter is empty
+        }
+        const filterLowerCase = filter.toLowerCase();
+        return (
+          data.Version.toLowerCase().includes(filterLowerCase) ||
+          (data.Tag?.toLowerCase().includes(filterLowerCase) ?? false) ||
+          (data.Name?.toLowerCase().includes(filterLowerCase) ?? false)
+        );
+      };
     }
   }
+
   getPublicationStatusValue(
     status: 'published' | 'semi-published' | 'not-published'
   ): number {

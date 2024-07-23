@@ -1,35 +1,25 @@
 ﻿using eRM_VersionHub.Dtos;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System;
 
 namespace eRM_VersionHub.Services
 {
     public class PublicationService(ILogger<PublicationService> logger) : IPublicationService
     {
         private readonly ILogger<PublicationService> _logger = logger;
+
         public ApiResponse<bool> Publish(MyAppSettings settings, VersionDto version)
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked Publish with data: {settings}\n{version}", settings, version);
-            if (version == null || version.Modules == null)
-            {
-                _logger.LogWarning(AppLogEvents.Service, "Version list for Publish is empty");
+
+            if (ValidateVersionDto(version))
                 return ApiResponse<bool>.ErrorResponse(["Empty collection of modules to publish"]);
-            }
 
             List<string> errors = [];
-            foreach (var module in version.Modules)
-            {
-                string sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
-                _logger.LogDebug(AppLogEvents.Service, "Checking version in: {sourcePath}", sourcePath);
 
-                if (!Directory.Exists(sourcePath))
-                {
-                    _logger.LogWarning(AppLogEvents.Service, "This version doesn't exist: {Name}, {ID}", module.Name, version.ID);
-                    errors.Add($"Module \"{module.Name}\" version \"{version.ID}\" does not exist");
-                }
-            }
-
-            if (errors.Count > 0)
+            if (ValidateAllModulesExistence(version, settings, errors))
             {
                 _logger.LogWarning(AppLogEvents.Service, "Publish returned: {errors}", errors);
                 return ApiResponse<bool>.ErrorResponse(errors);
@@ -37,27 +27,12 @@ namespace eRM_VersionHub.Services
 
             foreach (var module in version.Modules)
             {
-                var publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
-                var publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
-                
-                _logger.LogDebug(AppLogEvents.Service, "Publishing module: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
-
-                if (!string.IsNullOrEmpty(publishedVersionID))
-                {
-                    var success = TagService.ChangeTagOnPath(settings.ExternalPackagesPath, module.Name, publishedVersionID, TagService.SwapVersionTag(version.ID, version.PublishedTag));
-                    _logger.LogDebug(AppLogEvents.Service, "ChangeTagOnPath returned: {success}", success);
-
-                    if (success)
-                    {
-                        _logger.LogInformation(AppLogEvents.Service, "Successfully changing tag for: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
-                        continue;
-                    }
-
-                    _logger.LogWarning(AppLogEvents.Service, "Unpublishing due to failure of changing tag in module: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
-                    Unpublish(settings, version);
-
-                    return ApiResponse<bool>.ErrorResponse([$"System could not change published tag on module \"{module.Name}\" version \"{version.ID}\". Rollbacking publication of this version."]);
-                }
+                var (doContinue, returnError) = ChangeTagIfModuleIsPublished(settings, version, module);
+                if(doContinue)
+                    continue;
+                if(returnError)
+                    return ApiResponse<bool>.ErrorResponse([$"System could not change published tag on module \"{module.Name}\" version \"{version.ID}\"" +
+                        $". Rollbacking publication of this version."]);
 
                 var sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
                 var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID, version.PublishedTag));
@@ -79,7 +54,7 @@ namespace eRM_VersionHub.Services
                 }
             }
 
-            _logger.LogInformation(AppLogEvents.Service, "Successfully publishing: {version}", version);
+            _logger.LogInformation(AppLogEvents.Service, "Successful publication of: {version}", version);
             return ApiResponse<bool>.SuccessResponse(true);
         }
 
@@ -87,35 +62,99 @@ namespace eRM_VersionHub.Services
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked Unpublish with data: {settings}\n{version}", settings, version);
 
-            if (version == null || version.Modules == null)
-            {
-                _logger.LogWarning(AppLogEvents.Service, "Version list for Unpublish is empty");
+            if (ValidateVersionDto(version))
                 return ApiResponse<bool>.ErrorResponse(["Empty collection of modules to unpublish"]);
-            }
+
+            List<string> errors = [];
 
             foreach (var module in version.Modules)
             {
-                var publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
-                var publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
-                
-                _logger.LogDebug(AppLogEvents.Service, "Unpublishing module: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
+                var publishedVersionID = GetPublishedVersionID(settings, module, version);
+                _logger.LogDebug(AppLogEvents.Service, "Unpublishing module: {module.Name}, {publishedVersionID}", module.Name, publishedVersionID);
 
                 if (string.IsNullOrEmpty(publishedVersionID))
                 {
-                    _logger.LogWarning(AppLogEvents.Service, "This module doesn't exist: {publishedVersionID}", publishedVersionID);
+                    _logger.LogWarning(AppLogEvents.Service, "This version is not published: {publishedVersionID}", publishedVersionID);
+                    errors.Add($"This version is not published: {module.Name} {publishedVersionID}");
                     continue;
                 }
 
                 var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, publishedVersionID);
-                if (Directory.Exists(targetPath))
+
+                try 
                 {
                     _logger.LogDebug(AppLogEvents.Service, "Deleting folder: {targetPath}", targetPath);
                     Directory.Delete(targetPath, true);
                 }
+                catch
+                {
+                    _logger.LogDebug(AppLogEvents.Service, "An error occurred while deleting the version: {module.Name} {publishedVersionID}", 
+                        module.Name, publishedVersionID);
+                    errors.Add($"An error occurred while deleting the version: {module.Name} {publishedVersionID}");
+                }
             }
 
             _logger.LogInformation(AppLogEvents.Service, "Unpublishing version: {version}", version);
-            return ApiResponse<bool>.SuccessResponse(true);
+            return ApiResponse<bool>.ErrorResponse(errors);
+        }
+
+        private bool ValidateVersionDto(VersionDto version)
+        {
+            if (version == null || version.Modules == null)
+            {
+                _logger.LogWarning(AppLogEvents.Service, "Version list is empty");
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool ValidateAllModulesExistence(VersionDto version, MyAppSettings settings, List<string> errors)
+        {
+            foreach (var module in version.Modules)
+            {
+                string sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
+                _logger.LogDebug(AppLogEvents.Service, "Checking version in: {sourcePath}", sourcePath);
+
+                if (!Directory.Exists(sourcePath))
+                {
+                    _logger.LogWarning(AppLogEvents.Service, "This version doesn't exist: {Name}, {ID}", module.Name, version.ID);
+                    errors.Add($"Module \"{module.Name}\" version \"{version.ID}\" does not exist");
+                }
+            }
+
+            return errors.Count > 0;
+        }
+
+        private string? GetPublishedVersionID(MyAppSettings settings, ModuleDto module, VersionDto version)
+        {
+            var publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
+            return publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
+        }
+
+        private (bool doContinue, bool returnError) ChangeTagIfModuleIsPublished(MyAppSettings settings, VersionDto version, ModuleDto module)
+        {
+            var publishedVersionID = GetPublishedVersionID(settings, module, version);
+
+            if (!string.IsNullOrEmpty(publishedVersionID))
+            {
+                _logger.LogDebug(AppLogEvents.Service, "Module is already published: {module.Name}, {publishedVersionID}.\nTrying to change its tag",
+                    module.Name, publishedVersionID);
+
+                var success = TagService.ChangeTagOnPath(settings.ExternalPackagesPath, module.Name, publishedVersionID, TagService.SwapVersionTag(version.ID, version.PublishedTag));
+
+                if (success)
+                {
+                    _logger.LogInformation(AppLogEvents.Service, "Successfully changing tag for: {module.Name}, {publishedVersionID}", module.Name, publishedVersionID);
+                    return (true, false);
+                }
+
+                _logger.LogWarning(AppLogEvents.Service, "Unpublishing due to failure of changing tag in module: {module.Name}, {publishedVersionID}", module.Name, publishedVersionID);
+                Unpublish(settings, version);
+                return (false, true);
+            }
+
+            return (false, false);
         }
 
         private void PrepareTargetPath(string ExternalPackagesPath, string module, string targetPath)
