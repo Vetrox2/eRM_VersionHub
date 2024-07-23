@@ -353,7 +353,8 @@ export class ProjectVersionTableComponent
         this.isLoading = true;
         version.isLoading = true;
         const versionDto = this.flattenedVersionToDto(version);
-        versionDto.PublishedTag = result.selectedTag;
+        versionDto.PublishedTag =
+          result.selectedTag === 'none' ? '' : result.selectedTag;
         this.appService.publishVersion(versionDto).subscribe({
           next: (response) => {
             if (response.Success) {
