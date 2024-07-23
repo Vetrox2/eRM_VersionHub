@@ -8,12 +8,14 @@ namespace eRM_VersionHub_Tester.Repositories
     public class UserRepositoryTests
     {
         private readonly Mock<IDbRepository> _mockDbRepository;
+        private readonly Mock<ILogger<UserRepository>> _mockLogger;
         private readonly UserRepository _userRepository;
 
         public UserRepositoryTests()
         {
             _mockDbRepository = new Mock<IDbRepository>();
-            _userRepository = new UserRepository(_mockDbRepository.Object);
+            _mockLogger = new Mock<ILogger<UserRepository>>();
+            _userRepository = new UserRepository(_mockDbRepository.Object, _mockLogger.Object);
         }
 
         [Fact]

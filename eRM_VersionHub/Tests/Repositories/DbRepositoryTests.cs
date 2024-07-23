@@ -10,6 +10,7 @@ namespace eRM_VersionHub_Tester.Repositories
 {
     public class DbRepositoryTests : IAsyncLifetime
     {
+        private readonly Mock<ILogger<DbRepository>> _mockLogger;
         private const string TestConnectionString =
             "Host=localhost;Port=5433;Database=testdb;Username=postgres;Password=postgres_test";
         private DbRepository _dbRepository;
@@ -18,6 +19,7 @@ namespace eRM_VersionHub_Tester.Repositories
 
         public DbRepositoryTests()
         {
+            _mockLogger = new Mock<ILogger<DbRepository>>();
             var mockOptions = new Mock<IOptions<AppSettings>>();
             mockOptions
                 .Setup(o => o.Value)
@@ -31,7 +33,7 @@ namespace eRM_VersionHub_Tester.Repositories
                     }
                 );
 
-            _dbRepository = new DbRepository(mockOptions.Object);
+            _dbRepository = new DbRepository(mockOptions.Object, _mockLogger.Object);
             _testSchemaName = $"test_schema_{Guid.NewGuid():N}";
         }
 

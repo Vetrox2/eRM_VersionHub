@@ -1,7 +1,8 @@
 ﻿using eRM_VersionHub.Models;
-using eRM_VersionHub.Repositories;
 using eRM_VersionHub.Repositories.Interfaces;
+using eRM_VersionHub.Services.Database;
 using eRM_VersionHub_Tester.Helpers;
+using Moq;
 
 namespace eRM_VersionHub_Tester.Endpoints
 {
@@ -9,13 +10,15 @@ namespace eRM_VersionHub_Tester.Endpoints
     {
         private readonly HttpClient _client;
         private readonly User user;
-        private UserRepository userRepository;
+        private readonly Mock<IUserRepository> _mockRepository;
+        private readonly Mock<ILogger<UserService>> _mockLogger;
+        private readonly UserService _userService;
 
         public UserTests(TestFixture factory)
         {
-            factory.SetNewAppSettings("","","","");
-            IDbRepository dbRepository = factory.GetIDbRepository();
-            userRepository = new UserRepository(dbRepository);
+            _mockRepository = new Mock<IUserRepository>();
+            _mockLogger = new Mock<ILogger<UserService>>();
+            _userService = new UserService(_mockRepository.Object, _mockLogger.Object);
             _client = factory.CreateClient();
             user = new() { Username = "test", CreationDate = DateTime.MinValue };
         }
@@ -75,7 +78,8 @@ namespace eRM_VersionHub_Tester.Endpoints
                 Username = user.Username,
                 CreationDate = DateTime.MaxValue,
             };
-            await userRepository.CreateUser(user);
+            var expectedResponse = new ApiResponse<User?> { Errors = [], Data = user };
+            _mockRepository.Setup(repo => repo.CreateUser(user)).ReturnsAsync(expectedResponse);
             HttpResponseMessage response = await _client.PutAsJsonAsync<User>("/User", updatedUser);
             User? deserialized = await response.GetRequestContent<User?>();
             Assert.NotNull(deserialized);
@@ -98,7 +102,8 @@ namespace eRM_VersionHub_Tester.Endpoints
         [Fact]
         public async Task DeleteUser_ShouldReturnDeletedUser()
         {
-            await userRepository.CreateUser(user);
+            var expectedResponse = new ApiResponse<User?> { Errors = [], Data = user };
+            _mockRepository.Setup(repo => repo.CreateUser(user)).ReturnsAsync(expectedResponse);
             HttpResponseMessage response = await _client.DeleteAsync("/User/test");
             User? deserialized = await response.GetRequestContent<User?>();
             Assert.NotNull(deserialized);

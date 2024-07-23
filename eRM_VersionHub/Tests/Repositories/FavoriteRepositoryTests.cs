@@ -8,12 +8,14 @@ namespace eRM_VersionHub_Tester.Repositories
     public class FavoriteRepositoryTests
     {
         private readonly Mock<IDbRepository> _mockDbRepository;
+        private readonly Mock<ILogger<FavoriteRepository>> _mockLogger;
         private readonly FavoriteRepository _favoriteRepository;
 
         public FavoriteRepositoryTests()
         {
             _mockDbRepository = new Mock<IDbRepository>();
-            _favoriteRepository = new FavoriteRepository(_mockDbRepository.Object);
+            _mockLogger = new Mock<ILogger<FavoriteRepository>>();
+            _favoriteRepository = new FavoriteRepository(_mockDbRepository.Object, _mockLogger.Object);
         }
 
         [Fact]
