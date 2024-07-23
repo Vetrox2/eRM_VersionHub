@@ -41,6 +41,7 @@ namespace eRM_VersionHub.Services
                 var publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
                 
                 _logger.LogDebug(AppLogEvents.Service, "Publishing module: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
+
                 if (!string.IsNullOrEmpty(publishedVersionID))
                 {
                     var success = TagService.ChangeTagOnPath(settings.ExternalPackagesPath, module.Name, publishedVersionID, TagService.SwapVersionTag(version.ID, version.PublishedTag));
@@ -65,6 +66,7 @@ namespace eRM_VersionHub.Services
                 var response = CopyContent(sourcePath, targetPath);
 
                 _logger.LogDebug(AppLogEvents.Service, "CopyContent returned: {response}", response);
+
                 if (!response.Success)
                 {
                     _logger.LogWarning(AppLogEvents.Service, "Unpublishing due to failure of copying {sourcePath} to {targetPath}", sourcePath, targetPath);
@@ -97,6 +99,7 @@ namespace eRM_VersionHub.Services
                 var publishedVersionID = publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
                 
                 _logger.LogDebug(AppLogEvents.Service, "Unpublishing module: {publishedModule}, {publishedVersionID}", publishedModule, publishedVersionID);
+
                 if (string.IsNullOrEmpty(publishedVersionID))
                 {
                     _logger.LogWarning(AppLogEvents.Service, "This module doesn't exist: {publishedVersionID}", publishedVersionID);

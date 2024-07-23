@@ -56,12 +56,11 @@ namespace eRM_VersionHub.Controllers
             foreach (var version in versionDtos)
             {
                 _logger.LogDebug(AppLogEvents.Controller, "Unpublishing version: {version}", version);
-                List<string> modules = _publicationService.Unpublish(_settings, version).Errors;
-
-                if (modules.Count > 0)
+                List<string> errors = _publicationService.Unpublish(_settings, version).Errors;
+                if (errors.Count > 0)
                 {
-                    _logger.LogWarning(AppLogEvents.Controller, "Unpublish returned: {modules}", modules);
-                    result.AddRange(modules);
+                    _logger.LogWarning(AppLogEvents.Controller, "Unpublish returned: {errors}", errors);
+                    result.AddRange(errors);
                 }
             }
 
