@@ -19,6 +19,7 @@ namespace eRM_VersionHub.Controllers
         public IActionResult PublishVersions(List<VersionDto> versionDtos)
         {
             _logger.LogDebug(AppLogEvents.Controller, "PublishVersions invoked with data: {versionDtos}", versionDtos);
+
             if (versionDtos == null || versionDtos.Count == 0)
             {
                 _logger.LogWarning(AppLogEvents.Controller, "Data list for PublishVersions is empty");
@@ -36,6 +37,7 @@ namespace eRM_VersionHub.Controllers
                     result.AddRange(errors);
                 }
             }
+
             _logger.LogInformation(AppLogEvents.Controller, "PublishVersions returned: {result}", result);
             return Ok(ApiResponse<bool>.ErrorResponse(result).Serialize());
         }
@@ -44,11 +46,13 @@ namespace eRM_VersionHub.Controllers
         public IActionResult UnpublishVersions(List<VersionDto> versionDtos)
         {
             _logger.LogDebug(AppLogEvents.Controller, "UnpublishVersions invoked with data: {versionDtos}", versionDtos);
+
             if (versionDtos == null || versionDtos.Count == 0)
             {
                 _logger.LogWarning(AppLogEvents.Controller, "Data list for UnpublishVersions is empty");
                 return NotFound(ApiResponse<bool>.ErrorResponse(["Empty collection of versions to unpublish"]).Serialize());
             }
+
             List<string> result = [];
             foreach (var version in versionDtos)
             {
@@ -60,6 +64,7 @@ namespace eRM_VersionHub.Controllers
                     result.AddRange(errors);
                 }
             }
+
             _logger.LogInformation(AppLogEvents.Controller, "UnpublishVersions returned: {result}", result);
             return Ok(ApiResponse<bool>.ErrorResponse(result).Serialize());
         }
