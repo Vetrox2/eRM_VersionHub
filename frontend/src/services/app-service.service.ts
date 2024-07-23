@@ -27,6 +27,7 @@ export class AppService {
   apps$ = this.appsSubject.asObservable();
   selectedApp$ = this.selectedAppSubject.asObservable();
   favoriteApps$ = this.favoriteAppsSubject.asObservable();
+  
 
   constructor(private http: HttpClient) {}
 
@@ -79,6 +80,7 @@ export class AppService {
   getFavoriteApps(): Observable<App[]> {
     return this.favoriteApps$;
   }
+
 
   toggleFavorite(app: App, userName: string): void {
     if (app.IsFavourite) {
