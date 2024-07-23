@@ -8,8 +8,7 @@
   height: 100vh;
   overflow: hidden;
 }
-.searchbar
-{
+.searchbar {
   display: flex;
 }
 
@@ -103,11 +102,15 @@
 
 .app-sidebar {
   margin-left: 0.2rem;
-  max-width: 10rem;
+  max-width: 14rem;
   overflow-y: auto;
 }
 
 .app-main {
   flex-grow: 1;
   overflow-y: auto;
+}
+
+.app-sidebar {
+  padding: 0.2rem;
 }
