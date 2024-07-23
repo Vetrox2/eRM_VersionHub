@@ -363,7 +363,8 @@ export class ProjectVersionTableComponent
               version.Modules.forEach((module) => {
                 module.IsPublished = true;
               });
-              version.Tag = result.selectedTag;
+              version.Tag =
+                result.selectedTag === 'none' ? '' : result.selectedTag;
               this.refreshData();
             } else {
               this.handleError(
