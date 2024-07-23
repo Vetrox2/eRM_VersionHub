@@ -9,6 +9,7 @@ namespace eRM_VersionHub.Services
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             PropertyNameCaseInsensitive = true
         };
+
         public static T? Deserialize<T>(this string json)
         {
             try

@@ -6,10 +6,11 @@ using System.ComponentModel;
 
 namespace eRM_VersionHub.Services
 {
-    public class AppDataScanner(IFavoriteService favoriteService, IPermissionService permissionService) : IAppDataScanner
+    public class AppDataScanner(IFavoriteService favoriteService, IPermissionService permissionService, ILogger<AppDataScanner> logger) : IAppDataScanner
     {
         private IFavoriteService _favoriteService = favoriteService;
         private IPermissionService _permissionService = permissionService;
+        private ILogger<AppDataScanner> _logger = logger;
         private ApiResponse<List<AppStructureDto>> response;
 
         public static ApplicationJsonModel? GetAppJsonModel(string jsonFilePath)
@@ -53,6 +54,7 @@ namespace eRM_VersionHub.Services
 
         public async Task<ApiResponse<List<AppStructureDto>>> GetAppsStructure(MyAppSettings settings, string userToken)
         {
+            _logger.LogDebug(AppLogEvents.Service, "Invoking GetAppsStructure");
             response = new();
             if(!Directory.Exists(settings.InternalPackagesPath) || !Directory.Exists(settings.ExternalPackagesPath) || !Directory.Exists(settings.AppsPath))
             {

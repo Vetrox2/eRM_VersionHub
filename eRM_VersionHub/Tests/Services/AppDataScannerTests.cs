@@ -11,6 +11,7 @@ namespace eRM_VersionHub_Tester.Services
     {
         private readonly Mock<IFavoriteService> _mockFavoriteService;
         private readonly Mock<IPermissionService> _mockPermissionService;
+        private readonly Mock<ILogger<AppDataScanner>> _mockLogger;
         private readonly AppDataScanner _appDataScanner;
         private readonly FileStructureGenerator _fileStructureGenerator = new FileStructureGenerator();
 
@@ -20,9 +21,11 @@ namespace eRM_VersionHub_Tester.Services
         {
             _mockFavoriteService = new Mock<IFavoriteService>();
             _mockPermissionService = new Mock<IPermissionService>();
+            _mockLogger = new Mock<ILogger<AppDataScanner>>();
             _appDataScanner = new AppDataScanner(
                 _mockFavoriteService.Object,
-                _mockPermissionService.Object
+                _mockPermissionService.Object,
+                _mockLogger.Object
             );
         }
 

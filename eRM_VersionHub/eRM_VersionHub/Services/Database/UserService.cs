@@ -13,6 +13,7 @@ namespace eRM_VersionHub.Services.Database
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked CreateUser with data: {user}", user);
             ApiResponse<User?> result = await _repository.CreateUser(user);
+
             _logger.LogInformation(AppLogEvents.Service, "CreateUser returned: {result}", result);
             return result;
         }
@@ -21,6 +22,7 @@ namespace eRM_VersionHub.Services.Database
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked GetUserList");
             ApiResponse<List<User>> result = await _repository.GetUserList();
+
             _logger.LogInformation(AppLogEvents.Service, "GetUserList returned: {result}", result);
             return result;
         }
@@ -29,6 +31,7 @@ namespace eRM_VersionHub.Services.Database
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked GetUser with parameter: {Username}", Username);
             ApiResponse<User?> result = await _repository.GetUser(Username);
+
             _logger.LogInformation(AppLogEvents.Service, "GetUser returned: {result}", result);
             return result;
         }
@@ -37,6 +40,7 @@ namespace eRM_VersionHub.Services.Database
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked UpdateUser with data: {user}", user);
             ApiResponse<User?> result = await _repository.UpdateUser(user);
+
             _logger.LogInformation(AppLogEvents.Service, "UpdateUser returned: {result}", result);
             return result;
         }
@@ -45,6 +49,7 @@ namespace eRM_VersionHub.Services.Database
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked DeleteUser with parameter: {Username}", Username);
             ApiResponse<User?> result = await _repository.DeleteUser(Username);
+
             _logger.LogInformation(AppLogEvents.Service, "DeleteUser returned: {result}", result);
             return result;
         }
