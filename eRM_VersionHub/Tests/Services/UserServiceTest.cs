@@ -8,12 +8,14 @@ namespace eRM_VersionHub_Tester.Services
     public class UserServiceTests
     {
         private readonly Mock<IUserRepository> _mockRepository;
+        private readonly Mock<ILogger<UserService>> _mockLogger;
         private readonly UserService _userService;
 
         public UserServiceTests()
         {
             _mockRepository = new Mock<IUserRepository>();
-            _userService = new UserService(_mockRepository.Object);
+            _mockLogger = new Mock<ILogger<UserService>>();
+            _userService = new UserService(_mockRepository.Object, _mockLogger.Object);
         }
 
         [Fact]
