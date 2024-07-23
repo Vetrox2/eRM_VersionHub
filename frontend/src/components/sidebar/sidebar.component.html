@@ -1,5 +1,10 @@
+<app-search
+  [showIcons]="true"
+  placeholder="Search apps"
+  (valueChanged)="onSearchValueChanged($event)"
+></app-search>
 <ng-container *ngIf="apps$ | async as apps">
-  <ng-container *ngIf="apps.length > 0; else noApps">
+  <ng-container *ngIf="apps.length > 0; else noAppsFound">
     <mat-nav-list>
       <mat-list-item
         *ngFor="let app of apps; trackBy: trackById"
@@ -32,10 +37,15 @@
   </ng-container>
 </ng-container>
 
-<ng-template #noApps>
+<ng-template #noAppsFound>
   <div *ngIf="loading" class="loading">Loading apps...</div>
   <div *ngIf="!loading && error" class="error">
     {{ error }}
   </div>
-  <div *ngIf="!loading && !error" class="no-apps">No apps available.</div>
+  <div *ngIf="!loading && !error" class="no-apps">
+    <ng-container *ngIf="isFiltering; else noApps">
+      No apps match your search.
+    </ng-container>
+    <ng-template #noApps> No apps available. </ng-template>
+  </div>
 </ng-template>

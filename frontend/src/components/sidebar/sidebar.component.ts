@@ -8,9 +8,15 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { SearchComponent } from '../search/search.component';
 import { SelectionToggleComponent } from '../selection-toggle/selection-toggle/selection-toggle.component';
 import { App } from '../../models/app.model';
-import { Observable, of } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of } from 'rxjs';
 import { AppService } from '../../services/app-service.service';
-import { catchError, map } from 'rxjs/operators';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  map,
+  switchMap,
+} from 'rxjs/operators';
 import { MenuIconsComponent, MenuItem } from '../menu/menu.component';
 
 @Component({
@@ -31,9 +37,13 @@ import { MenuIconsComponent, MenuItem } from '../menu/menu.component';
     SearchComponent,
     SelectionToggleComponent,
     MenuIconsComponent,
+    SearchComponent,
   ],
 })
 export class SidebarComponent implements OnInit {
+  private searchTerm$ = new BehaviorSubject<string>('');
+  isFiltering = false;
+
   apps$: Observable<App[]>;
   selectedItem$: Observable<App | null>;
   loading = true;
@@ -46,10 +56,14 @@ export class SidebarComponent implements OnInit {
   ];
 
   constructor(private appService: AppService) {
-    this.apps$ = this.appService.getApps().pipe(
-      map((apps) => {
+    this.apps$ = combineLatest([
+      this.appService.getApps(),
+      this.searchTerm$.pipe(debounceTime(300), distinctUntilChanged()),
+    ]).pipe(
+      switchMap(([apps, searchTerm]) => {
         this.loading = false;
-        return apps;
+        this.isFiltering = !!searchTerm;
+        return of(this.filterApps(apps, searchTerm));
       }),
       catchError((err) => {
         this.loading = false;
@@ -58,9 +72,20 @@ export class SidebarComponent implements OnInit {
         return of([]);
       })
     );
+
     this.selectedItem$ = this.appService.getSelectedApp();
   }
 
+  private filterApps(apps: App[], searchTerm: string): App[] {
+    if (!searchTerm) {
+      return apps;
+    }
+    searchTerm = searchTerm.toLowerCase();
+    return apps.filter((app) => app.Name.toLowerCase().includes(searchTerm));
+  }
+  onSearchValueChanged(value: string) {
+    this.searchTerm$.next(value);
+  }
   ngOnInit() {
     this.appService.loadApps();
   }

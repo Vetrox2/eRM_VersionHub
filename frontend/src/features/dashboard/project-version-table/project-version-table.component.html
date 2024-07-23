@@ -1,3 +1,11 @@
+<div style="max-width: 20rem">
+  <app-search
+    [showIcons]="true"
+    placeholder="Search versions"
+    (valueChanged)="applyFilter($event)"
+  ></app-search>
+</div>
+
 <div class="table-container">
   <table
     mat-table
