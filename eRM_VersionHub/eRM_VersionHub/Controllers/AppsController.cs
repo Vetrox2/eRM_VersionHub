@@ -1,5 +1,6 @@
 using eRM_VersionHub.Dtos;
 using eRM_VersionHub.Models;
+using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -18,15 +19,17 @@ namespace eRM_VersionHub.Controllers
         public async Task<IActionResult> GetStructure(string UserName)
         {
             _logger.LogDebug(AppLogEvents.Controller, "GetStructure invoked with paramter: {UserName}", UserName);
-            ApiResponse<List<AppStructureDto>> response = await _appDataScanner.GetAppsStructure(_settings, UserName);
+            var response = await _appDataScanner.GetAppsStructure(_settings, UserName);
             _logger.LogDebug(AppLogEvents.Controller, "GetAppsStructure returned: {UserName}", UserName);
+
             if (response.Data == null || response.Data.Count == 0)
             {
                 _logger.LogWarning(AppLogEvents.Controller, "GetStructure returned: {Errors}", response.Errors);
-                return Problem(detail: string.Join(";", response.Errors), statusCode: 400);
+                return NotFound(response.Serialize());
             }
+
             _logger.LogInformation(AppLogEvents.Controller, "GetStructure returned: {Data}", response.Data);
-            return Ok(response.Data);
+            return Ok(response.Serialize());
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using eRM_VersionHub.Dtos;
 using eRM_VersionHub.Models;
+using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -15,13 +16,13 @@ namespace eRM_VersionHub.Controllers
         private readonly ILogger<PublicationController> _logger = logger; 
 
         [HttpPost]
-        public ApiResponse<bool> PublishVersions(List<VersionDto> versionDtos)
+        public IActionResult PublishVersions(List<VersionDto> versionDtos)
         {
             _logger.LogDebug(AppLogEvents.Controller, "PublishVersions invoked with data: {versionDtos}", versionDtos);
             if (versionDtos == null || versionDtos.Count == 0)
             {
                 _logger.LogWarning(AppLogEvents.Controller, "Data list for PublishVersions is empty");
-                return ApiResponse<bool>.ErrorResponse(["Empty collection of versions to publish"]);
+                return NotFound(ApiResponse<bool>.ErrorResponse(["Empty collection of versions to publish"]).Serialize());
             }
 
             List<string> result = [];
@@ -36,17 +37,17 @@ namespace eRM_VersionHub.Controllers
                 }
             }
             _logger.LogInformation(AppLogEvents.Controller, "PublishVersions returned: {result}", result);
-            return ApiResponse<bool>.ErrorResponse(result);
+            return Ok(ApiResponse<bool>.ErrorResponse(result).Serialize());
         }
 
         [HttpDelete]
-        public ApiResponse<bool> UnpublishVersions(List<VersionDto> versionDtos)
+        public IActionResult UnpublishVersions(List<VersionDto> versionDtos)
         {
             _logger.LogDebug(AppLogEvents.Controller, "UnpublishVersions invoked with data: {versionDtos}", versionDtos);
             if (versionDtos == null || versionDtos.Count == 0)
             {
                 _logger.LogWarning(AppLogEvents.Controller, "Data list for UnpublishVersions is empty");
-                return ApiResponse<bool>.ErrorResponse(["Empty collection of versions to unpublish"]);
+                return NotFound(ApiResponse<bool>.ErrorResponse(["Empty collection of versions to unpublish"]).Serialize());
             }
             List<string> result = [];
             foreach (var version in versionDtos)
@@ -60,7 +61,7 @@ namespace eRM_VersionHub.Controllers
                 }
             }
             _logger.LogInformation(AppLogEvents.Controller, "UnpublishVersions returned: {result}", result);
-            return ApiResponse<bool>.ErrorResponse(result);
+            return Ok(ApiResponse<bool>.ErrorResponse(result).Serialize());
         }
     }
 }

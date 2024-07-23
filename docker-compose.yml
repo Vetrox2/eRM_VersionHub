@@ -56,7 +56,14 @@ services:
      - DATABASE_URL=postgres://postgres:postgres_test@postgres_test:5432/testdb?sslmode=disable
     depends_on:
       - postgres_test
+    
+  frontend:
+    image: erm_versionhub-frontend
+    restart: unless-stopped
+    ports:
+    - "4200:4200"
 
 volumes:
   postgres_data:
   postgres_test_data:
+  frontend:
