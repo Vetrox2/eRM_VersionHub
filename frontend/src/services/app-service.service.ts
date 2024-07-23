@@ -6,9 +6,9 @@ import { App } from '../models/app.model';
 import { Version } from '../models/version.model';
 
 export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  errors: string[];
+  Success: boolean;
+  Data: T;
+  Errors: string[];
 }
 @Injectable({
   providedIn: 'root',
@@ -159,7 +159,7 @@ export class AppService {
       errorMessage = `Error Code: ${error.status}\nMessage: ${error.message}`;
     }
     return new Observable((observer) => {
-      observer.next({ success: false, data: null, errors: [errorMessage] });
+      observer.next({ Success: false, Data: null, Errors: [errorMessage] });
       observer.complete();
     });
   }

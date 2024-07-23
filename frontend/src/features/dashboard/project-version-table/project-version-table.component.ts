@@ -218,8 +218,8 @@ export class ProjectVersionTableComponent
             let failedPublishModules: string[] = [];
             let failedUnpublishModules: string[] = [];
 
-            responses.forEach((response, index) => {
-              if (!response.success) {
+            responses.forEach((response: ApiResponse<boolean>, index) => {
+              if (!response.Success) {
                 if (index === 0 && publishedModules.length > 0) {
                   publishError = true;
                   failedPublishModules = publishedModules.map((m) => m.Name);
@@ -356,7 +356,7 @@ export class ProjectVersionTableComponent
         versionDto.PublishedTag = result.selectedTag;
         this.appService.publishVersion(versionDto).subscribe({
           next: (response) => {
-            if (response.success) {
+            if (response.Success) {
               this.snackBar.open('Version published successfully', 'Close', {
                 duration: 3000,
               });
@@ -367,7 +367,7 @@ export class ProjectVersionTableComponent
               this.refreshData();
             } else {
               this.handleError(
-                response.errors.join(', '),
+                response.Errors.join(', '),
                 'Error publishing version'
               );
             }
@@ -399,7 +399,7 @@ export class ProjectVersionTableComponent
 
         this.appService.unPublishVersion(versionDto).subscribe({
           next: (response) => {
-            if (response.success) {
+            if (response.Success) {
               flattenedVersion.Tag = '';
               this.snackBar.open('Version unpublished successfully', 'Close', {
                 duration: 3000,
@@ -411,7 +411,7 @@ export class ProjectVersionTableComponent
             } else {
               this.handleError(
                 'Error unpublishing version',
-                response.errors.join(', ')
+                response.Errors.join(', ')
               );
               return;
             }
