@@ -5,7 +5,7 @@ import {
   ViewChild,
   AfterViewInit,
   ChangeDetectorRef,
-  Input
+  Input,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
@@ -37,6 +37,7 @@ import { ChipDropdownComponent } from '../../../components/chip-dropdown/chip-dr
 import { DefaultModalComponent } from '../../../components/modals/default-modal/default-modal.component';
 import { app } from '../../../../server';
 import { SearchService } from '../../../services/search-service.service';
+import { SearchComponent } from '../../../components/search/search.component';
 
 interface FlattenedVersion {
   Version: string;
@@ -76,6 +77,7 @@ interface FlattenedVersion {
     MatDividerModule,
     MatProgressSpinnerModule,
     MatSortModule,
+    SearchComponent,
   ],
 })
 export class ProjectVersionTableComponent
@@ -87,7 +89,6 @@ export class ProjectVersionTableComponent
   isLoading: boolean = false;
   selectedTag: Tag = '';
   @Input() searchTerm: string = '';
-  
 
   columnsToDisplay = ['Actions', 'Published', 'Version', 'Tag'];
   expandedElement: FlattenedVersion | null = null;
@@ -103,9 +104,6 @@ export class ProjectVersionTableComponent
   ) {
     this.dataSource = new MatTableDataSource<FlattenedVersion>([]);
   }
-  
-
-
 
   ngOnInit() {
     this.selectedAppSubscription = this.appService
@@ -117,12 +115,14 @@ export class ProjectVersionTableComponent
           this.dataSource.data = [];
         }
       });
-  
+
     // Subscribe to search text changes
-    this.searchSubscription = this.searchService.searchText$.subscribe(searchText => {
-      console.log('Search Text Changed:', searchText);
-      this.applyFilter(searchText); // Apply filter based on search text
-    });
+    this.searchSubscription = this.searchService.searchText$.subscribe(
+      (searchText) => {
+        console.log('Search Text Changed:', searchText);
+        this.applyFilter(searchText); // Apply filter based on search text
+      }
+    );
   }
   applyFilter(searchText: string) {
     if (this.dataSource) {
@@ -145,17 +145,24 @@ export class ProjectVersionTableComponent
             return (item as any)[property];
         }
       };
-  
+
       // Set custom filter predicate
-      this.dataSource.filterPredicate = (data: FlattenedVersion, filter: string) => {
-        const filterLowerCase = filter.trim().toLowerCase();
-        const versionMatches = data.Version.toLowerCase().startsWith(filterLowerCase);
-        const tagMatches = data.Tag.toLowerCase().startsWith(filterLowerCase);
-        return versionMatches || tagMatches;
+      this.dataSource.filterPredicate = (
+        data: FlattenedVersion,
+        filter: string
+      ): boolean => {
+        if (!filter) {
+          return true; // Show all data when filter is empty
+        }
+        const filterLowerCase = filter.toLowerCase();
+        return (
+          data.Version.toLowerCase().includes(filterLowerCase) ||
+          (data.Tag?.toLowerCase().includes(filterLowerCase) ?? false) ||
+          (data.Name?.toLowerCase().includes(filterLowerCase) ?? false)
+        );
       };
     }
   }
-  
 
   getPublicationStatusValue(
     status: 'published' | 'semi-published' | 'not-published'
@@ -247,7 +254,7 @@ export class ProjectVersionTableComponent
             let unpublishError = false;
             let failedPublishModules: string[] = [];
             let failedUnpublishModules: string[] = [];
-            
+
             responses.forEach((response: ApiResponse<boolean>, index) => {
               if (!response.Success) {
                 if (index === 0 && publishedModules.length > 0) {
