@@ -3,6 +3,7 @@ using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System;
+using System.Collections.Concurrent;
 
 namespace eRM_VersionHub.Services
 {
@@ -28,15 +29,15 @@ namespace eRM_VersionHub.Services
             foreach (var module in version.Modules)
             {
                 var (doContinue, returnError) = ChangeTagIfModuleIsPublished(settings, version, module);
-                if(doContinue)
+                if (doContinue)
                     continue;
-                if(returnError)
+                if (returnError)
                     return ApiResponse<bool>.ErrorResponse([$"System could not change published tag on module \"{module.Name}\" version \"{version.ID}\"" +
                         $". Rollbacking publication of this version."]);
 
                 var sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
                 var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID, version.PublishedTag));
-                
+
                 PrepareTargetPath(settings.ExternalPackagesPath, module.Name, targetPath);
                 var response = CopyContent(sourcePath, targetPath);
                 _logger.LogDebug(AppLogEvents.Service, "CopyContent returned: {response}", response);
@@ -80,14 +81,14 @@ namespace eRM_VersionHub.Services
 
                 var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, publishedVersionID);
 
-                try 
+                try
                 {
                     _logger.LogDebug(AppLogEvents.Service, "Deleting folder: {targetPath}", targetPath);
                     Directory.Delete(targetPath, true);
                 }
                 catch
                 {
-                    _logger.LogDebug(AppLogEvents.Service, "An error occurred while deleting the version: {module.Name} {publishedVersionID}", 
+                    _logger.LogDebug(AppLogEvents.Service, "An error occurred while deleting the version: {module.Name} {publishedVersionID}",
                         module.Name, publishedVersionID);
                     errors.Add($"An error occurred while deleting the version: {module.Name} {publishedVersionID}");
                 }
@@ -176,36 +177,50 @@ namespace eRM_VersionHub.Services
             _logger.LogInformation(AppLogEvents.Service, "Creating directory: {targetPath}", targetPath);
             Directory.CreateDirectory(targetPath);
         }
-
+        private static readonly ConcurrentDictionary<string, object> _folderLocks = new ConcurrentDictionary<string, object>();
         private ApiResponse<bool> CopyContent(string sourcePath, string targetPath)
         {
             _logger.LogDebug(AppLogEvents.Service, "Copying {sourcePath} to {targetPath}", sourcePath, targetPath);
 
-            try
-            {
-                foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
-                {
-                    var newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, dirPath));
-                    _logger.LogDebug(AppLogEvents.Service, "Copying {dirPath} to {newPath}", dirPath, newPath);
+            var sourceLock = _folderLocks.GetOrAdd(sourcePath, new object());
+            var targetLock = _folderLocks.GetOrAdd(targetPath, new object());
 
-                    if (!Directory.Exists(newPath))
+            lock (sourceLock)
+            {
+                lock (targetLock)
+                {
+                    try
                     {
-                        _logger.LogDebug(AppLogEvents.Service, "Creating directory {newPath}", newPath);
-                        Directory.CreateDirectory(newPath);
+                        foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+                        {
+                            var newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, dirPath));
+                            _logger.LogDebug(AppLogEvents.Service, "Copying {dirPath} to {newPath}", dirPath, newPath);
+
+                            if (!Directory.Exists(newPath))
+                            {
+                                _logger.LogDebug(AppLogEvents.Service, "Creating directory {newPath}", newPath);
+                                Directory.CreateDirectory(newPath);
+                            }
+                        }
+
+                        foreach (string filePath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+                        {
+                            var newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, filePath));
+                            _logger.LogDebug(AppLogEvents.Service, "Copying {filePath} to {newPath}", filePath, newPath);
+                            File.Copy(filePath, newPath, true);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(AppLogEvents.Service, "When copying content, this exception was thrown: {Message}\n{StackTrace}", ex.Message, ex.StackTrace);
+                        return ApiResponse<bool>.ErrorResponse([]);
+                    }
+                    finally
+                    {
+                        _folderLocks.TryRemove(sourcePath, out _);
+                        _folderLocks.TryRemove(targetPath, out _);
                     }
                 }
-
-                foreach (string filePath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
-                {
-                    var newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, filePath));
-                    _logger.LogDebug(AppLogEvents.Service, "Copying {filePath} to {newPath}", filePath, newPath);
-                    File.Copy(filePath, newPath, true);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(AppLogEvents.Service, "When copying content, this exception was thrown: {Message}\n{StackTrace}", ex.Message, ex.StackTrace);
-                return ApiResponse<bool>.ErrorResponse([]);
             }
 
             _logger.LogInformation(AppLogEvents.Service, "This version has been copied: {sourcePath}", sourcePath);
