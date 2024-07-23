@@ -22,11 +22,11 @@ namespace eRM_VersionHub.Models
 
     public class MyAppSettings
     {
-        public required string ConnectionString { get; set; }
-        public required string AppsPath { get; set; }
-        public required string ApplicationConfigFile { get; set; }
-        public required string InternalPackagesPath { get; set; }
-        public required string ExternalPackagesPath { get; set; }
-        public override string ToString() => JsonManager.Serialize<MyAppSettings>(this);
+        public string ConnectionString { get; set; }
+        public string AppsPath { get; set; }
+        public string ApplicationConfigFile { get; set; }
+        public string InternalPackagesPath { get; set; }
+        public string ExternalPackagesPath { get; set; }
+        public override string ToString() => this.Serialize();
     }
 }

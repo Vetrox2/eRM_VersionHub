@@ -24,12 +24,12 @@ namespace eRM_VersionHub.Repositories
 
         public class ColumnDefinition
         {
-            public required string Name { get; set; }
-            public required string Type { get; set; }
+            public string Name { get; set; }
+            public string Type { get; set; }
             public bool IsPrimaryKey { get; set; }
             public bool IsNullable { get; set; }
             public bool IsUnique { get; set; }
-            public override string ToString() => JsonManager.Serialize<ColumnDefinition>(this);
+            public override string ToString() => this.Serialize();
         }
 
         public async Task<ApiResponse<bool>> CreateTable(
@@ -62,7 +62,9 @@ namespace eRM_VersionHub.Repositories
                 _logger.LogWarning(AppLogEvents.Database,
                     "While executing CreateTable, this execption has been thrown: {Message}\n{StackTrace}",
                     ex.Message, ex.StackTrace);
-                return ApiResponse<bool>.ErrorResponse([$"Error creating table: {ex.Message}"]);
+                return ApiResponse<bool>.ErrorResponse(
+                    new List<string> { $"Error creating table: {ex.Message}" }
+                );
             }
         }
 
