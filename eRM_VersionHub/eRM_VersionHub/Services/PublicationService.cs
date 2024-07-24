@@ -75,7 +75,6 @@ namespace eRM_VersionHub.Services
                 if (string.IsNullOrEmpty(publishedVersionID))
                 {
                     _logger.LogWarning(AppLogEvents.Service, "This version is not published: {publishedVersionID}", publishedVersionID);
-                    errors.Add($"This version is not published: {module.Name} {publishedVersionID}");
                     continue;
                 }
 
