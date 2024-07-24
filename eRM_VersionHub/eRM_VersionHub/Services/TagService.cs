@@ -80,13 +80,36 @@ namespace eRM_VersionHub.Services
             if (string.IsNullOrEmpty(oldPath))
                 return false;
 
-            if (oldPath == newPath) 
+            if (oldPath == newPath)
                 return true;
 
             if (Directory.Exists(oldPath))
             {
-                Directory.Move(oldPath, newPath);
-                return true;
+                var oldLock = FolderLockManager.GetOrAdd(oldPath);
+                var newLock = FolderLockManager.GetOrAdd(newPath);
+
+                lock (oldLock)
+                {
+                    lock (newLock)
+                    {
+
+                        try
+                        {
+                            Directory.Move(oldPath, newPath);
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                        finally
+                        {
+                            FolderLockManager.TryRemove(oldPath);
+                            FolderLockManager.TryRemove(newPath);
+                        }
+
+                        return true;
+                    }
+                }
             }
 
             return false;

@@ -80,17 +80,25 @@ namespace eRM_VersionHub.Services
                 }
 
                 var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, publishedVersionID);
+                var targetLock = FolderLockManager.GetOrAdd(targetPath);
 
-                try
+                lock (targetLock)
                 {
-                    _logger.LogDebug(AppLogEvents.Service, "Deleting folder: {targetPath}", targetPath);
-                    Directory.Delete(targetPath, true);
-                }
-                catch
-                {
-                    _logger.LogDebug(AppLogEvents.Service, "An error occurred while deleting the version: {module.Name} {publishedVersionID}",
-                        module.Name, publishedVersionID);
-                    errors.Add($"An error occurred while deleting the version: {module.Name} {publishedVersionID}");
+                    try
+                    {
+                        _logger.LogDebug(AppLogEvents.Service, "Deleting folder: {targetPath}", targetPath);
+                        Directory.Delete(targetPath, true);
+                    }
+                    catch
+                    {
+                        _logger.LogDebug(AppLogEvents.Service, "An error occurred while deleting the version: {module.Name} {publishedVersionID}",
+                            module.Name, publishedVersionID);
+                        errors.Add($"An error occurred while deleting the version: {module.Name} {publishedVersionID}");
+                    }
+                    finally
+                    {
+                        FolderLockManager.TryRemove(targetPath);
+                    }
                 }
             }
 
@@ -177,13 +185,13 @@ namespace eRM_VersionHub.Services
             _logger.LogInformation(AppLogEvents.Service, "Creating directory: {targetPath}", targetPath);
             Directory.CreateDirectory(targetPath);
         }
-        private static readonly ConcurrentDictionary<string, object> _folderLocks = new ConcurrentDictionary<string, object>();
+
         private ApiResponse<bool> CopyContent(string sourcePath, string targetPath)
         {
             _logger.LogDebug(AppLogEvents.Service, "Copying {sourcePath} to {targetPath}", sourcePath, targetPath);
 
-            var sourceLock = _folderLocks.GetOrAdd(sourcePath, new object());
-            var targetLock = _folderLocks.GetOrAdd(targetPath, new object());
+            var sourceLock = FolderLockManager.GetOrAdd(sourcePath);
+            var targetLock = FolderLockManager.GetOrAdd(targetPath);
 
             lock (sourceLock)
             {
@@ -217,8 +225,8 @@ namespace eRM_VersionHub.Services
                     }
                     finally
                     {
-                        _folderLocks.TryRemove(sourcePath, out _);
-                        _folderLocks.TryRemove(targetPath, out _);
+                        FolderLockManager.TryRemove(sourcePath);
+                        FolderLockManager.TryRemove(targetPath);
                     }
                 }
             }
