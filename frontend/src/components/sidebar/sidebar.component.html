@@ -1,51 +1,53 @@
-<app-search
-  [showIcons]="true"
-  placeholder="Search apps"
-  (valueChanged)="onSearchValueChanged($event)"
-></app-search>
-<ng-container *ngIf="apps$ | async as apps">
-  <ng-container *ngIf="apps.length > 0; else noAppsFound">
-    <mat-nav-list>
-      <mat-list-item
-        *ngFor="let app of apps; trackBy: trackById"
-        (click)="selectItem(app)"
-        [ngClass]="{
-          selected: (selectedItem$ | async) === app,
-          'selected-hover': (selectedItem$ | async) === app
-        }"
-        [style.background-color]="
-          (selectedItem$ | async) === app ? 'var(--primary-color)' : ''
-        "
-      >
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
+<div class="sidebar-container">
+  <app-search
+    [showIcons]="true"
+    placeholder="Search apps"
+    (valueChanged)="onSearchValueChanged($event)"
+  ></app-search>
+  <ng-container *ngIf="apps$ | async as apps">
+    <ng-container *ngIf="apps.length > 0; else noAppsFound">
+      <mat-nav-list>
+        <mat-list-item
+          *ngFor="let app of apps; trackBy: trackById"
+          (click)="selectItem(app)"
+          [ngClass]="{
+            selected: (selectedItem$ | async) === app,
+            'selected-hover': (selectedItem$ | async) === app
+          }"
+          [style.background-color]="
+            (selectedItem$ | async) === app ? 'var(--primary-color)' : ''
           "
-          [style.color]="(selectedItem$ | async) === app ? 'white' : ''"
         >
-          {{ app.Name }}
-          <app-menu-icons
-            [menuItems]="menuItems"
-            (menuSelection)="handleMenuSelection($event, app)"
-          ></app-menu-icons>
-        </div>
-      </mat-list-item>
-    </mat-nav-list>
-  </ng-container>
-</ng-container>
-
-<ng-template #noAppsFound>
-  <div *ngIf="loading" class="loading">Loading apps...</div>
-  <div *ngIf="!loading && error" class="error">
-    {{ error }}
-  </div>
-  <div *ngIf="!loading && !error" class="no-apps">
-    <ng-container *ngIf="isFiltering; else noApps">
-      No apps match your search.
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              width: 100%;
+            "
+            [style.color]="(selectedItem$ | async) === app ? 'white' : ''"
+          >
+            {{ app.Name }}
+            <app-menu-icons
+              [menuItems]="menuItems"
+              (menuSelection)="handleMenuSelection($event, app)"
+            ></app-menu-icons>
+          </div>
+        </mat-list-item>
+      </mat-nav-list>
     </ng-container>
-    <ng-template #noApps> No apps available. </ng-template>
-  </div>
-</ng-template>
+  </ng-container>
+
+  <ng-template #noAppsFound>
+    <div *ngIf="loading" class="loading">Loading apps...</div>
+    <div *ngIf="!loading && error" class="error">
+      {{ error }}
+    </div>
+    <div *ngIf="!loading && !error" class="no-apps">
+      <ng-container *ngIf="isFiltering; else noApps">
+        No apps match your search.
+      </ng-container>
+      <ng-template #noApps> No apps available. </ng-template>
+    </div>
+  </ng-template>
+</div>
