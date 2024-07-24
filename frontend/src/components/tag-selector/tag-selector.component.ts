@@ -6,34 +6,46 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
   selector: 'app-tag-selector',
   standalone: true,
   imports: [MatButtonToggleModule, MatCheckboxModule],
-  templateUrl: './tag-selector.component.html',
-  styleUrls: ['./tag-selector.component.scss'],
-  template:`
-    <div class="tag-selector">
-      <button *ngFor="let option of options" [class.selected]="option.value === selectedOption"
-              (click)="selectOption(option.value)">
-        {{ option.label }}
-      </button>
+  template: `
+    <div class="tag-selector-container">
+      <mat-button-toggle-group
+        class="tag-selector"
+        [value]="selectedOption"
+        (change)="selectOption($event.value)"
+      >
+        @for (option of options; track option.value) {
+        <mat-button-toggle [value]="option.value">
+          {{ option.label }}
+        </mat-button-toggle>
+        }
+      </mat-button-toggle-group>
     </div>
   `,
-  styles: [`
-    .tag-selector {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    
-    button {
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 4px 12px;
-    }
-    
-    button.selected {
-      background-color: #007bff;
-      color: white;
-    }
-  `]
+  styles: [
+    `
+      .tag-selector-container {
+        width: 100%;
+      }
+      .tag-selector {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+      mat-button-toggle {
+        flex: 1 1 auto;
+        text-align: center;
+      }
+      @media (max-width: 260px) {
+        .tag-selector {
+          flex-direction: column;
+        }
+        mat-button-toggle {
+          width: 100%;
+          margin-bottom: 8px;
+        }
+      }
+    `,
+  ],
 })
 export class TagSelectorComponent {
   @Output() tagSelected = new EventEmitter<string>();
