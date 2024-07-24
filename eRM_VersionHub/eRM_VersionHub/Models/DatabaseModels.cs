@@ -7,6 +7,7 @@ namespace eRM_VersionHub.Models
         public required string Username { get; set; }
         public required string AppID { get; set; }
         public override string ToString() => this.Serialize();
+        public virtual bool Equals(Permission permission) => Username == permission.Username && AppID == permission.AppID;
     }
 
     public class Favorite
@@ -14,6 +15,7 @@ namespace eRM_VersionHub.Models
         public required string Username { get; set; }
         public required string AppID { get; set; }
         public override string ToString() => this.Serialize();
+        public virtual bool Equals(Favorite favorite) => Username == favorite.Username && AppID == favorite.AppID;
     }
 
     public class User
