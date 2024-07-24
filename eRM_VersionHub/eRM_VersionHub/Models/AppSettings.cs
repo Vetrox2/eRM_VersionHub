@@ -27,6 +27,7 @@ namespace eRM_VersionHub.Models
         public string ApplicationConfigFile { get; set; }
         public string InternalPackagesPath { get; set; }
         public string ExternalPackagesPath { get; set; }
+
         public override string ToString() => this.Serialize();
     }
 }

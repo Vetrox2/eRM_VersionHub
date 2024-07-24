@@ -39,6 +39,7 @@ namespace eRM_VersionHub.Services
                 
                 PrepareTargetPath(settings.ExternalPackagesPath, module.Name, targetPath);
                 var response = CopyContent(sourcePath, targetPath);
+
                 _logger.LogDebug(AppLogEvents.Service, "CopyContent returned: {response}", response);
 
                 if (!response.Success)
@@ -160,6 +161,7 @@ namespace eRM_VersionHub.Services
             _logger.LogDebug(AppLogEvents.Service, "Preparing target path with data: {ExternalPackagesPath}, {module}, {targetPath}",
                 ExternalPackagesPath, module, targetPath);
             var modulePath = Path.Combine(ExternalPackagesPath, module);
+
             if (!Directory.Exists(modulePath))
             {
                 _logger.LogWarning(AppLogEvents.Service, "Creating directory that doesn't exist: {modulePath}", modulePath);

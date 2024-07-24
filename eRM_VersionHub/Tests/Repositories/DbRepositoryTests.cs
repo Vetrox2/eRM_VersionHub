@@ -91,15 +91,12 @@ namespace eRM_VersionHub_Tester.Repositories
                 {
                     Name = "Id",
                     Type = "INT",
-                    IsPrimaryKey = true,
-                    IsNullable = false,
-                    IsUnique = true
+                    PrimaryKey = true
                 },
                 new()
                 {
                     Name = "Name",
-                    Type = "VARCHAR(100)",
-                    IsNullable = false
+                    Type = "VARCHAR(100)"
                 }
             };
 
@@ -125,9 +122,7 @@ namespace eRM_VersionHub_Tester.Repositories
                 {
                     Name = "Id",
                     Type = "INT",
-                    IsPrimaryKey = true,
-                    IsNullable = false,
-                    IsUnique = true
+                    PrimaryKey = true
                 }
             };
 
@@ -149,15 +144,12 @@ namespace eRM_VersionHub_Tester.Repositories
                 {
                     Name = "Id",
                     Type = "INT",
-                    IsPrimaryKey = true,
-                    IsNullable = false,
-                    IsUnique = true
+                    PrimaryKey = true
                 },
                 new()
                 {
                     Name = "Name",
-                    Type = "VARCHAR(100)",
-                    IsNullable = false
+                    Type = "VARCHAR(100)"
                 }
             };
 

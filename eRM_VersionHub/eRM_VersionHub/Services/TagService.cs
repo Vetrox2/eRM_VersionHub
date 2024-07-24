@@ -1,10 +1,4 @@
-﻿using eRM_VersionHub.Dtos;
-using eRM_VersionHub.Models;
-using eRM_VersionHub.Services.Interfaces;
-using System;
-using System.ComponentModel;
-
-namespace eRM_VersionHub.Services
+﻿namespace eRM_VersionHub.Services
 {
     public static class TagService
     {
@@ -24,6 +18,7 @@ namespace eRM_VersionHub.Services
                 Name = versionID.Substring(0, index);
                 Tag = versionID[(index + 1)..];
             }
+
             return (Name, Tag);
         }
 
@@ -43,7 +38,9 @@ namespace eRM_VersionHub.Services
         {
             var (newVersionID, _) = SplitVersionID(versionID);
             if (!string.IsNullOrEmpty(newTag))
+            {
                 newVersionID += $"-{newTag}";
+            }
 
             return newVersionID;
         }
@@ -58,17 +55,22 @@ namespace eRM_VersionHub.Services
         {
 
             if (!TagService.CompareVersions(versionID, newVersionID))
+            {
                 return false;
+            }
 
             var oldPath = string.Empty;
             var newPath = Path.Combine(packagesPath, moduleId, newVersionID);
             var publishedModulePath = Path.Combine(packagesPath, moduleId);
 
             if (!Directory.Exists(publishedModulePath))
-                return false;
+            {
+                 return false;
+            }
 
             var info = new DirectoryInfo(publishedModulePath);
             var allPublishedVersions = info.GetDirectories().ToList();
+
             foreach (var publishedVersion in allPublishedVersions)
             {
                 if (GetVersionWithoutTag(publishedVersion.Name) == (GetVersionWithoutTag(versionID)))
@@ -77,11 +79,16 @@ namespace eRM_VersionHub.Services
                     break;
                 }
             }
+
             if (string.IsNullOrEmpty(oldPath))
+            {
                 return false;
+            }
 
             if (oldPath == newPath) 
+            {
                 return true;
+            }
 
             if (Directory.Exists(oldPath))
             {

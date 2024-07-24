@@ -31,6 +31,7 @@ namespace eRM_VersionHub.Controllers
             {
                 _logger.LogDebug(AppLogEvents.Controller, "Publishing version: {version}", version);
                 List<string> errors = _publicationService.Publish(_settings, version).Errors;
+
                 if (errors.Count > 0)
                 {
                     _logger.LogWarning(AppLogEvents.Controller, "Publish returned: {Errors}", errors);
