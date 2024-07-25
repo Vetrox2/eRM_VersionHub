@@ -1,0 +1,29 @@
+name: Build Docker Image
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  build:
+    name: Building and pushing frontend image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:$GITHUB_SHA-dev" frontend
+          
+      - name: Push Docker image
+        run: |
+          docker tag "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:$GITHUB_SHA-dev" "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:latest"
+          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          docker push "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:$GITHUB_SHA-dev"
+          docker push "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:latest" 
