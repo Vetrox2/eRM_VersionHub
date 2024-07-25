@@ -1,9 +1,11 @@
 <div class="sidebar-container">
-  <app-search
-  [showIcons]="true"
-  placeholder="Search apps"
-  (valueChanged)="onSearchValueChanged($event)"
-  ></app-search>
+  <div style="margin-top: 1rem;">
+    <app-search
+    [showIcons]="true"
+    placeholder="Search apps"
+    (valueChanged)="onSearchValueChanged($event)"
+    ></app-search>
+  </div>
   <div style="display: flex; justify-content: center;">
     <app-toggle-app-selector (ActiveOption)="onActive($event)"></app-toggle-app-selector>
   </div>
