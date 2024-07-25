@@ -3,11 +3,7 @@ name: Build Docker Image
 on:
   push:
     branches:
-      - main
-
-env:
-  CURRENT_VERSION_NAME: "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:${{ github.event.head_commit.timestamp }}-dev"
-  LATEST_VERSION_NAME: "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:latest"
+      - development
 
 jobs:
   build:
@@ -23,11 +19,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:${{ github.event.head_commit.timestamp }}-dev" frontend
+          docker build -t "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:$GITHUB_SHA-dev" frontend
           
       - name: Push Docker image
         run: |
-          docker tag $CURRENT_VERSION_NAME $LATEST_VERSION_NAME
+          docker tag "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:$GITHUB_SHA-dev" "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:latest"
           echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push CURRENT_VERSION_NAME
-          docker push LATEST_VERSION_NAME
+          docker push "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:$GITHUB_SHA-dev"
+          docker push "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:latest" 
