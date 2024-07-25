@@ -14,22 +14,21 @@
     multiTemplateDataRows
     class="mat-elevation-z8"
   >
-  
-  <!-- Published Column -->
-  <ng-container matColumnDef="Published" >
-    <th mat-header-cell *matHeaderCellDef>Published</th>
-    <td mat-cell *matCellDef="let element">
-      <ng-container *ngIf="getPublicationIcon(element) !== ''">
-        <mat-chip>{{getPublicationIcon(element)}}</mat-chip>
-      </ng-container>
-    </td>
+    <!-- Published Column -->
+    <ng-container matColumnDef="Published">
+      <th mat-header-cell *matHeaderCellDef>Published</th>
+      <td mat-cell *matCellDef="let element">
+        <ng-container *ngIf="getPublicationStatusText(element)">
+          <mat-chip>{{ getPublicationStatusText(element) }}</mat-chip>
+        </ng-container>
+      </td>
     </ng-container>
 
     <!-- Version Column -->
     <ng-container matColumnDef="Version">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>Version</th>
       <td mat-cell *matCellDef="let element">
-        <span style="font-weight: 500;">
+        <span style="font-weight: 500">
           {{ element.Version }}
         </span>
       </td>
@@ -137,11 +136,18 @@
     <ng-container matColumnDef="expand">
       <th mat-header-cell *matHeaderCellDef aria-label="row actions"></th>
       <td mat-cell *matCellDef="let element">
-        <button mat-icon-button aria-label="expand row" (click)="(expandedElement = expandedElement === element ? null : element); $event.stopPropagation()">
+        <button
+          mat-icon-button
+          aria-label="expand row"
+          (click)="
+            expandedElement = expandedElement === element ? null : element;
+            $event.stopPropagation()
+          "
+        >
           @if (expandedElement === element) {
-            <mat-icon>keyboard_arrow_up</mat-icon>
+          <mat-icon>keyboard_arrow_up</mat-icon>
           } @else {
-            <mat-icon>keyboard_arrow_down</mat-icon>
+          <mat-icon>keyboard_arrow_down</mat-icon>
           }
         </button>
       </td>
@@ -205,8 +211,8 @@
       class="element-row"
       [class.expanded-row]="expandedElement === element"
       (click)="expandedElement = expandedElement === element ? null : element"
-      ></tr>
-      <tr
+    ></tr>
+    <tr
       mat-row
       *matRowDef="let row; columns: ['expandedDetail']"
       class="detail-row"
