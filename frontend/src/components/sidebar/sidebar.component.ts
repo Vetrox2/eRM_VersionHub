@@ -10,7 +10,7 @@ import { SelectionToggleComponent } from '../selection-toggle/selection-toggle/s
 import { App } from '../../models/app.model';
 import { BehaviorSubject, combineLatest, Observable, of } from 'rxjs';
 import { AppService } from '../../services/app-service.service';
-import {
+import { 
   catchError,
   debounceTime,
   distinctUntilChanged,
@@ -18,6 +18,7 @@ import {
   switchMap,
 } from 'rxjs/operators';
 import { MenuIconsComponent, MenuItem } from '../menu/menu.component';
+import { ToggleAppSelectorComponent } from '../toggle-app-selector/toggle-app-selector.component';
 
 @Component({
   selector: 'app-sidebar',
@@ -38,33 +39,21 @@ import { MenuIconsComponent, MenuItem } from '../menu/menu.component';
     SelectionToggleComponent,
     MenuIconsComponent,
     SearchComponent,
+    ToggleAppSelectorComponent
   ],
 })
 export class SidebarComponent implements OnInit {
   private searchTerm$ = new BehaviorSubject<string>('');
+  private isFavorites$ = new BehaviorSubject<string>('All');
   isFiltering = false;
-
+  favoriteApps$: Observable<App[]>;
   apps$: Observable<App[]>;
   selectedItem$: Observable<App | null>;
   loading = true;
   error: string | null = null;
 
-  menuItems: MenuItem[] = [
-    { icon: 'publish', label: 'Publish', action: 'publish' },
-    { icon: 'cancel', label: 'Unpublish', action: 'unpublish' },
-    { icon: 'favorite', label: 'Add to favorites', action: 'favorite' },
-  ];
-
   constructor(private appService: AppService) {
-    this.apps$ = combineLatest([
-      this.appService.getApps(),
-      this.searchTerm$.pipe(debounceTime(300), distinctUntilChanged()),
-    ]).pipe(
-      switchMap(([apps, searchTerm]) => {
-        this.loading = false;
-        this.isFiltering = !!searchTerm;
-        return of(this.filterApps(apps, searchTerm));
-      }),
+    const apps$ = this.appService.getApps().pipe(
       catchError((err) => {
         this.loading = false;
         this.error = 'Failed to load apps. Please try again later.';
@@ -73,19 +62,56 @@ export class SidebarComponent implements OnInit {
       })
     );
 
+    this.favoriteApps$ = this.appService.getFavoriteApps();
+
+    this.apps$ = combineLatest([
+      apps$,
+      this.favoriteApps$,
+      this.isFavorites$,
+      this.searchTerm$.pipe(debounceTime(300), distinctUntilChanged()),
+    ]).pipe(
+      map(([apps, favoriteApps, isFavorites, searchTerm]) => {
+        this.loading = false;
+        this.isFiltering = !!searchTerm;
+        
+        const filteredApps = this.filterApps(apps, favoriteApps, isFavorites, searchTerm);
+        
+        if (isFavorites !== 'All' && filteredApps.length === 0) {
+          return [];
+        }
+        
+        return filteredApps;
+      })
+    );
+  
     this.selectedItem$ = this.appService.getSelectedApp();
   }
 
-  private filterApps(apps: App[], searchTerm: string): App[] {
-    if (!searchTerm) {
-      return apps;
-    }
-    searchTerm = searchTerm.toLowerCase();
-    return apps.filter((app) => app.Name.toLowerCase().includes(searchTerm));
+  onActive(active: string) {
+    this.isFavorites$.next(active);
+    console.log(this.appService.getFavoriteApps()  )
   }
+
+  private filterApps(apps: App[], favoriteApps: App[], isFavorites: string, searchTerm: string): App[] {
+    let filteredApps = isFavorites === 'All'
+      ? apps
+      : isFavorites === 'Favorites'
+        ? favoriteApps
+        : apps;
+
+    if (searchTerm) {
+      filteredApps = filteredApps.filter(app => 
+        app.Name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return filteredApps;
+  }
+
   onSearchValueChanged(value: string) {
     this.searchTerm$.next(value);
   }
+
   ngOnInit() {
     this.appService.loadApps();
   }
@@ -98,20 +124,21 @@ export class SidebarComponent implements OnInit {
     return app.ID;
   }
 
-  handleMenuSelection(action: string, app: App) {
-    console.log(`Action ${action} selected for app ${app.Name}`);
-    switch (action) {
-      case 'publish':
-        // Handle publish action
-        break;
-      case 'unpublish':
-        // Handle unpublish action
-        break;
-      case 'favorite':
-        this.appService.addToFavorite(app, 'admin');
-        break;
-      default:
-        console.warn(`Unknown action: ${action}`);
+  favoriteClickCount: { [key: string]: number } = {};
+
+  handleFavoriteSelection(event: Event, app: App) {
+    event.stopPropagation();
+    
+    if (app.IsFavourite) {
+      this.appService.removeFromFavorite(app, 'admin');
+    } else {
+      this.appService.addToFavorite(app, 'admin');
     }
+
+    // The service will update the favorites list internally
+  }
+
+  getFavoriteIcon(app: App): string {
+    return app.IsFavourite ? 'favorite' : 'favorite_border';
   }
 }

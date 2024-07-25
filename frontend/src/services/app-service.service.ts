@@ -112,7 +112,7 @@ export class AppService {
       error: (error) => console.error('Error adding to favorites:', error),
     });
   }
-
+  
   removeFromFavorite(app: App, userName: string): void {
     this.removeFromFavorites(userName, app.ID).subscribe({
       next: () => {
@@ -127,6 +127,7 @@ export class AppService {
     const allApps = this.appsSubject.value;
     const favoriteApps = allApps.filter((app) => app.IsFavourite);
     this.favoriteAppsSubject.next(favoriteApps);
+    this.appsSubject.next(allApps);
   }
 
   private sendPostRequest(

@@ -1,0 +1,10 @@
+<mat-button-toggle-group
+    name="favoriteColor"
+    aria-label="Favorite Color"
+    [(value)]="activeValue"
+    [hideSingleSelectionIndicator]="hideSingleSelectionIndicator()"
+    (change)="onSelectionChange($event.value)"
+  >
+    <mat-button-toggle  value="All">All</mat-button-toggle>
+    <mat-button-toggle value="Favorites">Favorites</mat-button-toggle>
+  </mat-button-toggle-group>
