@@ -10,7 +10,7 @@ import { SelectionToggleComponent } from '../selection-toggle/selection-toggle/s
 import { App } from '../../models/app.model';
 import { BehaviorSubject, combineLatest, Observable, of } from 'rxjs';
 import { AppService } from '../../services/app-service.service';
-import { 
+import {
   catchError,
   debounceTime,
   distinctUntilChanged,
@@ -19,6 +19,7 @@ import {
 } from 'rxjs/operators';
 import { MenuIconsComponent, MenuItem } from '../menu/menu.component';
 import { ToggleAppSelectorComponent } from '../toggle-app-selector/toggle-app-selector.component';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-sidebar',
@@ -29,6 +30,7 @@ import { ToggleAppSelectorComponent } from '../toggle-app-selector/toggle-app-se
     MatListModule,
     MatIconModule,
     MatButtonModule,
+    MatTooltipModule,
     NgClass,
     NgFor,
     NgIf,
@@ -39,7 +41,7 @@ import { ToggleAppSelectorComponent } from '../toggle-app-selector/toggle-app-se
     SelectionToggleComponent,
     MenuIconsComponent,
     SearchComponent,
-    ToggleAppSelectorComponent
+    ToggleAppSelectorComponent,
   ],
 })
 export class SidebarComponent implements OnInit {
@@ -73,34 +75,45 @@ export class SidebarComponent implements OnInit {
       map(([apps, favoriteApps, isFavorites, searchTerm]) => {
         this.loading = false;
         this.isFiltering = !!searchTerm;
-        
-        const filteredApps = this.filterApps(apps, favoriteApps, isFavorites, searchTerm);
-        
+
+        const filteredApps = this.filterApps(
+          apps,
+          favoriteApps,
+          isFavorites,
+          searchTerm
+        );
+
         if (isFavorites !== 'All' && filteredApps.length === 0) {
           return [];
         }
-        
+
         return filteredApps;
       })
     );
-  
+
     this.selectedItem$ = this.appService.getSelectedApp();
   }
 
   onActive(active: string) {
     this.isFavorites$.next(active);
-    console.log(this.appService.getFavoriteApps()  )
+    console.log(this.appService.getFavoriteApps());
   }
 
-  private filterApps(apps: App[], favoriteApps: App[], isFavorites: string, searchTerm: string): App[] {
-    let filteredApps = isFavorites === 'All'
-      ? apps
-      : isFavorites === 'Favorites'
+  private filterApps(
+    apps: App[],
+    favoriteApps: App[],
+    isFavorites: string,
+    searchTerm: string
+  ): App[] {
+    let filteredApps =
+      isFavorites === 'All'
+        ? apps
+        : isFavorites === 'Favorites'
         ? favoriteApps
         : apps;
 
     if (searchTerm) {
-      filteredApps = filteredApps.filter(app => 
+      filteredApps = filteredApps.filter((app) =>
         app.Name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -128,7 +141,7 @@ export class SidebarComponent implements OnInit {
 
   handleFavoriteSelection(event: Event, app: App) {
     event.stopPropagation();
-    
+
     if (app.IsFavourite) {
       this.appService.removeFromFavorite(app, 'admin');
     } else {

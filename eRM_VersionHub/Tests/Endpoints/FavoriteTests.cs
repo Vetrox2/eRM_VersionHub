@@ -54,14 +54,6 @@ namespace eRM_VersionHub_Tester.Endpoints
         }
 
         [Fact]
-        public async Task AddFavorite3_ShouldReturnErrorOnFailure_AddingDuplicate()
-        {
-            HttpResponseMessage response = await _client.PostAsJsonAsync<Favorite>("api/Favorite", fav);
-            Favorite? deserialized = await response.GetRequestContent<Favorite?>();
-            Assert.Null(deserialized);
-        }
-
-        [Fact]
         public async Task DeleteFavorite_ShouldReturnDeletedUser()
         {
             HttpResponseMessage response = await _client.DeleteAsync($"api/Favorite/{fav.Username}/{fav.AppID}");

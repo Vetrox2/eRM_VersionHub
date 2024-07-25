@@ -1,4 +1,5 @@
 using Dapper;
+using eRM_VersionHub.Data;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories;
 using eRM_VersionHub.Repositories.Interfaces;
@@ -54,7 +55,8 @@ app.UseCors(builder =>
         .AllowAnyMethod();
 });
 
-// var db = new DbInitializer(app);
+var logger = app.Services.GetRequiredService<ILogger<DbInitializer>>();
+var db = new DbInitializer(app, logger);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

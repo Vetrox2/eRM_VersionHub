@@ -38,18 +38,9 @@ import { DefaultModalComponent } from '../../../components/modals/default-modal/
 import { app } from '../../../../server';
 import { SearchService } from '../../../services/search-service.service';
 import { SearchComponent } from '../../../components/search/search.component';
+import { FlattenedVersion } from '../../../models/flattened-version.model';
+import { VersionUtilsService } from '../../../services/version-utils.service';
 import { MatChip } from '@angular/material/chips';
-
-interface FlattenedVersion {
-  Version: string;
-  Name: string;
-  ID: string;
-  Modules: App['Versions'][0]['Modules'];
-  ParentApp: App;
-  Tag: string;
-  isLoading: boolean;
-  orignalID: string;
-}
 
 @Component({
   selector: 'app-project-version-table',
@@ -79,7 +70,7 @@ interface FlattenedVersion {
     MatProgressSpinnerModule,
     MatSortModule,
     SearchComponent,
-    MatChip
+    MatChip,
   ],
 })
 export class ProjectVersionTableComponent
@@ -92,7 +83,7 @@ export class ProjectVersionTableComponent
   selectedTag: Tag = '';
   arrowStates: { [key: string]: string } = {};
   @Input() searchTerm: string = '';
-  columnsToDisplay = ['Version', 'Tag','Published','expand'];
+  columnsToDisplay = ['Version', 'Tag', 'Published', 'expand'];
   expandedElement: FlattenedVersion | null = null;
   private selectedAppSubscription: Subscription | undefined;
   private searchSubscription: Subscription | undefined;
@@ -101,8 +92,8 @@ export class ProjectVersionTableComponent
     private appService: AppService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private cdr: ChangeDetectorRef,
-    private searchService: SearchService
+    private searchService: SearchService,
+    private versionUtils: VersionUtilsService
   ) {
     this.dataSource = new MatTableDataSource<FlattenedVersion>([]);
   }
@@ -141,47 +132,25 @@ export class ProjectVersionTableComponent
         item: FlattenedVersion,
         property: string
       ) => {
-        switch (property) {
-          case 'Published':
-            return this.getPublicationStatusValue(
-              this.getPublicationStatus(item)
-            );
-          default:
-            return (item as any)[property];
-        }
-      };
-
-      // Set custom filter predicate
-      this.dataSource.filterPredicate = (
-        data: FlattenedVersion,
-        filter: string
-      ): boolean => {
-        if (!filter) {
-          return true; // Show all data when filter is empty
-        }
-        const filterLowerCase = filter.toLowerCase();
-        return (
-          data.Version.toLowerCase().includes(filterLowerCase) ||
-          (data.Tag?.toLowerCase().includes(filterLowerCase) ?? false) ||
-          (data.Name?.toLowerCase().includes(filterLowerCase) ?? false)
-        );
+        return (item as any)[property];
       };
     }
-  }
 
-  getPublicationStatusValue(
-    status: 'published' | 'semi-published' | 'not-published'
-  ): number {
-    switch (status) {
-      case 'published':
-        return 2;
-      case 'semi-published':
-        return 1;
-      case 'not-published':
-        return 0;
-      default:
-        return -1;
-    }
+    // Set custom filter predicate
+    this.dataSource.filterPredicate = (
+      data: FlattenedVersion,
+      filter: string
+    ): boolean => {
+      if (!filter) {
+        return true; // Show all data when filter is empty
+      }
+      const filterLowerCase = filter.toLowerCase();
+      return (
+        data.Version.toLowerCase().includes(filterLowerCase) ||
+        (data.Tag?.toLowerCase().includes(filterLowerCase) ?? false) ||
+        (data.Name?.toLowerCase().includes(filterLowerCase) ?? false)
+      );
+    };
   }
 
   ngOnDestroy() {
@@ -336,49 +305,22 @@ export class ProjectVersionTableComponent
   }
 
   flattenData(apps: App[]) {
-    const flattenedData = apps.flatMap((app) =>
-      app.Versions.map((version) => {
-        return {
-          Version: version.Number,
-          Tag: version.PublishedTag,
-          Name: app.Name,
-          ID: app.ID,
-          Modules: version.Modules,
-          ParentApp: app,
-          isLoading: false,
-          orignalID: version.ID,
-        };
-      })
-    );
-
+    const flattenedData = this.versionUtils.flattenData(apps);
     this.dataSource = new MatTableDataSource<FlattenedVersion>(flattenedData);
     if (this.sort) {
       this.dataSource.sort = this.sort;
     }
   }
 
-  getPublicationStatus(
-    version: FlattenedVersion
-  ): 'published' | 'semi-published' | 'not-published' {
-    const publishedCount = version.Modules.filter((m) => m.IsPublished).length;
-    if (publishedCount === version.Modules.length) {
-      return 'published';
-    } else if (publishedCount > 0) {
-      return 'semi-published';
-    } else {
-      return 'not-published';
-    }
+  getPublicationStatus(version: FlattenedVersion) {
+    return this.versionUtils.getPublicationStatus(version);
+  }
+  getPublicationStatusText(version: FlattenedVersion) {
+    return this.versionUtils.getPublicationStatusText(version);
   }
 
   flattenedVersionToDto(flattenedVersion: FlattenedVersion): Version {
-    return {
-      ID: flattenedVersion.orignalID,
-      Number: flattenedVersion.Version,
-      Modules: flattenedVersion.Modules,
-      Name: flattenedVersion.Version,
-      PublishedTag:
-        flattenedVersion.Tag === 'none' ? '' : (flattenedVersion.Tag as Tag),
-    };
+    return this.versionUtils.flattenedVersionToDto(flattenedVersion);
   }
 
   handlePublishVersion(version: FlattenedVersion) {
@@ -477,29 +419,4 @@ export class ProjectVersionTableComponent
       this.dataSource.data = [...this.dataSource.data];
     }
   }
-
-  getPublicationIcon(version: FlattenedVersion): string {
-    const status = this.getPublicationStatus(version);
-    switch (status) {
-      case 'published':
-        return 'published';
-      case 'not-published':
-        return '';
-      case 'semi-published':
-        return 'semi-published'   
-      }
-  }
-
-  getPublicationColor(version: FlattenedVersion): string {
-    const status = this.getPublicationStatus(version);
-    switch (status) {
-      case 'published':
-        return '#1b701e';
-      case 'not-published':
-        return '#f53c37';
-        case 'semi-published':
-        return 'orange';
-    }
-  }
-
 }
