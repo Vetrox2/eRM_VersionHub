@@ -8,7 +8,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
   standalone: true,
   imports: [MatCheckboxModule, MatButtonToggleModule],
   templateUrl: './toggle-app-selector.component.html',
-  styleUrl: './toggle-app-selector.component.scss'
+  // styleUrl: './toggle-app-selector.component.scss'
 })
 export class ToggleAppSelectorComponent {
   hideSingleSelectionIndicator = signal(false);
