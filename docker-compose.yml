@@ -64,7 +64,7 @@ services:
       - network
     
   frontend:
-    image: erm_versionhub-frontend
+    image: fawkes2k/erm_versionhub-frontend:latest
     restart: unless-stopped
     ports:
     - "4200:4200"
