@@ -17,7 +17,7 @@ import { MatButtonModule } from '@angular/material/button';
     MatButtonModule,
   ],
   template: `
-    <mat-form-field class="search-field" appearance="fill">
+    <mat-form-field class="search-field" appearance="outline">
       @if (showIcons) {
       <mat-icon matIconPrefix>search</mat-icon>
       }
