@@ -1,6 +1,7 @@
 ﻿using eRM_VersionHub.Models;
 
 using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace eRM_VersionHub.Controllers
@@ -13,6 +14,7 @@ namespace eRM_VersionHub.Controllers
         private readonly IFavoriteService _favoritesService = favoritesService;
 
         [HttpGet("{Username}")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> GetFavorites(string Username)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked GetFavorites with paramter: {Username}", Username);
@@ -30,6 +32,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "user")]
         public async Task<IActionResult> AddFavorite([FromBody] Favorite favorite)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked AddFavorite with data: {favorite}", favorite);
@@ -47,6 +50,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpDelete]
+        [Authorize(Roles = "user")]
         public async Task<IActionResult> DeleteFavorite([FromBody] Favorite favorite)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked DeleteFavorite with data: {favorite}", favorite);
@@ -64,6 +68,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpPost("{UserName}/{app_id}")]
+        [Authorize(Roles = "user")]
         public async Task<IActionResult> AddToFavorites(string UserName, string app_id)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked AddToFavorites with paramters: {UserName}, {app_id}", UserName, app_id);
@@ -83,6 +88,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpDelete("{UserName}/{app_id}")]
+        [Authorize(Roles = "user")]
         public async Task<IActionResult> RemoveFromFavorites(string UserName, string app_id)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked RemoveFromFavorites with paramters: {UserName}, {app_id}", UserName, app_id);

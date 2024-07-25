@@ -2,6 +2,7 @@
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -16,6 +17,7 @@ namespace eRM_VersionHub.Controllers
         private readonly ILogger<PublicationController> _logger = logger; 
 
         [HttpPost]
+        [Authorize(Roles = "user")]
         public IActionResult PublishVersions(List<VersionDto> versionDtos)
         {
             _logger.LogDebug(AppLogEvents.Controller, "PublishVersions invoked with data: {versionDtos}", versionDtos);
@@ -44,6 +46,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpDelete]
+        [Authorize(Roles = "user")]
         public IActionResult UnpublishVersions(List<VersionDto> versionDtos)
         {
             _logger.LogDebug(AppLogEvents.Controller, "UnpublishVersions invoked with data: {versionDtos}", versionDtos);

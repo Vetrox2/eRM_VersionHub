@@ -1,5 +1,6 @@
 ﻿using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace eRM_VersionHub.Controllers
@@ -12,6 +13,7 @@ namespace eRM_VersionHub.Controllers
         private readonly IUserService _userService = userService;
 
         [HttpGet]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> GetUsers()
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked GetUsers");
@@ -29,6 +31,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpGet("{Username}")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> GetUser(string Username)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked GetUser with parameter: {Username}", Username);
@@ -46,6 +49,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> AddUser([FromBody] User user)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked AddUser with data: {user}", user);
@@ -63,6 +67,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpPut]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> UpdateUser([FromBody] User user)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked UpdateUser with data: {user}", user);
@@ -80,6 +85,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpDelete("{Username}")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> DeleteUser(string Username)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked DeleteUser with parameter: {Username}", Username);

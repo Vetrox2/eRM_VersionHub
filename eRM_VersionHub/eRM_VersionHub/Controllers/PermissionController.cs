@@ -1,5 +1,6 @@
 ﻿using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace eRM_VersionHub.Controllers
@@ -12,6 +13,7 @@ namespace eRM_VersionHub.Controllers
         private readonly IPermissionService _permissionService = permissionService;
 
         [HttpGet("{Username}")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> GetPermission(string Username)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked GetPermission with paramter: {Username}", Username);
@@ -29,6 +31,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> AddPermssion([FromBody] Permission permission)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked AddPermssion with data: {permission}", permission);
@@ -46,6 +49,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpDelete]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> DeletePermission([FromBody] Permission permission)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked DeletePermission with data: {permission}", permission);

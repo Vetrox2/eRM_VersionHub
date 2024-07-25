@@ -2,6 +2,7 @@ using eRM_VersionHub.Dtos;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -16,8 +17,11 @@ namespace eRM_VersionHub.Controllers
         private readonly ILogger<AppsController> _logger = logger;
 
         [HttpGet("{UserName}")]
+        [Authorize(Roles ="user")]
         public async Task<IActionResult> GetStructure(string UserName)
         {
+            var userID = User.FindFirst("sub")?.Value;
+
             _logger.LogDebug(AppLogEvents.Controller, "GetStructure invoked with paramter: {UserName}", UserName);
             var response = await _appDataScanner.GetAppsStructure(_settings, UserName);
             _logger.LogDebug(AppLogEvents.Controller, "GetAppsStructure returned: {UserName}", UserName);
