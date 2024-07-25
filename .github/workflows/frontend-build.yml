@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - development
+    paths:
+      - frontend/**
 
 jobs:
   build:
