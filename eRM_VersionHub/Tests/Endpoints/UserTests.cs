@@ -76,9 +76,17 @@ namespace eRM_VersionHub_Tester.Endpoints
         }
 
         [Fact]
-        public async Task UpdateUser_ShouldReturnErrorOnFailure()
+        public async Task UpdateUser_ShouldReturnErrorOnFailure_InvalidJSON()
         {
             HttpResponseMessage response = await _client.PutAsJsonAsync<Favorite>("api/User", fav);
+            User? deserialized = await response.GetRequestContent<User?>();
+            Assert.Null(deserialized);
+        }
+
+        [Fact]
+        public async Task UpdateUser_ShouldReturnErrorOnFailure_UpdatingNonExistentUser()
+        {
+            HttpResponseMessage response = await _client.PutAsJsonAsync<User>("api/#", updatedUser);
             User? deserialized = await response.GetRequestContent<User?>();
             Assert.Null(deserialized);
         }
@@ -94,7 +102,7 @@ namespace eRM_VersionHub_Tester.Endpoints
         }
 
         [Fact]
-        public async Task DeleteUser_ShouldReturnErrorOnFailure()
+        public async Task DeleteUser_ShouldReturnErrorOnFailure_DeletingNonExistentUser()
         {
             HttpResponseMessage response = await _client.DeleteAsync("api/User/#");
             User? deserialized = await response.GetRequestContent<User?>();

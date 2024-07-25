@@ -1,5 +1,4 @@
 ﻿using eRM_VersionHub.Models;
-
 using eRM_VersionHub.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -46,25 +45,8 @@ namespace eRM_VersionHub.Controllers
             return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
         }
 
-        [HttpDelete]
-        public async Task<IActionResult> DeleteFavorite([FromBody] Favorite favorite)
-        {
-            _logger.LogDebug(AppLogEvents.Controller, "Invoked DeleteFavorite with data: {favorite}", favorite);
-            ApiResponse<Favorite?> result = await _favoritesService.DeleteFavorite(favorite);
-            _logger.LogDebug(AppLogEvents.Controller, "DeleteFavorite result: {result}", result);
-
-            if (result.Success)
-            {
-                _logger.LogInformation(AppLogEvents.Controller, "DeleteFavorite returned: {Data}", result.Data);
-                return Ok(result.Data);
-            }
-
-            _logger.LogWarning(AppLogEvents.Controller, "DeleteFavorite returned error(s): {Errors}", result.Errors);
-            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
-        }
-
         [HttpPost("{UserName}/{app_id}")]
-        public async Task<IActionResult> AddToFavorites(string UserName, string app_id)
+        public async Task<IActionResult> AddFavorite(string UserName, string app_id)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked AddToFavorites with paramters: {UserName}, {app_id}", UserName, app_id);
             var result = await _favoritesService.CreateFavorite(
@@ -83,7 +65,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpDelete("{UserName}/{app_id}")]
-        public async Task<IActionResult> RemoveFromFavorites(string UserName, string app_id)
+        public async Task<IActionResult> DeleteFavorite(string UserName, string app_id)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked RemoveFromFavorites with paramters: {UserName}, {app_id}", UserName, app_id);
             var result = await _favoritesService.DeleteFavorite(
