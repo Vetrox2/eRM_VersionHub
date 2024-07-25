@@ -38,6 +38,7 @@ import { DefaultModalComponent } from '../../../components/modals/default-modal/
 import { app } from '../../../../server';
 import { SearchService } from '../../../services/search-service.service';
 import { SearchComponent } from '../../../components/search/search.component';
+import { MatChip } from '@angular/material/chips';
 
 interface FlattenedVersion {
   Version: string;
@@ -78,6 +79,7 @@ interface FlattenedVersion {
     MatProgressSpinnerModule,
     MatSortModule,
     SearchComponent,
+    MatChip
   ],
 })
 export class ProjectVersionTableComponent
@@ -88,9 +90,9 @@ export class ProjectVersionTableComponent
   moduleChanges: { [key: string]: boolean } = {};
   isLoading: boolean = false;
   selectedTag: Tag = '';
+  arrowStates: { [key: string]: string } = {};
   @Input() searchTerm: string = '';
-
-  columnsToDisplay = ['Actions', 'Published', 'Version', 'Tag'];
+  columnsToDisplay = ['Version', 'Tag','Published','expand'];
   expandedElement: FlattenedVersion | null = null;
   private selectedAppSubscription: Subscription | undefined;
   private searchSubscription: Subscription | undefined;
@@ -128,6 +130,9 @@ export class ProjectVersionTableComponent
     if (this.dataSource) {
       this.dataSource.filter = searchText.trim().toLowerCase();
     }
+  }
+  toggleRow(version: FlattenedVersion) {
+    this.expandedElement = this.expandedElement === version ? null : version;
   }
   ngAfterViewInit() {
     if (this.dataSource) {
@@ -477,12 +482,12 @@ export class ProjectVersionTableComponent
     const status = this.getPublicationStatus(version);
     switch (status) {
       case 'published':
-        return 'check_circle';
+        return 'published';
       case 'not-published':
-        return 'cancel';
-      default:
-        return 'remove';
-    }
+        return '';
+      case 'semi-published':
+        return 'semi-published'   
+      }
   }
 
   getPublicationColor(version: FlattenedVersion): string {
@@ -492,8 +497,9 @@ export class ProjectVersionTableComponent
         return '#1b701e';
       case 'not-published':
         return '#f53c37';
-      default:
+        case 'semi-published':
         return 'orange';
     }
   }
+
 }
