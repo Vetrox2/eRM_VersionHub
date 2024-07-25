@@ -29,39 +29,68 @@ import {
   ],
   template: `
     <p>Favorites:</p>
-    <ng-container *ngIf="favoriteApps$ | async as favoriteApps">
-      <mat-chip-set style="padding: 5px;">
-        <mat-chip
-          [style.background-color]="'var(--primary-color)'"
-          *ngFor="let app of favoriteApps"
-          style="margin: 5px;"
-          (click)="onChipClick(app)"
-        >
-          <div
-            [style.color]="'white'"
-            style="display: flex; align-items: center; justify-content: space-between; width: 100%;"
-          >
-            <span>{{ app.Name }}</span>
-            <app-menu-icons
-              [menuItems]="menuItems"
-              (menuSelection)="handleMenuSelection($event, app)"
-            ></app-menu-icons>
-          </div>
-        </mat-chip>
-      </mat-chip-set>
-    </ng-container>
+
+    <div class="chip-container">
+      <ng-container *ngIf="favoriteApps$ | async as favoriteApps">
+        <div class="tag-selector-scroll">
+          <mat-chip-set class="chip-set">
+            <mat-chip
+              [style.background-color]="'var(--primary-color)'"
+              *ngFor="let app of favoriteApps"
+              (click)="onChipClick(app)"
+            >
+              <div [style.color]="'white'" class="chip-content">
+                <span>{{ app.Name }}</span>
+                <app-menu-icons
+                  [menuItems]="menuItems"
+                  (menuSelection)="handleMenuSelection($event, app)"
+                ></app-menu-icons>
+              </div>
+            </mat-chip>
+          </mat-chip-set>
+        </div>
+      </ng-container>
+    </div>
   `,
   styles: [
     `
-      mat-chip-set {
+      .chip-container {
+        width: 100%;
+        overflow-x: auto;
+        padding: 5px 0;
+      }
+      .chip-set {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+      }
+      ::ng-deep .mdc-evolution-chip-set__chips {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+      }
+      .tag-selector-scroll {
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* Internet Explorer 10+ */
+      }
+      .tag-selector-scroll::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none; /* Safari and Chrome */
+      }
+      mat-chip {
+        flex: 0 0 auto;
+        margin-right: 10px;
+        cursor: pointer;
+      }
+      .chip-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
       }
       app-menu-icons {
         margin-left: 8px;
-      }
-      mat-chip {
-        cursor: pointer;
       }
     `,
   ],
