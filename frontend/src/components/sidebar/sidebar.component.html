@@ -1,14 +1,17 @@
 <div class="sidebar-container">
-  <div style="margin-top: 1rem;">
+  <div>
     <app-search
-    [showIcons]="true"
-    placeholder="Search apps"
-    (valueChanged)="onSearchValueChanged($event)"
+      [showIcons]="true"
+      placeholder="Search apps"
+      (valueChanged)="onSearchValueChanged($event)"
     ></app-search>
   </div>
-  <div style="display: flex; justify-content: center;">
-    <app-toggle-app-selector (ActiveOption)="onActive($event)"></app-toggle-app-selector>
+  <div style="display: flex; justify-content: center">
+    <app-toggle-app-selector
+      (ActiveOption)="onActive($event)"
+    ></app-toggle-app-selector>
   </div>
+  <mat-divider></mat-divider>
   <ng-container *ngIf="apps$ | async as apps">
     <ng-container *ngIf="apps.length > 0; else noAppsFound">
       <mat-nav-list>
