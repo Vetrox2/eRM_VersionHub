@@ -40,6 +40,11 @@
             <mat-icon
               class="favorite-icon"
               (click)="handleFavoriteSelection($event, app)"
+              [style.color]="
+                app.IsFavourite && (selectedItem$ | async) !== app
+                  ? 'var(--primary-color)'
+                  : ''
+              "
             >
               {{ getFavoriteIcon(app) }}
             </mat-icon>
