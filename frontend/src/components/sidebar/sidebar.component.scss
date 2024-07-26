@@ -4,6 +4,12 @@
   justify-content: space-between;
   width: 100%;
 }
+.sidebar-container {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
 
 .app-name {
   flex: 1;
