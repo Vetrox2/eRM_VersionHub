@@ -7,9 +7,12 @@ using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Database;
 using eRM_VersionHub.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,7 +31,7 @@ builder.Services.AddControllers();
 
 // Configure Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+//builder.Services.AddSwaggerGen();
 
 DefaultTypeMap.MatchNamesWithUnderscores = true;
 
@@ -49,14 +52,8 @@ builder.Services.AddScoped<IAppDataScanner, AppDataScanner>();
 // Configure Swagger
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "My API",
-        Version = "v1"
-    });
-
-    // Configure OAuth2 for Swagger
-    options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+    options.AddSecurityDefinition("Keycloak", new OpenApiSecurityScheme
     {
         Type = SecuritySchemeType.OAuth2,
         Flows = new OpenApiOAuthFlows
@@ -66,74 +63,128 @@ builder.Services.AddSwaggerGen(options =>
                 AuthorizationUrl = new Uri("http://localhost:8080/realms/eRM-realm/protocol/openid-connect/auth"),
                 Scopes = new Dictionary<string, string>
                 {
-                    { "api.read", "Read access to protected API" }
+                    { "openid", "openid" },
+                    { "profile", "profile" }
                 }
             }
         }
     });
 
+    OpenApiSecurityScheme keycloakSecurityScheme = new()
+    {
+        Reference = new OpenApiReference
+        {
+            Id = "Keycloak",
+            Type = ReferenceType.SecurityScheme,
+        },
+        In = ParameterLocation.Header,
+        Name = "Bearer",
+        Scheme = "Bearer",
+    };
+
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "oauth2"
-                }
-            },
-            new[] { "api.read" }
-        }
+        { keycloakSecurityScheme, Array.Empty<string>() },
     });
 });
 
 // Add JWT Bearer Authentication
 var keycloakSettings = builder.Configuration.GetSection("Keycloak").Get<KeycloakSettings>();
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.Authority = keycloakSettings.Authority;
-    options.Audience = keycloakSettings.ClientId;
-    options.RequireHttpsMetadata = false; // Set to true in production
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidIssuer = keycloakSettings.Authority,
-        ValidateAudience = true,
-        ValidAudience = keycloakSettings.ClientId,
-        ValidateLifetime = true,
-        RoleClaimType = ClaimTypes.Role
-    };
+//builder.Services.AddAuthentication(options =>
+//{
+//    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+//    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+//})
+//.AddJwtBearer(options =>
+//{
+//    options.Authority = keycloakSettings.Authority;
+//    options.Audience = keycloakSettings.ClientId;
+//    options.RequireHttpsMetadata = false; // Set to true in production
+//    options.TokenValidationParameters = new TokenValidationParameters
+//    {
+//        ValidateIssuer = true,
+//        ValidIssuer = keycloakSettings.Authority,
+//        ValidateAudience = true,
+//        ValidAudience = keycloakSettings.ClientId,
+//        ValidateLifetime = true,
+//        RoleClaimType = ClaimTypes.Role
+//    };
 
-    options.Events = new JwtBearerEvents
-    {
-        OnTokenValidated = context =>
+//    options.Events = new JwtBearerEvents
+//    {
+//        OnTokenValidated = context =>
+//        {
+//            var userClaims = context.Principal.Identity as ClaimsIdentity;
+
+//            var clientRolesClaim = context.Principal.FindFirst("resource_access")?.Value;
+//            if (clientRolesClaim != null)
+//            {
+//                var resourceAccess = clientRolesClaim.Deserialize<Dictionary<string, Dictionary<string, string[]>>>();
+//                if (resourceAccess.ContainsKey(keycloakSettings.ClientId))
+//                {
+//                    var clientRoles = resourceAccess[keycloakSettings.ClientId]["roles"];
+//                    foreach (var role in clientRoles)
+//                    {
+//                        userClaims.AddClaim(new Claim(ClaimTypes.Role, role));
+//                    }
+//                }
+//            }
+
+//            return Task.CompletedTask;
+//        }
+//    };
+//});
+
+builder.Services
+        .AddAuthentication()
+        .AddJwtBearer(options =>
         {
-            var userClaims = context.Principal.Identity as ClaimsIdentity;
-
-            var clientRolesClaim = context.Principal.FindFirst("resource_access")?.Value;
-            if (clientRolesClaim != null)
+            options.RequireHttpsMetadata = false;
+            options.MetadataAddress = $"http://localhost:8080/realms/eRM-realm/.well-known/openid-configuration";
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                var resourceAccess = clientRolesClaim.Deserialize<Dictionary<string, Dictionary<string, string[]>>>();
-                if (resourceAccess.ContainsKey(keycloakSettings.ClientId))
+                RoleClaimType = ClaimTypes.Role,
+                NameClaimType = "preferred_username",
+                ValidAudience = "account",
+                // https://stackoverflow.com/questions/60306175/bearer-error-invalid-token-error-description-the-issuer-is-invalid
+                ValidateIssuer = false,
+            };
+            options.Events = new JwtBearerEvents
+            {
+                OnTokenValidated = context =>
                 {
-                    var clientRoles = resourceAccess[keycloakSettings.ClientId]["roles"];
-                    foreach (var role in clientRoles)
-                    {
-                        userClaims.AddClaim(new Claim(ClaimTypes.Role, role));
-                    }
-                }
-            }
+                    var userClaims = context.Principal.Identity as ClaimsIdentity;
 
-            return Task.CompletedTask;
-        }
-    };
+                    // Extract the realm_access claim and parse roles
+                    var realmAccessClaim = context.Principal.FindFirst("realm_access")?.Value;
+                    if (realmAccessClaim != null)
+                    {
+                        var realmAccess = realmAccessClaim.Deserialize<Dictionary<string, object>>();
+                        if (realmAccess.TryGetValue("roles", out var rolesObj))
+                        {
+                            var roles = rolesObj as List<string>;
+                            if (roles != null)
+                            {
+                                foreach (var role in roles)
+                                {
+                                    userClaims.AddClaim(new Claim(ClaimTypes.Role, role));
+                                }
+                            }
+                        }
+                    }
+
+                    return Task.CompletedTask;
+                }
+            };
+        });
+
+builder.Services.AddAuthorization(o =>
+{
+    o.DefaultPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .RequireClaim("email_verified", "true")
+        .Build();
 });
 
 var app = builder.Build();
@@ -149,12 +200,10 @@ app.UseCors(builder =>
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    app.UseSwaggerUI(options =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-        c.OAuthClientId("swaggerUI");
-        c.OAuthAppName("My API");
-        c.OAuthUsePkce(); // Recommended for OAuth2
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
+        options.OAuthClientId("swaggerUI");
     });
 }
 
@@ -173,3 +222,4 @@ app.MapControllers();
 app.Run();
 
 public partial class Program { }
+

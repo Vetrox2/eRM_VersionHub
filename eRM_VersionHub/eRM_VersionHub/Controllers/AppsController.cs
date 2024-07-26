@@ -20,7 +20,7 @@ namespace eRM_VersionHub.Controllers
         [Authorize(Roles ="user")]
         public async Task<IActionResult> GetStructure(string UserName)
         {
-            var userID = User.FindFirst("sub")?.Value;
+            var userID = User.Identity?.Name;
 
             _logger.LogDebug(AppLogEvents.Controller, "GetStructure invoked with paramter: {UserName}", UserName);
             var response = await _appDataScanner.GetAppsStructure(_settings, UserName);
