@@ -16,11 +16,11 @@ namespace eRM_VersionHub.Controllers
         private readonly IAppDataScanner _appDataScanner = appDataScanner;
         private readonly ILogger<AppsController> _logger = logger;
 
-        [HttpGet("{UserName}")]
+        [HttpGet]
         [Authorize(Roles ="user")]
-        public async Task<IActionResult> GetStructure(string UserName)
+        public async Task<IActionResult> GetStructure()
         {
-            var userID = User.Identity?.Name;
+            var UserName = User.Identity?.Name;
 
             _logger.LogDebug(AppLogEvents.Controller, "GetStructure invoked with paramter: {UserName}", UserName);
             var response = await _appDataScanner.GetAppsStructure(_settings, UserName);
