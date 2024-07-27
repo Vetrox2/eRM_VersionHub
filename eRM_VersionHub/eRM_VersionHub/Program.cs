@@ -14,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Security.Claims;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,11 +62,6 @@ builder.Services.AddSwaggerGen(options =>
             Implicit = new OpenApiOAuthFlow
             {
                 AuthorizationUrl = new Uri("http://localhost:8080/realms/eRM-realm/protocol/openid-connect/auth"),
-                Scopes = new Dictionary<string, string>
-                {
-                    { "openid", "openid" },
-                    { "profile", "profile" }
-                }
             }
         }
     });
@@ -91,51 +87,6 @@ builder.Services.AddSwaggerGen(options =>
 // Add JWT Bearer Authentication
 var keycloakSettings = builder.Configuration.GetSection("Keycloak").Get<KeycloakSettings>();
 
-//builder.Services.AddAuthentication(options =>
-//{
-//    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-//    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-//})
-//.AddJwtBearer(options =>
-//{
-//    options.Authority = keycloakSettings.Authority;
-//    options.Audience = keycloakSettings.ClientId;
-//    options.RequireHttpsMetadata = false; // Set to true in production
-//    options.TokenValidationParameters = new TokenValidationParameters
-//    {
-//        ValidateIssuer = true,
-//        ValidIssuer = keycloakSettings.Authority,
-//        ValidateAudience = true,
-//        ValidAudience = keycloakSettings.ClientId,
-//        ValidateLifetime = true,
-//        RoleClaimType = ClaimTypes.Role
-//    };
-
-//    options.Events = new JwtBearerEvents
-//    {
-//        OnTokenValidated = context =>
-//        {
-//            var userClaims = context.Principal.Identity as ClaimsIdentity;
-
-//            var clientRolesClaim = context.Principal.FindFirst("resource_access")?.Value;
-//            if (clientRolesClaim != null)
-//            {
-//                var resourceAccess = clientRolesClaim.Deserialize<Dictionary<string, Dictionary<string, string[]>>>();
-//                if (resourceAccess.ContainsKey(keycloakSettings.ClientId))
-//                {
-//                    var clientRoles = resourceAccess[keycloakSettings.ClientId]["roles"];
-//                    foreach (var role in clientRoles)
-//                    {
-//                        userClaims.AddClaim(new Claim(ClaimTypes.Role, role));
-//                    }
-//                }
-//            }
-
-//            return Task.CompletedTask;
-//        }
-//    };
-//});
-
 builder.Services
         .AddAuthentication()
         .AddJwtBearer(options =>
@@ -160,16 +111,13 @@ builder.Services
                     var realmAccessClaim = context.Principal.FindFirst("realm_access")?.Value;
                     if (realmAccessClaim != null)
                     {
-                        var realmAccess = realmAccessClaim.Deserialize<Dictionary<string, object>>();
-                        if (realmAccess.TryGetValue("roles", out var rolesObj))
+                        var realmAccess = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(realmAccessClaim);
+                        if (realmAccess.TryGetValue("roles", out var rolesElement))
                         {
-                            var roles = rolesObj as List<string>;
-                            if (roles != null)
+                            var roles = rolesElement.EnumerateArray().Select(role => role.GetString()).ToList();
+                            foreach (var role in roles)
                             {
-                                foreach (var role in roles)
-                                {
-                                    userClaims.AddClaim(new Claim(ClaimTypes.Role, role));
-                                }
+                                userClaims.AddClaim(new Claim(ClaimTypes.Role, role));
                             }
                         }
                     }
@@ -204,6 +152,9 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
         options.OAuthClientId("swaggerUI");
+        options.OAuthUsePkce(); // Enable PKCE
+        options.OAuthScopeSeparator(" ");
+        options.OAuthAdditionalQueryStringParams(new Dictionary<string, string> { { "prompt", "login" } });
     });
 }
 
