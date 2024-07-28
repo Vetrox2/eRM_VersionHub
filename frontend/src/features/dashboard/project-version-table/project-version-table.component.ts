@@ -30,7 +30,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { App } from '../../../models/app.model';
 import { Tag, Version } from '../../../models/version.model';
 import { Module } from '../../../models/module.model';
-import { ApiResponse, AppService } from '../../../services/app-service.service';
+import { AppService } from '../../../services/app.service';
 import { StatusChipComponent } from '../../../components/status-chip/status-chip.component';
 import { MenuIconsComponent } from '../../../components/menu/menu.component';
 import { ChipDropdownComponent } from '../../../components/chip-dropdown/chip-dropdown.component';
@@ -41,6 +41,8 @@ import { SearchComponent } from '../../../components/search/search.component';
 import { FlattenedVersion } from '../../../models/flattened-version.model';
 import { VersionUtilsService } from '../../../services/version-utils.service';
 import { MatChip } from '@angular/material/chips';
+import { PublicationService } from '../../../services/publication.service';
+import { ApiResponse } from '../../../models/api-response.model';
 
 @Component({
   selector: 'app-project-version-table',
@@ -90,6 +92,7 @@ export class ProjectVersionTableComponent
   selectedAppName: string = '';
   constructor(
     private appService: AppService,
+    private publicationService: PublicationService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private searchService: SearchService,
@@ -99,16 +102,16 @@ export class ProjectVersionTableComponent
   }
 
   ngOnInit() {
-    this.selectedAppSubscription = this.appService
-      .getSelectedApp()
-      .subscribe((selectedApp) => {
+    this.selectedAppSubscription = this.appService.selectedApp$.subscribe(
+      (selectedApp) => {
         if (selectedApp) {
           this.flattenData([selectedApp]);
           this.selectedAppName = selectedApp.Name;
         } else {
           this.dataSource.data = [];
         }
-      });
+      }
+    );
 
     // Subscribe to search text changes
     this.searchSubscription = this.searchService.searchText$.subscribe(
@@ -214,13 +217,17 @@ export class ProjectVersionTableComponent
 
         if (publishedModules.length > 0) {
           promises.push(
-            this.appService.publishVersion(versionDtoPublish).toPromise()
+            this.publicationService
+              .publishVersion(versionDtoPublish)
+              .toPromise()
           );
         }
 
         if (unpublishedModules.length > 0) {
           promises.push(
-            this.appService.unPublishVersion(versionDtoUnPublish).toPromise()
+            this.publicationService
+              .unPublishVersion(versionDtoUnPublish)
+              .toPromise()
           );
         }
 
@@ -341,7 +348,7 @@ export class ProjectVersionTableComponent
         const versionDto = this.flattenedVersionToDto(version);
         versionDto.PublishedTag =
           result.selectedTag === 'none' ? '' : result.selectedTag;
-        this.appService.publishVersion(versionDto).subscribe({
+        this.publicationService.publishVersion(versionDto).subscribe({
           next: (response) => {
             if (response.Success) {
               this.snackBar.open('Version published successfully', 'Close', {
@@ -385,7 +392,7 @@ export class ProjectVersionTableComponent
         flattenedVersion.isLoading = true;
         const versionDto = this.flattenedVersionToDto(flattenedVersion);
 
-        this.appService.unPublishVersion(versionDto).subscribe({
+        this.publicationService.unPublishVersion(versionDto).subscribe({
           next: (response) => {
             if (response.Success) {
               flattenedVersion.Tag = '';
