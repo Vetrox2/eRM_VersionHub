@@ -9,20 +9,18 @@ import { SearchComponent } from '../search/search.component';
 import { SelectionToggleComponent } from '../selection-toggle/selection-toggle/selection-toggle.component';
 import { App } from '../../models/app.model';
 import { BehaviorSubject, combineLatest, Observable, of } from 'rxjs';
-import { AppService } from '../../services/app-service.service';
+import { AppService } from '../../services/app.service';
 import {
-  catchError,
   debounceTime,
   distinctUntilChanged,
   filter,
   map,
-  switchMap,
   take,
-  tap,
 } from 'rxjs/operators';
 import { MenuIconsComponent, MenuItem } from '../menu/menu.component';
 import { ToggleAppSelectorComponent } from '../toggle-app-selector/toggle-app-selector.component';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { FavoriteService } from '../../services/favorite.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -50,6 +48,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 export class SidebarComponent implements OnInit {
   private searchTerm$ = new BehaviorSubject<string>('');
   private currentTabAppsCategory$ = new BehaviorSubject<string>('All');
+  private firstRun = true;
   isFiltering = false;
   favoriteApps$: Observable<App[]>;
   apps$: Observable<App[]>;
@@ -58,44 +57,32 @@ export class SidebarComponent implements OnInit {
   error: string | null = null;
   currentTab: 'All' | 'Favorites' = 'All';
 
-  constructor(private appService: AppService) {
-    const apps$ = this.appService.getApps().pipe(
-      catchError((err) => {
-        this.loading = false;
-        this.error = 'Failed to load apps. Please try again later.';
-        console.error('Error loading apps:', err);
-        return of([]);
-      })
-    );
-
-    this.favoriteApps$ = this.appService.getFavoriteApps();
-
+  constructor(
+    private appService: AppService,
+    private favoriteService: FavoriteService
+  ) {
+    this.favoriteApps$ = favoriteService.favoriteApps$;
+    this.favoriteService.favoriteApps$.subscribe((apps) => console.log(apps));
     this.apps$ = combineLatest([
-      apps$,
+      this.appService.apps$,
       this.favoriteApps$,
       this.currentTabAppsCategory$,
       this.searchTerm$.pipe(debounceTime(300), distinctUntilChanged()),
     ]).pipe(
-      map(([apps, favoriteApps, isFavorites, searchTerm]) => {
+      map(([apps, favoriteApps, currentTab, searchTerm]) => {
         this.loading = false;
         this.isFiltering = !!searchTerm;
-
         const filteredApps = this.filterApps(
           apps,
           favoriteApps,
-          isFavorites,
+          currentTab,
           searchTerm
         );
-
-        if (isFavorites !== 'All' && filteredApps.length === 0) {
-          return [];
-        }
-
         return filteredApps;
       })
     );
 
-    this.selectedItem$ = this.appService.getSelectedApp();
+    this.selectedItem$ = this.appService.selectedApp$;
   }
 
   setAppsCategory(appsCategory: 'All' | 'Favorites') {
@@ -129,9 +116,24 @@ export class SidebarComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.appService.loadApps();
-    this.initializeSelectedApp();
+    this.loadApps();
   }
+
+  private loadApps() {
+    this.loading = true;
+    this.appService.apps$.subscribe({
+      next: () => {
+        this.loading = false;
+        this.initializeSelectedApp();
+      },
+      error: (error) => {
+        this.loading = false;
+        this.error = 'Failed to load apps. Please try again.';
+        console.error('Error loading apps:', error);
+      },
+    });
+  }
+
   private initializeSelectedApp() {
     combineLatest([this.apps$])
       .pipe(
@@ -140,12 +142,15 @@ export class SidebarComponent implements OnInit {
       )
       .subscribe(([apps]) => {
         const favoriteApps = apps.filter((app) => app.IsFavourite);
-        if (favoriteApps.length > 0) {
-          this.appService.setSelectedApp(favoriteApps[0]);
-          this.setAppsCategory('Favorites');
-        } else {
-          this.appService.setSelectedApp(apps[0]);
-          this.setAppsCategory('All');
+        if (this.firstRun) {
+          if (favoriteApps.length > 0) {
+            this.appService.setSelectedApp(favoriteApps[0]);
+            this.setAppsCategory('Favorites');
+          } else {
+            this.appService.setSelectedApp(apps[0]);
+            this.setAppsCategory('All');
+          }
+          this.firstRun = false;
         }
       });
   }
@@ -161,9 +166,9 @@ export class SidebarComponent implements OnInit {
   handleFavoriteSelection(event: Event, app: App) {
     event.stopPropagation();
     if (app.IsFavourite) {
-      this.appService.removeFromFavorite(app, 'admin');
+      this.favoriteService.removeFromFavorite(app, 'admin');
     } else {
-      this.appService.addToFavorite(app, 'admin');
+      this.favoriteService.addToFavorite(app, 'admin');
     }
   }
   getFavoriteIcon(app: App): string {
