@@ -3,7 +3,6 @@ import { AppService } from '../services/app.service';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../components/sidebar/sidebar.component';
 import { ProjectVersionTableComponent } from '../features/dashboard/project-version-table/project-version-table.component';
-import { CustomCheckboxChipComponent } from '../components/custom-checkbox-chip/custom-checkbox-chip.component';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
@@ -21,7 +20,6 @@ import { Subscription } from 'rxjs';
     RouterOutlet,
     SidebarComponent,
     ProjectVersionTableComponent,
-    CustomCheckboxChipComponent,
     MatChipsModule,
     MatDividerModule,
     MatIconModule,

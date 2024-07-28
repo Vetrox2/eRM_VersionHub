@@ -17,7 +17,6 @@ import {
   map,
   take,
 } from 'rxjs/operators';
-import { MenuIconsComponent, MenuItem } from '../menu/menu.component';
 import { ToggleAppSelectorComponent } from '../toggle-app-selector/toggle-app-selector.component';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FavoriteService } from '../../services/favorite.service';
@@ -40,7 +39,6 @@ import { FavoriteService } from '../../services/favorite.service';
     MatFormFieldModule,
     SearchComponent,
     SelectionToggleComponent,
-    MenuIconsComponent,
     SearchComponent,
     ToggleAppSelectorComponent,
   ],

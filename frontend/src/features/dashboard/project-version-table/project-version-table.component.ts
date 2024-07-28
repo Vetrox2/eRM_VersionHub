@@ -31,11 +31,7 @@ import { App } from '../../../models/app.model';
 import { Tag, Version } from '../../../models/version.model';
 import { Module } from '../../../models/module.model';
 import { AppService } from '../../../services/app.service';
-import { StatusChipComponent } from '../../../components/status-chip/status-chip.component';
-import { MenuIconsComponent } from '../../../components/menu/menu.component';
-import { ChipDropdownComponent } from '../../../components/chip-dropdown/chip-dropdown.component';
 import { DefaultModalComponent } from '../../../components/modals/default-modal/default-modal.component';
-import { app } from '../../../../server';
 import { SearchService } from '../../../services/search-service.service';
 import { SearchComponent } from '../../../components/search/search.component';
 import { FlattenedVersion } from '../../../models/flattened-version.model';
@@ -63,11 +59,8 @@ import { ApiResponse } from '../../../models/api-response.model';
     CommonModule,
     MatTableModule,
     MatCheckboxModule,
-    StatusChipComponent,
     MatButtonModule,
-    MenuIconsComponent,
     MatIconModule,
-    ChipDropdownComponent,
     MatDividerModule,
     MatProgressSpinnerModule,
     MatSortModule,
