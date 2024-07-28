@@ -87,7 +87,6 @@ export class ProjectVersionTableComponent
   expandedElement: FlattenedVersion | null = null;
   private selectedAppSubscription: Subscription | undefined;
   private searchSubscription: Subscription | undefined;
-
   selectedAppName: string = '';
   constructor(
     private appService: AppService,
@@ -124,8 +123,9 @@ export class ProjectVersionTableComponent
       this.dataSource.filter = searchText.trim().toLowerCase();
     }
   }
-  toggleRow(version: FlattenedVersion) {
+  toggleRow(version: FlattenedVersion, event: Event) {
     this.expandedElement = this.expandedElement === version ? null : version;
+    event?.stopPropagation();
   }
   ngAfterViewInit() {
     if (this.dataSource) {
@@ -414,6 +414,31 @@ export class ProjectVersionTableComponent
         });
       }
     });
+  }
+  getPublishedVersionsCount(): number {
+    return this.dataSource.data.filter(
+      (v) => this.getPublicationStatus(v) === 'published'
+    ).length;
+  }
+
+  selectAllModules(version: FlattenedVersion) {
+    version.Modules.forEach((module) => {
+      this.moduleChanges[module.Name + version.orignalID] = true;
+    });
+    this.dataSource.data = [...this.dataSource.data];
+  }
+
+  unselectAllModules(version: FlattenedVersion) {
+    version.Modules.forEach((module) => {
+      this.moduleChanges[module.Name + version.orignalID] = false;
+    });
+    this.dataSource.data = [...this.dataSource.data];
+  }
+
+  isModuleSelected(version: FlattenedVersion, module: Module): boolean {
+    return (
+      this.moduleChanges[module.Name + version.orignalID] ?? module.IsPublished
+    );
   }
 
   private refreshData() {
