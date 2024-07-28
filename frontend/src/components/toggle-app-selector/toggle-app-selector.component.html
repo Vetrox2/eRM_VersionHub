@@ -1,6 +1,6 @@
 <mat-button-toggle-group
   aria-label="App Category Seleciton"
-  [(value)]="activeValue"
+  [(value)]="_activeValue"
   [hideMultipleSelectionIndicator]="true"
   hideSingleSelectionIndicator="true"
   (change)="onSelectionChange($event.value)"

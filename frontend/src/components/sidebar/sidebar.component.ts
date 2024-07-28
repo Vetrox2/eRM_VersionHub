@@ -14,8 +14,11 @@ import {
   catchError,
   debounceTime,
   distinctUntilChanged,
+  filter,
   map,
   switchMap,
+  take,
+  tap,
 } from 'rxjs/operators';
 import { MenuIconsComponent, MenuItem } from '../menu/menu.component';
 import { ToggleAppSelectorComponent } from '../toggle-app-selector/toggle-app-selector.component';
@@ -46,13 +49,14 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 })
 export class SidebarComponent implements OnInit {
   private searchTerm$ = new BehaviorSubject<string>('');
-  private isFavorites$ = new BehaviorSubject<string>('All');
+  private currentTabAppsCategory$ = new BehaviorSubject<string>('All');
   isFiltering = false;
   favoriteApps$: Observable<App[]>;
   apps$: Observable<App[]>;
   selectedItem$: Observable<App | null>;
   loading = true;
   error: string | null = null;
+  currentTab: 'All' | 'Favorites' = 'All';
 
   constructor(private appService: AppService) {
     const apps$ = this.appService.getApps().pipe(
@@ -69,7 +73,7 @@ export class SidebarComponent implements OnInit {
     this.apps$ = combineLatest([
       apps$,
       this.favoriteApps$,
-      this.isFavorites$,
+      this.currentTabAppsCategory$,
       this.searchTerm$.pipe(debounceTime(300), distinctUntilChanged()),
     ]).pipe(
       map(([apps, favoriteApps, isFavorites, searchTerm]) => {
@@ -94,11 +98,10 @@ export class SidebarComponent implements OnInit {
     this.selectedItem$ = this.appService.getSelectedApp();
   }
 
-  onActive(active: string) {
-    this.isFavorites$.next(active);
-    console.log(this.appService.getFavoriteApps());
+  setAppsCategory(appsCategory: 'All' | 'Favorites') {
+    this.currentTab = appsCategory;
+    this.currentTabAppsCategory$.next(appsCategory);
   }
-
   private filterApps(
     apps: App[],
     favoriteApps: App[],
@@ -127,6 +130,24 @@ export class SidebarComponent implements OnInit {
 
   ngOnInit() {
     this.appService.loadApps();
+    this.initializeSelectedApp();
+  }
+  private initializeSelectedApp() {
+    combineLatest([this.apps$])
+      .pipe(
+        filter(([apps]) => apps.length > 0),
+        take(1)
+      )
+      .subscribe(([apps]) => {
+        const favoriteApps = apps.filter((app) => app.IsFavourite);
+        if (favoriteApps.length > 0) {
+          this.appService.setSelectedApp(favoriteApps[0]);
+          this.setAppsCategory('Favorites');
+        } else {
+          this.appService.setSelectedApp(apps[0]);
+          this.setAppsCategory('All');
+        }
+      });
   }
 
   selectItem(item: App) {
@@ -137,20 +158,14 @@ export class SidebarComponent implements OnInit {
     return app.ID;
   }
 
-  favoriteClickCount: { [key: string]: number } = {};
-
   handleFavoriteSelection(event: Event, app: App) {
     event.stopPropagation();
-
     if (app.IsFavourite) {
       this.appService.removeFromFavorite(app, 'admin');
     } else {
       this.appService.addToFavorite(app, 'admin');
     }
-
-    // The service will update the favorites list internally
   }
-
   getFavoriteIcon(app: App): string {
     return app.IsFavourite ? 'favorite' : 'favorite_border';
   }
