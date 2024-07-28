@@ -88,6 +88,7 @@ export class ProjectVersionTableComponent
   private selectedAppSubscription: Subscription | undefined;
   private searchSubscription: Subscription | undefined;
 
+  selectedAppName: string = '';
   constructor(
     private appService: AppService,
     private dialog: MatDialog,
@@ -104,6 +105,7 @@ export class ProjectVersionTableComponent
       .subscribe((selectedApp) => {
         if (selectedApp) {
           this.flattenData([selectedApp]);
+          this.selectedAppName = selectedApp.Name;
         } else {
           this.dataSource.data = [];
         }
