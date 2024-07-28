@@ -11,18 +11,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
   // styleUrl: './toggle-app-selector.component.scss'
 })
 export class ToggleAppSelectorComponent {
-  hideSingleSelectionIndicator = signal(false);
-  hideMultipleSelectionIndicator = signal(false);
   @Output() ActiveOption: EventEmitter<string> = new EventEmitter<string>();
   activeValue = 'All';
-
-  toggleSingleSelectionIndicator() {
-    this.hideSingleSelectionIndicator.update(value => !value);
-  }
-
-  toggleMultipleSelectionIndicator() {
-    this.hideMultipleSelectionIndicator.update(value => !value);
-  }
 
   onSelectionChange(value: string) {
     this.activeValue = value;
