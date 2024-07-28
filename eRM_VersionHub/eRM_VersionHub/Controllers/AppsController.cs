@@ -21,6 +21,11 @@ namespace eRM_VersionHub.Controllers
         public async Task<IActionResult> GetStructure()
         {
             var UserName = User.Identity?.Name;
+            if (string.IsNullOrEmpty(UserName))
+            {
+                _logger.LogWarning(AppLogEvents.Controller, "GetStructure invoked but userName not found");
+                return NotFound(ApiResponse<bool>.ErrorResponse(["UserName not found"]));
+            }
 
             _logger.LogDebug(AppLogEvents.Controller, "GetStructure invoked with paramter: {UserName}", UserName);
             var response = await _appDataScanner.GetAppsStructure(_settings, UserName);

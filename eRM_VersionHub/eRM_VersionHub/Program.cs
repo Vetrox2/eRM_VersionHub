@@ -47,7 +47,6 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IPublicationService, PublicationService>();
-
 builder.Services.AddScoped<IAppDataScanner, AppDataScanner>();
 
 // Configure Swagger
@@ -92,14 +91,18 @@ builder.Services
         .AddJwtBearer(options =>
         {
             options.RequireHttpsMetadata = false;
-            options.MetadataAddress = $"http://localhost:8080/realms/eRM-realm/.well-known/openid-configuration";
+            options.Authority = keycloakSettings.Authority;
+            options.MetadataAddress = keycloakSettings.MetadataAddress;
             options.TokenValidationParameters = new TokenValidationParameters
             {
+                ValidateIssuer = true,
+                ValidIssuer = keycloakSettings.Authority,
+                ValidateAudience = true,
+                ValidAudience = keycloakSettings.ClientId,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
                 RoleClaimType = ClaimTypes.Role,
-                NameClaimType = "preferred_username",
-                ValidAudience = "account",
-                // https://stackoverflow.com/questions/60306175/bearer-error-invalid-token-error-description-the-issuer-is-invalid
-                ValidateIssuer = false,
+                NameClaimType = "preferred_username"
             };
             options.Events = new JwtBearerEvents
             {
@@ -135,6 +138,7 @@ builder.Services.AddAuthorization(o =>
         .Build();
 });
 
+// Build app
 var app = builder.Build();
 
 // Configure middleware
@@ -145,6 +149,7 @@ app.UseCors(builder =>
     builder.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod();
 });
 
+// Turn on swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -152,7 +157,7 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
         options.OAuthClientId("swaggerUI");
-        options.OAuthUsePkce(); // Enable PKCE
+        options.OAuthUsePkce();
         options.OAuthScopeSeparator(" ");
         options.OAuthAdditionalQueryStringParams(new Dictionary<string, string> { { "prompt", "login" } });
     });
