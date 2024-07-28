@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { App } from '../models/app.model';
 import { ApiService } from './api.service';
 import { AppService } from './app.service';
@@ -21,25 +21,30 @@ export class FavoriteService {
     this.favoriteAppsSubject.next(favoriteApps);
   }
 
-  addToFavorite(app: App, userName: string): void {
-    this.addToFavoritesApiCall(userName, app.ID).subscribe({
-      next: () => {
+  addToFavorite(app: App, userName: string): Observable<void> {
+    return this.addToFavoritesApiCall(userName, app.ID).pipe(
+      map(() => {
         app.IsFavourite = true;
         this.appService.updateApp(app);
-      },
-      error: (error: any) => console.error('Error adding to favorites:', error),
-    });
+      }),
+      catchError((error) => {
+        console.error('Error adding to favorites:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  removeFromFavorite(app: App, userName: string): void {
-    this.removeFromFavoritesApiCall(userName, app.ID).subscribe({
-      next: () => {
+  removeFromFavorite(app: App, userName: string): Observable<void> {
+    return this.removeFromFavoritesApiCall(userName, app.ID).pipe(
+      map(() => {
         app.IsFavourite = false;
         this.appService.updateApp(app);
-      },
-      error: (error: any) =>
-        console.error('Error removing from favorites:', error),
-    });
+      }),
+      catchError((error) => {
+        console.error('Error removing from favorites:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   private addToFavoritesApiCall(
