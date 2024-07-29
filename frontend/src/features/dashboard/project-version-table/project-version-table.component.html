@@ -97,22 +97,13 @@
           >
             <div class="version-detail">
               <div class="version-actions">
-                <h4>Modules</h4>
-                <div class="action-buttons">
-                  <button
-                    mat-button
-                    (click)="selectAllModules(element)"
-                    [disabled]="element.isLoading"
-                  >
-                    Select All
-                  </button>
-                  <button
-                    mat-button
-                    (click)="unselectAllModules(element)"
-                    [disabled]="element.isLoading"
-                  >
-                    Unselect All
-                  </button>
+                <mat-checkbox 
+                (change)="$event.checked ? selectAllModules(element) : unselectAllModules(element)" 
+                [checked]="areAllModulesSelected(element)"
+                [disabled]="element.isLoading">
+                Modules
+              </mat-checkbox>             
+              <div class="action-buttons">
                   <button
                     mat-raised-button
                     color="primary"

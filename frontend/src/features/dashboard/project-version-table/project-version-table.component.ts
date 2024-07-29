@@ -440,6 +440,9 @@ export class ProjectVersionTableComponent
       this.moduleChanges[module.Name + version.orignalID] ?? module.IsPublished
     );
   }
+  areAllModulesSelected(element: any): boolean {
+  return element.Modules.every((module: any) => this.isModuleSelected(element, module));
+  }
 
   private refreshData() {
     if (this.dataSource) {
