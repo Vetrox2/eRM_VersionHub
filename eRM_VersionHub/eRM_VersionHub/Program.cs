@@ -1,5 +1,4 @@
 using Dapper;
-using eRM_VersionHub.Data;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories;
 using eRM_VersionHub.Repositories.Interfaces;
@@ -8,11 +7,8 @@ using eRM_VersionHub.Services.Database;
 using eRM_VersionHub.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Reflection;
 using System.Security.Claims;
 using System.Text.Json;
 

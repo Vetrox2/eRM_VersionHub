@@ -65,7 +65,7 @@
 
             if (!Directory.Exists(publishedModulePath))
             {
-                 return false;
+                return false;
             }
 
             var info = new DirectoryInfo(publishedModulePath);

@@ -30,7 +30,7 @@ namespace eRM_VersionHub.Repositories
             public bool NotNull { get; set; }
             public bool Unique { get; set; }
 
-            public override string ToString() => $"{Name} {Type} {(PrimaryKey? " PRIMARY KEY" : "")} {(NotNull? "NOT NULL" : "")} {(Unique ? " UNIQUE" : "")}";
+            public override string ToString() => $"{Name} {Type} {(PrimaryKey ? " PRIMARY KEY" : "")} {(NotNull ? "NOT NULL" : "")} {(Unique ? " UNIQUE" : "")}";
         }
 
         public async Task<ApiResponse<bool>> CreateTable(string tableName, List<ColumnDefinition> columns)
@@ -102,8 +102,8 @@ namespace eRM_VersionHub.Repositories
             }
             catch (Exception ex)
             {
-                 _logger.LogWarning(AppLogEvents.Database, "While executing GetAsync of type {type}, this execption has been thrown: {Message}\n{StackTrace}",
-                    type, ex.Message, ex.StackTrace);
+                _logger.LogWarning(AppLogEvents.Database, "While executing GetAsync of type {type}, this execption has been thrown: {Message}\n{StackTrace}",
+                   type, ex.Message, ex.StackTrace);
                 return ApiResponse<T?>.ErrorResponse([ex.Message]);
             }
         }
@@ -123,7 +123,7 @@ namespace eRM_VersionHub.Repositories
                 _logger.LogDebug(AppLogEvents.Database, "Result of GetAll of type {type}: {result}", type, query);
                 if (result == null)
                 {
-                     _logger.LogWarning(AppLogEvents.Database, "This query returned null: {command}, {parms}", command, parms);
+                    _logger.LogWarning(AppLogEvents.Database, "This query returned null: {command}, {parms}", command, parms);
                     return ApiResponse<List<T>>.ErrorResponse(["No data available"]);
                 }
 

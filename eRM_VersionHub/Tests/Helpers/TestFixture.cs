@@ -56,7 +56,7 @@ namespace eRM_VersionHub_Tester.Helpers
 
         public IDbRepository GetIDbRepository()
         {
-             return Services.GetRequiredService<IDbRepository>();
+            return Services.GetRequiredService<IDbRepository>();
         }
     }
 }

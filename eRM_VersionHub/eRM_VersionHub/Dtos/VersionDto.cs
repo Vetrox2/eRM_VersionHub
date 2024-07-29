@@ -4,7 +4,7 @@ namespace eRM_VersionHub.Dtos
 {
     public class VersionDto
     {
-        public string ID {  get; set; }
+        public string ID { get; set; }
         public string Number { get; set; }
         public string PublishedTag { get; set; }
         public List<ModuleDto> Modules { get; set; }

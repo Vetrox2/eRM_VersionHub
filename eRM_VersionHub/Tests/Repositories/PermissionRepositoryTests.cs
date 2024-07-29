@@ -8,7 +8,7 @@ namespace eRM_VersionHub_Tester.Repositories
     public class PermissionRepositoryTests
     {
         private readonly Mock<IDbRepository> _mockDbRepository;
-         private readonly Mock<ILogger<PermissionRepository>> _mockLogger;
+        private readonly Mock<ILogger<PermissionRepository>> _mockLogger;
         private readonly PermissionRepository _permissionRepository;
 
         public PermissionRepositoryTests()

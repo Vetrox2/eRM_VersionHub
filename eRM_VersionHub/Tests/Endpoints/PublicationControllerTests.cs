@@ -1,12 +1,7 @@
-﻿using eRM_VersionHub.Services.Interfaces;
+﻿using eRM_VersionHub.Dtos;
+using eRM_VersionHub.Models;
 using eRM_VersionHub.Services;
 using eRM_VersionHub_Tester.Helpers;
-using Moq;
-using eRM_VersionHub.Models;
-using eRM_VersionHub.Dtos;
-using System.Text;
-using Xunit.Sdk;
-using System;
 
 namespace eRM_VersionHub_Tester.Endpoints
 {

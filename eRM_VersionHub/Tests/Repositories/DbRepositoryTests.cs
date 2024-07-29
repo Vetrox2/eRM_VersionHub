@@ -1,10 +1,10 @@
-﻿using System.Reflection;
-using Dapper;
+﻿using Dapper;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories;
 using Microsoft.Extensions.Options;
 using Moq;
 using Npgsql;
+using System.Reflection;
 
 namespace eRM_VersionHub_Tester.Repositories
 {

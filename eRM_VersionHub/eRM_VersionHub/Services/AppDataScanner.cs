@@ -54,7 +54,7 @@ namespace eRM_VersionHub.Services
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoking GetAppsStructure with paramters: {userToken}, {settings}", userToken, settings);
             response = new();
-            
+
             if (!Directory.Exists(settings.InternalPackagesPath) || !Directory.Exists(settings.ExternalPackagesPath) || !Directory.Exists(settings.AppsPath))
             {
                 _logger.LogError(AppLogEvents.Service, "At least one of the path in the settings does not exist");
@@ -70,7 +70,7 @@ namespace eRM_VersionHub.Services
                 _logger.LogError(AppLogEvents.Service, "Internal app structure is null");
                 return response;
             }
-            
+
             structure = await SetFavorites(structure, userToken);
             _logger.LogDebug(AppLogEvents.Service, "SetFavorites returned: {structure}", structure);
 
@@ -120,7 +120,7 @@ namespace eRM_VersionHub.Services
 
                 var moduleModels = GetModuleModels(internalPackagesPath, appJSModel.GetModulesNames());
                 _logger.LogDebug(AppLogEvents.Service, "GetModuleModels returned: {moduleModels}", moduleModels);
-                
+
                 var appStructureDto = CreateAppStructureDto(appJSModel, moduleModels);
                 _logger.LogDebug(AppLogEvents.Service, "CreateAppStructureDto returned: {appStructureDto}", appStructureDto);
 

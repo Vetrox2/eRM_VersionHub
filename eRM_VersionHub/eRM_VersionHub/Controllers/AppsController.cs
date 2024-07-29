@@ -1,4 +1,3 @@
-using eRM_VersionHub.Dtos;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Interfaces;
@@ -17,7 +16,7 @@ namespace eRM_VersionHub.Controllers
         private readonly ILogger<AppsController> _logger = logger;
 
         [HttpGet]
-        [Authorize(Roles ="user")]
+        [Authorize(Roles = "user")]
         public async Task<IActionResult> GetStructure()
         {
             var UserName = User.Identity?.Name;
