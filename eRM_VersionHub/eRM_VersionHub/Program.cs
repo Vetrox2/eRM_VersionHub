@@ -1,4 +1,5 @@
 using Dapper;
+using eRM_VersionHub.Data;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories;
 using eRM_VersionHub.Repositories.Interfaces;
@@ -7,6 +8,7 @@ using eRM_VersionHub.Services.Database;
 using eRM_VersionHub.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Security.Claims;
@@ -28,12 +30,8 @@ builder.Services.AddControllers();
 
 // Configure Swagger
 builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
 
 DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-var logger = app.Services.GetRequiredService<ILogger<DbInitializer>>();
-var db = new DbInitializer(app, logger);
 
 builder.Services.Configure<AppSettings>(builder.Configuration);
 builder.Services.AddSingleton<IDbRepository, DbRepository>();
@@ -156,10 +154,6 @@ app.UseCors(builder =>
 });
 
 // Turn on swagger
-
-
-// Configure the HTTP request pipeline.
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -171,8 +165,17 @@ if (app.Environment.IsDevelopment())
         options.OAuthScopeSeparator(" ");
         options.OAuthAdditionalQueryStringParams(new Dictionary<string, string> { { "prompt", "login" } });
     });
+
+    var logger = app.Services.GetRequiredService<ILogger<DbInitializer>>();
+    var db = new DbInitializer(app, logger);
+
+    AppSettings? settings = app.Services.CreateScope().ServiceProvider.GetService<IOptions<AppSettings>>().Value;
+    if (settings != null)
+        PackagesGenerator.Generate(settings.MyAppSettings.InternalPackagesPath, Path.Combine(Directory.GetParent(settings.MyAppSettings.AppsPath).Name, "packages.txt")); // To delete
+
 }
 
+// Configure the HTTP request pipeline.
 app.UseHttpsRedirection();
 
 // Enable authentication and authorization
@@ -180,10 +183,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-//AppSettings? settings = app.Services.CreateScope().ServiceProvider.GetService<IOptions<AppSettings>>().Value;
-// if (settings != null)
-//     PackagesGenerator.Generate(settings.MyAppSettings.InternalPackagesPath, Path.Combine(Directory.GetParent(settings.MyAppSettings.AppsPath).Name, "packages.txt")); // To delete
 
 app.Run();
 
