@@ -10,15 +10,17 @@ namespace eRM_VersionHub.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PublicationController(IOptions<AppSettings> appSettings, IPublicationService publicationService, ILogger<PublicationController> logger) : ControllerBase
+    public class PublicationController(IOptions<AppSettings> appSettings, IPublicationService publicationService,
+        ILogger<PublicationController> logger, IPermissionService permissionService) : ControllerBase
     {
         private readonly MyAppSettings _settings = appSettings.Value.MyAppSettings;
         private readonly IPublicationService _publicationService = publicationService;
-        private readonly ILogger<PublicationController> _logger = logger; 
+        private readonly IPermissionService _permissionService = permissionService;
+        private readonly ILogger<PublicationController> _logger = logger;
 
         [HttpPost]
         [Authorize(Roles = "user")]
-        public IActionResult PublishVersions(List<VersionDto> versionDtos)
+        public async Task<IActionResult> PublishVersions(List<VersionDto> versionDtos)
         {
             _logger.LogDebug(AppLogEvents.Controller, "PublishVersions invoked with data: {versionDtos}", versionDtos);
 
@@ -26,6 +28,15 @@ namespace eRM_VersionHub.Controllers
             {
                 _logger.LogWarning(AppLogEvents.Controller, "Data list for PublishVersions is empty");
                 return NotFound(ApiResponse<bool>.ErrorResponse(["Empty collection of versions to publish"]).Serialize());
+            }
+
+            foreach (var versionDto in versionDtos)
+            {
+                if (!await _permissionService.ValidatePermissions(versionDto, _settings, User?.Identity?.Name))
+                {
+                    _logger.LogWarning(AppLogEvents.Controller, "User is not permitted to operate on these modules");
+                    return NotFound(ApiResponse<bool>.ErrorResponse(["User is not permitted to operate on these modules"]).Serialize());
+                }
             }
 
             List<string> result = [];
@@ -47,7 +58,7 @@ namespace eRM_VersionHub.Controllers
 
         [HttpDelete]
         [Authorize(Roles = "user")]
-        public IActionResult UnpublishVersions(List<VersionDto> versionDtos)
+        public async Task<IActionResult> UnpublishVersions(List<VersionDto> versionDtos)
         {
             _logger.LogDebug(AppLogEvents.Controller, "UnpublishVersions invoked with data: {versionDtos}", versionDtos);
 
@@ -55,6 +66,15 @@ namespace eRM_VersionHub.Controllers
             {
                 _logger.LogWarning(AppLogEvents.Controller, "Data list for UnpublishVersions is empty");
                 return NotFound(ApiResponse<bool>.ErrorResponse(["Empty collection of versions to unpublish"]).Serialize());
+            }
+
+            foreach (var versionDto in versionDtos)
+            {
+                if (!await _permissionService.ValidatePermissions(versionDto, _settings, User?.Identity?.Name))
+                {
+                    _logger.LogWarning(AppLogEvents.Controller, "User is not permitted to operate on these modules");
+                    return NotFound(ApiResponse<bool>.ErrorResponse(["User is not permitted to operate on these modules"]).Serialize());
+                }
             }
 
             List<string> result = [];
