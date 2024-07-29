@@ -31,6 +31,9 @@ describe('SidebarComponent', () => {
       { favoriteApps$: of(mockApps.filter((app) => app.IsFavourite)) }
     );
 
+    favoriteServiceMock.addToFavorite.and.returnValue(of(undefined));
+    favoriteServiceMock.removeFromFavorite.and.returnValue(of(undefined));
+
     await TestBed.configureTestingModule({
       imports: [SidebarComponent, NoopAnimationsModule],
       providers: [
@@ -102,8 +105,10 @@ describe('SidebarComponent', () => {
     const app = { ...mockApps[0], IsFavourite: false };
     const event = new Event('click');
     spyOn(event, 'stopPropagation');
+
     component.handleFavoriteSelection(event, app);
     tick();
+
     expect(event.stopPropagation).toHaveBeenCalled();
     expect(favoriteServiceMock.addToFavorite).toHaveBeenCalledWith(
       app,

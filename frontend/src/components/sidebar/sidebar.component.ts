@@ -164,9 +164,11 @@ export class SidebarComponent implements OnInit {
   handleFavoriteSelection(event: Event, app: App) {
     event.stopPropagation();
     if (app.IsFavourite) {
-      this.favoriteService.removeFromFavorite(app, 'admin');
+      //dont remove subscribe()
+      this.favoriteService.removeFromFavorite(app, 'admin').subscribe();
     } else {
-      this.favoriteService.addToFavorite(app, 'admin');
+      //dont remove subscribe()
+      this.favoriteService.addToFavorite(app, 'admin').subscribe();
     }
   }
   getFavoriteIcon(app: App): string {
