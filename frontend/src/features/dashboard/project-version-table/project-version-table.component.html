@@ -1,189 +1,178 @@
-<div style="max-width: 20rem">
-  <app-search
-    [showIcons]="true"
-    placeholder="Search versions"
-    (valueChanged)="applyFilter($event)"
-  ></app-search>
-</div>
-
 <div class="table-container">
-  <table
-    mat-table
-    [dataSource]="dataSource"
-    matSort
-    multiTemplateDataRows
-    class="mat-elevation-z8"
-  >
-    <!-- Actions Column -->
-    <ng-container matColumnDef="Actions">
-      <th mat-header-cell *matHeaderCellDef>Actions</th>
-      <td mat-cell *matCellDef="let element">
-        @switch (getPublicationStatus(element)) { @case ('published') {
-        <button
-          mat-button
-          style="color: red"
-          (click)="handleUnPublishVersion(element)"
-          [disabled]="element.isLoading"
-        >
-          @if (!element.isLoading) {
-          <ng-container>
-            <mat-icon>unpublished</mat-icon>
+  <div class="table-container-header">
+    <div class="summary-container">
+      <div class="summary-card">
+        <ng-container *ngIf="selectedAppName">
+          <h3>{{ selectedAppName }} Summary</h3>
+          <div class="summary-stats">
+            <div class="stat-item">
+              <span class="stat-label">Total Versions:</span>
+              <span class="stat-value">{{ dataSource.data.length }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Published Versions:</span>
+              <span class="stat-value">{{ getPublishedVersionsCount() }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Unpublished Versions:</span>
+              <span class="stat-value">{{
+                dataSource.data.length - getPublishedVersionsCount()
+              }}</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+    <div>
+      <app-search
+        [showIcons]="true"
+        placeholder="Search versions"
+        (valueChanged)="applyFilter($event)"
+      ></app-search>
+    </div>
+  </div>
+  <div class="table-container">
+    <table
+      mat-table
+      [dataSource]="dataSource"
+      matSort
+      multiTemplateDataRows
+      class="mat-elevation-z8"
+    >
+      <!-- Published Column -->
+      <ng-container matColumnDef="Published">
+        <th mat-header-cell *matHeaderCellDef>Published</th>
+        <td mat-cell *matCellDef="let element">
+          <ng-container *ngIf="getPublicationStatusText(element)">
+            <mat-chip>{{ getPublicationStatusText(element) }}</mat-chip>
           </ng-container>
-          Unpublish } @else {
-          <mat-spinner [diameter]="20"></mat-spinner>
-          }
-        </button>
-        } @case ('semi-published') {
-        <div style="display: flex">
-          <button
-            mat-button
-            style="color: var(--primary-color)"
-            (click)="handlePublishVersion(element)"
-            [disabled]="element.isLoading"
-          >
-            @if (!element.isLoading) {
-            <mat-icon>publish</mat-icon>
-            } @else {
-            <mat-spinner [diameter]="20"></mat-spinner>
-            }
+        </td>
+      </ng-container>
+
+      <!-- Version Column -->
+      <ng-container matColumnDef="Version">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Version</th>
+        <td mat-cell *matCellDef="let element">
+          <span style="font-weight: 500">
+            {{ element.Version }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Tag Column -->
+      <ng-container matColumnDef="Tag">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Tag</th>
+        <td mat-cell *matCellDef="let element">
+          <div>
+            <span *ngIf="element.Tag !== ''">{{ element.Tag }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Expand Column -->
+      <ng-container matColumnDef="expand">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let element" class="expand-cell">
+          <button mat-icon-button (click)="toggleRow(element, $event)">
+            <mat-icon>{{
+              expandedElement === element
+                ? "keyboard_arrow_up"
+                : "keyboard_arrow_down"
+            }}</mat-icon>
           </button>
-          <mat-divider></mat-divider>
-          <button
-            mat-button
-            style="color: red"
-            (click)="handleUnPublishVersion(element)"
-            [disabled]="element.isLoading"
+        </td>
+      </ng-container>
+      <!-- Expanded Detail  -->
+      <ng-container matColumnDef="expandedDetail">
+        <td
+          mat-cell
+          *matCellDef="let element"
+          [attr.colspan]="columnsToDisplay.length"
+        >
+          <div
+            class="element-detail"
+            [@detailExpand]="
+              element == expandedElement ? 'expanded' : 'collapsed'
+            "
           >
-            @if (!element.isLoading) {
-            <ng-container>
-              <mat-icon>unpublished</mat-icon>
-            </ng-container>
-            } @else {
-            <mat-spinner [diameter]="20"></mat-spinner>
-            }
-          </button>
-        </div>
-        } @case ('not-published') {
-        <button
-          mat-button
-          style="color: var(--primary-color)"
-          (click)="handlePublishVersion(element)"
-          [disabled]="element.isLoading"
-        >
-          @if (!element.isLoading) {
-          <ng-container>
-            <mat-icon>unpublished</mat-icon>
-          </ng-container>
-          Publish } @else {
-          <mat-spinner [diameter]="20"></mat-spinner>
-          }
-        </button>
-        } }
-      </td>
-    </ng-container>
-
-    <!-- Published Column -->
-    <ng-container matColumnDef="Published">
-      <th mat-header-cell *matHeaderCellDef>Published</th>
-      <td mat-cell *matCellDef="let element">
-        <mat-icon [style.color]="getPublicationColor(element)">
-          {{ getPublicationIcon(element) }}
-        </mat-icon>
-      </td>
-    </ng-container>
-
-    <!-- Version Column -->
-    <ng-container matColumnDef="Version">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Version</th>
-      <td mat-cell *matCellDef="let element">{{ element.Version }}</td>
-    </ng-container>
-
-    <!-- Tag Column -->
-    <ng-container matColumnDef="Tag">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Tag</th>
-      <td mat-cell *matCellDef="let element">
-        <div>
-          <span *ngIf="element.Tag === ''">none</span>
-          <span *ngIf="element.Tag !== ''">{{ element.Tag }}</span>
-        </div>
-      </td>
-    </ng-container>
-
-    <!-- Name Column -->
-    <!-- <ng-container matColumnDef="Name">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
-      <td mat-cell *matCellDef="let element">{{ element.Name }}</td>
-    </ng-container> -->
-
-    <!-- ID Column -->
-    <!-- <ng-container matColumnDef="ID">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
-      <td mat-cell *matCellDef="let element">{{ element.ID }}</td>
-    </ng-container> -->
-
-    <!-- Expanded Detail Column -->
-    <ng-container matColumnDef="expandedDetail">
-      <td
-        mat-cell
-        *matCellDef="let element"
-        [attr.colspan]="columnsToDisplay.length"
-      >
-        <div
-          class="element-detail"
-          [@detailExpand]="
-            element == expandedElement ? 'expanded' : 'collapsed'
-          "
-        >
-          <div class="version-detail">
-            <div style="justify-content: space-between; display: flex">
-              <strong>Modules:</strong>
-              @if (element.isLoading) {
-              <mat-spinner [diameter]="40"></mat-spinner>
-              } @else {
+            <div class="version-detail">
+              <div class="version-actions">
+                <mat-checkbox 
+                (change)="$event.checked ? selectAllModules(element) : unselectAllModules(element)" 
+                [checked]="areAllModulesSelected(element)"
+                [disabled]="element.isLoading">
+                Modules
+              </mat-checkbox>             
+              <div class="action-buttons">
+                  <button
+                    mat-raised-button
+                    color="primary"
+                    (click)="applyChanges(element)"
+                    [disabled]="element.isLoading"
+                    class="desktop-only"
+                  >
+                    @if (!element.isLoading) { Apply } @else {
+                    <mat-spinner [diameter]="20"></mat-spinner>
+                    }
+                  </button>
+                </div>
+              </div>
+              <mat-divider></mat-divider>
+              <div class="modules-list">
+                @for (module of element.Modules; track module) {
+                <div class="module-item">
+                  <mat-checkbox
+                    [checked]="isModuleSelected(element, module)"
+                    (change)="
+                      onModuleCheckboxChange(element, module, $event.checked)
+                    "
+                    [disabled]="element.isLoading"
+                  >
+                    {{ module.Name }}
+                  </mat-checkbox>
+                  @if (module.IsOptional) {
+                  <span class="module-optional">(Optional)</span>
+                  }
+                  <span
+                    class="module-status"
+                    [class.published]="module.IsPublished"
+                  >
+                    {{ module.IsPublished ? "Published" : "Unpublished" }}
+                  </span>
+                </div>
+                }
+              </div>
+            </div>
+            <mat-divider></mat-divider>
+            <div class="mobile-only version-actions">
               <button
-                mat-button
+                class="mobile-apply-changes"
+                mat-raised-button
+                color="primary"
                 (click)="applyChanges(element)"
                 [disabled]="element.isLoading"
               >
-                Apply
-              </button>
-              }
-            </div>
-            <ul>
-              @for (module of element.Modules; track module) {
-              <li class="module-item">
-                <mat-checkbox
-                  [checked]="module.IsPublished"
-                  (change)="
-                    onModuleCheckboxChange(element, module, $event.checked)
-                  "
-                  [disabled]="element.isLoading"
-                >
-                  {{ module.Name }}
-                </mat-checkbox>
-                @if (module.IsOptional) {
-                <span class="module-optional">(Optional)</span>
+                @if (!element.isLoading) { Apply } @else {
+                <mat-spinner [diameter]="20"></mat-spinner>
                 }
-              </li>
-              }
-            </ul>
+              </button>
+            </div>
           </div>
-        </div>
-      </td>
-    </ng-container>
-
-    <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
-    <tr
-      mat-row
-      *matRowDef="let element; columns: columnsToDisplay"
-      class="element-row"
-      [class.expanded-row]="expandedElement === element"
-      (click)="expandedElement = expandedElement === element ? null : element"
-    ></tr>
-    <tr
-      mat-row
-      *matRowDef="let row; columns: ['expandedDetail']"
-      class="detail-row"
-    ></tr>
-  </table>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
+      <tr
+        mat-row
+        *matRowDef="let element; columns: columnsToDisplay"
+        class="element-row"
+        [class.expanded-row]="expandedElement === element"
+        (click)="expandedElement = expandedElement === element ? null : element"
+      ></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: ['expandedDetail']"
+        class="detail-row"
+      ></tr>
+    </table>
+  </div>
 </div>

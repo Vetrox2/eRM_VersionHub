@@ -32,6 +32,9 @@ builder.Services.AddEndpointsApiExplorer();
 
 DefaultTypeMap.MatchNamesWithUnderscores = true;
 
+var logger = app.Services.GetRequiredService<ILogger<DbInitializer>>();
+var db = new DbInitializer(app, logger);
+
 builder.Services.Configure<AppSettings>(builder.Configuration);
 builder.Services.AddSingleton<IDbRepository, DbRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
@@ -142,10 +145,21 @@ app.UseHttpLogging();
 
 app.UseCors(builder =>
 {
-    builder.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod();
+    builder
+        .SetIsOriginAllowed(origin =>
+        {
+            var host = new Uri(origin).Host;
+            return host == "localhost" || host == "127.0.0.1";
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod();
 });
 
 // Turn on swagger
+
+
+// Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -174,4 +188,3 @@ app.MapControllers();
 app.Run();
 
 public partial class Program { }
-

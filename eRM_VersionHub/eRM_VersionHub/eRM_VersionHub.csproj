@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -7,6 +7,7 @@
     <RootNamespace>eRM_VersionHub</RootNamespace>
     <UserSecretsId>5154d14b-ae94-43a8-8227-ff61e994a1ae</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+	<DockerfileRunArguments>--network erm_versionhub</DockerfileRunArguments>
   </PropertyGroup>
 
   <ItemGroup>

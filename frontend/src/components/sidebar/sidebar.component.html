@@ -1,9 +1,18 @@
 <div class="sidebar-container">
-  <app-search
-    [showIcons]="true"
-    placeholder="Search apps"
-    (valueChanged)="onSearchValueChanged($event)"
-  ></app-search>
+  <div>
+    <app-search
+      [showIcons]="true"
+      placeholder="Search apps"
+      (valueChanged)="onSearchValueChanged($event)"
+    ></app-search>
+  </div>
+  <div style="display: flex; justify-content: center">
+    <app-toggle-app-selector
+      (ActiveOption)="setAppsCategory($event)"
+      [activeValue]="currentTab"
+    ></app-toggle-app-selector>
+  </div>
+  <mat-divider></mat-divider>
   <ng-container *ngIf="apps$ | async as apps">
     <ng-container *ngIf="apps.length > 0; else noAppsFound">
       <mat-nav-list>
@@ -19,19 +28,27 @@
           "
         >
           <div
-            style="
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              width: 100%;
-            "
+            class="app-item"
             [style.color]="(selectedItem$ | async) === app ? 'white' : ''"
           >
-            {{ app.Name }}
-            <app-menu-icons
-              [menuItems]="menuItems"
-              (menuSelection)="handleMenuSelection($event, app)"
-            ></app-menu-icons>
+            <div
+              class="app-name"
+              [matTooltip]="app.Name"
+              matTooltipClass="app-name-tooltip"
+            >
+              {{ app.Name }}
+            </div>
+            <mat-icon
+              class="favorite-icon"
+              (click)="handleFavoriteSelection($event, app)"
+              [style.color]="
+                app.IsFavourite && (selectedItem$ | async) !== app
+                  ? 'var(--primary-color)'
+                  : ''
+              "
+            >
+              {{ getFavoriteIcon(app) }}
+            </mat-icon>
           </div>
         </mat-list-item>
       </mat-nav-list>
