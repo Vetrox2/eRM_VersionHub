@@ -6,8 +6,8 @@ namespace eRM_VersionHub.Services
 {
     public class AppDataScanner(IFavoriteService favoriteService, IPermissionService permissionService, ILogger<AppDataScanner> logger) : IAppDataScanner
     {
-        private IFavoriteService _favoriteService = favoriteService;
-        private IPermissionService _permissionService = permissionService;
+        private readonly IFavoriteService _favoriteService = favoriteService;
+        private readonly IPermissionService _permissionService = permissionService;
         private readonly ILogger<AppDataScanner> _logger = logger;
         private ApiResponse<List<AppStructureDto>> response;
 
