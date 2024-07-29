@@ -45,10 +45,18 @@ app.UseHttpLogging();
 
 app.UseCors(builder =>
 {
-    builder.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod();
+    builder
+        .SetIsOriginAllowed(origin =>
+        {
+            var host = new Uri(origin).Host;
+            return host == "localhost" || host == "127.0.0.1";
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod();
 });
 
-// var db = new DbInitializer(app);
+var logger = app.Services.GetRequiredService<ILogger<DbInitializer>>();
+var db = new DbInitializer(app, logger);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -63,9 +71,13 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-AppSettings? settings = app.Services.CreateScope().ServiceProvider.GetService<IOptions<AppSettings>>().Value ;
+AppSettings? settings = app
+    .Services.CreateScope()
+    .ServiceProvider.GetService<IOptions<AppSettings>>()
+    .Value;
+
 //if(settings != null)
-  // PackagesGenerator.Generate(settings.MyAppSettings.InternalPackagesPath, Path.Combine(Directory.GetParent(settings.MyAppSettings.AppsPath).Name, "packages.txt")); //To delete
+// PackagesGenerator.Generate(settings.MyAppSettings.InternalPackagesPath, Path.Combine(Directory.GetParent(settings.MyAppSettings.AppsPath).Name, "packages.txt")); //To delete
 
 app.Run();
 

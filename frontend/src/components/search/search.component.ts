@@ -31,9 +31,9 @@ import { MatButtonModule } from '@angular/material/button';
       @if (showIcons && value.length > 0) {
       <button
         matSuffix
-        mat-icon-button
         aria-label="Clear"
         (click)="clearSearch()"
+        class="clear-button"
       >
         <mat-icon>close</mat-icon>
       </button>

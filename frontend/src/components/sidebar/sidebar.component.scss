@@ -1,0 +1,24 @@
+.app-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.app-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 10px; /* Adds space between text and icon */
+}
+
+.favorite-icon {
+  flex-shrink: 0; /* Prevents icon from shrinking */
+}
+.sidebar-container {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
