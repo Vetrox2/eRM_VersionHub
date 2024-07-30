@@ -27,6 +27,7 @@ import {
   catchError,
   finalize,
   forkJoin,
+  lastValueFrom,
   Observable,
   Subscription,
   tap,
@@ -117,7 +118,6 @@ export class ProjectVersionTableComponent
     // Subscribe to search text changes
     this.searchSubscription = this.searchService.searchText$.subscribe(
       (searchText) => {
-        console.log('Search Text Changed:', searchText);
         this.applyFilter(searchText); // Apply filter based on search text
       }
     );
@@ -228,27 +228,28 @@ export class ProjectVersionTableComponent
           );
         }
 
-        let completedCount = 0;
         let publishError = false;
         let unpublishError = false;
         let failedPublishModules: string[] = [];
         let failedUnpublishModules: string[] = [];
+        let completedCount = 0;
 
         observables.forEach((observable, index) => {
           observable.subscribe({
             next: (response: ApiResponse<boolean>) => {
-              console.log(`Response for observable ${index}:`, response);
               if (!response.Success) {
-                if (index === 0 && publishedModules.length > 0) {
+                if (index === 0) {
                   publishError = true;
                   failedPublishModules = publishedModules.map((m) => m.Name);
-                } else if (index === 1 && unpublishedModules.length > 0) {
+                } else {
                   unpublishError = true;
                   failedUnpublishModules = unpublishedModules.map(
                     (m) => m.Name
                   );
                 }
-                console.log(response);
+              }
+              completedCount++;
+              if (completedCount === observables.length) {
                 this.handleCompletion(
                   flattenedVersion,
                   result,
@@ -259,16 +260,11 @@ export class ProjectVersionTableComponent
                 );
               }
             },
-            error: (error) => {
-              console.error(`Error in observable ${index}:`, error);
-              this.handleError('Error applying changes', error);
-            },
           });
         });
       }
     });
   }
-
   private handleCompletion(
     flattenedVersion: FlattenedVersion,
     result: any,
@@ -344,53 +340,6 @@ export class ProjectVersionTableComponent
     return this.versionUtils.flattenedVersionToDto(flattenedVersion);
   }
 
-  handlePublishVersion(version: FlattenedVersion) {
-    const dialogRef = this.dialog.open(DefaultModalComponent, {
-      data: {
-        title: 'Publish Version',
-        message: 'Are you sure you want to publish this version?',
-        selectedTag: version.Tag || 'none',
-        showTags: true,
-      },
-    });
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result && result.selectedTag) {
-        this.isLoading = true;
-        version.isLoading = true;
-        const versionDto = this.flattenedVersionToDto(version);
-        versionDto.PublishedTag =
-          result.selectedTag === 'none' ? '' : result.selectedTag;
-        this.publicationService.publishVersion(versionDto).subscribe({
-          next: (response) => {
-            if (response.Success) {
-              this.snackBar.open('Version published successfully', 'Close', {
-                duration: 3000,
-              });
-              version.Modules.forEach((module) => {
-                module.IsPublished = true;
-              });
-              version.Tag =
-                result.selectedTag === 'none' ? '' : result.selectedTag;
-              this.refreshData();
-            } else {
-              this.handleError(
-                response.Errors.join(', '),
-                'Error publishing version'
-              );
-            }
-          },
-          error: (error) => {
-            this.handleError(error, 'Error publishing version');
-          },
-          complete: () => {
-            version.isLoading = false;
-            this.refreshData();
-          },
-        });
-      }
-    });
-  }
-
   handleUnPublishVersion(flattenedVersion: FlattenedVersion) {
     const dialogRef = this.dialog.open(DefaultModalComponent, {
       data: {
@@ -414,21 +363,20 @@ export class ProjectVersionTableComponent
               flattenedVersion.Modules.forEach((module) => {
                 module.IsPublished = false;
               });
+              flattenedVersion.isLoading = false;
               this.refreshData();
             } else {
+              flattenedVersion.isLoading = false;
               this.handleError(
                 'Error unpublishing version',
                 response.Errors.join(', ')
               );
+              this.refreshData();
               return;
             }
           },
           error: (error) => {
             this.handleError('publish error', 'Error unpublishing version');
-          },
-          complete: () => {
-            flattenedVersion.isLoading = false;
-            this.refreshData();
           },
         });
       }
