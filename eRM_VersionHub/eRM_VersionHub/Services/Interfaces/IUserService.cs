@@ -1,4 +1,5 @@
-﻿using eRM_VersionHub.Models;
+﻿using eRM_VersionHub.Dtos;
+using eRM_VersionHub.Models;
 
 
 namespace eRM_VersionHub.Services.Interfaces
@@ -10,5 +11,6 @@ namespace eRM_VersionHub.Services.Interfaces
         Task<ApiResponse<User?>> GetUser(string Username);
         Task<ApiResponse<User?>> UpdateUser(User user);
         Task<ApiResponse<User?>> DeleteUser(string Username);
+        Task<ApiResponse<List<UserDto>>> GetUsersWithApps();
     }
 }
