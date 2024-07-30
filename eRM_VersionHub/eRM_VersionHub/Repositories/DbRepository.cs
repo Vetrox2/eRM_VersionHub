@@ -4,6 +4,7 @@ using eRM_VersionHub.Repositories.Interfaces;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Data;
+using System.Text.RegularExpressions;
 
 namespace eRM_VersionHub.Repositories
 {
@@ -32,32 +33,52 @@ namespace eRM_VersionHub.Repositories
 
             public override string ToString() => $"{Name} {Type} {(PrimaryKey ? " PRIMARY KEY" : "")} {(NotNull ? "NOT NULL" : "")} {(Unique ? " UNIQUE" : "")}";
         }
+        private static readonly Regex ValidIdentifierRegex = new Regex(@"^[a-zA-Z0-9_]+$");
+
+
+        private static bool IsValidIdentifier(string identifier)
+        {
+            return ValidIdentifierRegex.IsMatch(identifier);
+        }
+
+        private static string SanitizeIdentifier(string identifier)
+        {
+            // Double quote the identifier to escape it properly for SQL
+            return $"\"{identifier.Replace("\"", "\"\"")}\"";
+        }
+
+
 
         public async Task<ApiResponse<bool>> CreateTable(string tableName, List<ColumnDefinition> columns)
         {
             _logger.LogDebug(AppLogEvents.Database, "Invoked CreateTable with data: {tableName}\n{columns}", tableName, columns);
+
+            if (!IsValidIdentifier(tableName))
+            {
+                return ApiResponse<bool>.ErrorResponse(new List<string> { "Invalid table name." });
+            }
+
             try
             {
                 var columnDefinitions = columns.Select(c => c.ToString());
-                var AllColumns = string.Join(",\n", columnDefinitions);
-                var sql = $"CREATE TABLE IF NOT EXISTS {tableName} ({AllColumns});";
+                var allColumns = string.Join(",\n", columnDefinitions);
+                var sql = $"CREATE TABLE IF NOT EXISTS {SanitizeIdentifier(tableName)} ({allColumns});";
 
                 _logger.LogDebug(AppLogEvents.Database, "CreateTable is executing an SQL query: {sql}, ({tableName}, {columnDefinitions})", sql, tableName, columnDefinitions);
                 await _db.ExecuteAsync(sql);
 
-                _logger.LogInformation(AppLogEvents.Database, "CreateTable invoked succesfully");
+                _logger.LogInformation(AppLogEvents.Database, "CreateTable invoked successfully");
                 return ApiResponse<bool>.SuccessResponse(true);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(AppLogEvents.Database, "While executing CreateTable, this execption has been thrown: {Message}\n{StackTrace}",
+                _logger.LogWarning(AppLogEvents.Database, "While executing CreateTable, this exception has been thrown: {Message}\n{StackTrace}",
                     ex.Message, ex.StackTrace);
 
-                return ApiResponse<bool>.ErrorResponse(
-                    new List<string> { $"Error creating table: {ex.Message}" }
-                );
+                return ApiResponse<bool>.ErrorResponse(new List<string> { $"Error creating table: {ex.Message}" });
             }
         }
+
 
         public async Task<ApiResponse<bool>> TableExists(string tableName)
         {
