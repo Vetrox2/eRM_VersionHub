@@ -82,6 +82,25 @@ namespace eRM_VersionHub.Services
             return response;
         }
 
+        public ApiResponse<List<string>> GetAppsNames(MyAppSettings settings)
+        {
+            _logger.LogDebug(AppLogEvents.Service, "Invoking GetAppsNames");
+
+            if (!Directory.Exists(settings.AppsPath))
+            {
+                _logger.LogError(AppLogEvents.Service, "AppsPath in the settings does not exist");
+                return ApiResponse<List<string>>.ErrorResponse(["Fatal error"]);
+            }
+
+            var info = GetDirectoryInfo(settings.AppsPath);
+            var appsNames = info?.Select(x => x.Name).ToList();
+
+            _logger.LogDebug(AppLogEvents.Service, "GetAppsNames returned: {appsNames}", appsNames);
+
+            return appsNames == null ? 
+                ApiResponse<List<string>>.ErrorResponse(["Fatal error"]) : ApiResponse<List<string>>.SuccessResponse(appsNames);
+        }
+
         private async Task<List<AppStructureDto>?> GetInternalAppStructure(string appsPath, string appJsonName, string internalPackagesPath, string token)
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoking GetInternalAppStructure with paramters: {appsPath}, {appJsonName}, {internalPackagesPath}, {token}", appsPath, appJsonName, internalPackagesPath, token);
