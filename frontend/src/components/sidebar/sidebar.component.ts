@@ -60,7 +60,6 @@ export class SidebarComponent implements OnInit {
     private favoriteService: FavoriteService
   ) {
     this.favoriteApps$ = favoriteService.favoriteApps$;
-    this.favoriteService.favoriteApps$.subscribe((apps) => console.log(apps));
     this.apps$ = combineLatest([
       this.appService.apps$,
       this.favoriteApps$,

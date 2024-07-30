@@ -1,6 +1,8 @@
 ﻿using Dapper;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories.Interfaces;
+using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Data;
@@ -8,20 +10,10 @@ using System.Text.RegularExpressions;
 
 namespace eRM_VersionHub.Repositories
 {
-    public class DbRepository : IDbRepository
+    public class DbRepository(ILogger<DbRepository> logger, ISqlConnectionFactory connectionFactory) : IDbRepository
     {
-        private static string? configuration;
-        private readonly IDbConnection _db;
-        private readonly ILogger _logger;
+        private readonly ILogger _logger = logger;
 
-        public DbRepository(IOptions<AppSettings> appSettings, ILogger<DbRepository> logger)
-        {
-            configuration = appSettings.Value.MyAppSettings.ConnectionString;
-            _db = new NpgsqlConnection(configuration);
-
-            _logger = logger;
-            _logger.LogDebug(AppLogEvents.Database, "Started a database connection with settings: {configuration}", configuration);
-        }
 
         public class ColumnDefinition
         {
@@ -60,6 +52,9 @@ namespace eRM_VersionHub.Repositories
 
             try
             {
+                using var _db = connectionFactory.CreateConnection();
+
+
                 var columnDefinitions = columns.Select(c => c.ToString());
                 var allColumns = string.Join(",\n", columnDefinitions);
                 var sql = $"CREATE TABLE IF NOT EXISTS {SanitizeIdentifier(tableName)} ({allColumns});";
@@ -68,7 +63,10 @@ namespace eRM_VersionHub.Repositories
                 await _db.ExecuteAsync(sql);
 
                 _logger.LogInformation(AppLogEvents.Database, "CreateTable invoked successfully");
+
+
                 return ApiResponse<bool>.SuccessResponse(true);
+
             }
             catch (Exception ex)
             {
@@ -85,6 +83,8 @@ namespace eRM_VersionHub.Repositories
             _logger.LogDebug(AppLogEvents.Database, "Invoked TableExists with parameter: {tableName}", tableName);
             var sql = "SELECT 1 FROM information_schema.tables WHERE table_name = @TableName";
 
+            using var _db = connectionFactory.CreateConnection();
+
             _logger.LogDebug(AppLogEvents.Database, "TableExists is executing an SQL query: {sql}", sql);
             var result = await _db.ExecuteScalarAsync<bool>(sql, new { TableName = tableName });
             _logger.LogDebug(AppLogEvents.Database, "Result of query from function TableExists: {result}", result);
@@ -94,6 +94,7 @@ namespace eRM_VersionHub.Repositories
                 _logger.LogInformation(AppLogEvents.Database, "TableExists invoked succesfully");
                 return ApiResponse<bool>.SuccessResponse(true);
             }
+
 
             _logger.LogWarning(AppLogEvents.Database, "Table {tableName} doesn't exist", tableName);
             return ApiResponse<bool>.ErrorResponse(["Table doesn't exist"]);
@@ -108,6 +109,7 @@ namespace eRM_VersionHub.Repositories
             {
                 _logger.LogDebug(AppLogEvents.Database, "GetAsync of type {type} is executing an SQL query: {command}, {parms}", type, command, parms);
 
+                using var _db = connectionFactory.CreateConnection();
                 IEnumerable<T> query = await _db.QueryAsync<T>(command, parms);
                 T? result = query.FirstOrDefault();
 
@@ -138,6 +140,7 @@ namespace eRM_VersionHub.Repositories
             {
                 _logger.LogDebug(AppLogEvents.Database, "GetAll of type {type} is executing an SQL query: {command}, {parms}", type, command, parms);
 
+                using var _db = connectionFactory.CreateConnection();
                 IEnumerable<T> query = await _db.QueryAsync<T>(command, parms);
                 List<T> result = query.ToList();
 
@@ -168,6 +171,7 @@ namespace eRM_VersionHub.Repositories
             {
                 _logger.LogDebug(AppLogEvents.Database, "EditData of type {type} is executing an SQL query: {command}, {parms}", type, command, parms);
 
+                using var _db = connectionFactory.CreateConnection();
                 IEnumerable<T> query = await _db.QueryAsync<T>(command, parms);
                 T? result = query.FirstOrDefault();
 

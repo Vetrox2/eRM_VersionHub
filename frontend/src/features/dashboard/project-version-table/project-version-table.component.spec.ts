@@ -233,10 +233,18 @@ describe('ProjectVersionTableComponent', () => {
 
       const errorMessage = 'Publish error';
       publicationServiceSpy.publishVersion.and.returnValue(
-        throwError(() => new Error(errorMessage))
+        of({
+          Success: false,
+          Data: null,
+          Errors: [errorMessage],
+        } as ApiResponse<any>)
       );
       publicationServiceSpy.unPublishVersion.and.returnValue(
-        throwError(() => new Error('Unpublish error'))
+        of({
+          Success: false,
+          Data: null,
+          Errors: ['Unpublish error'],
+        } as ApiResponse<any>)
       );
 
       component.applyChanges(mockFlattenedVersion);
