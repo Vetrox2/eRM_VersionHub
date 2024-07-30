@@ -20,36 +20,31 @@ namespace eRM_VersionHub.Controllers
 
         [HttpPost]
         [Authorize(Roles = "user")]
-        public async Task<IActionResult> PublishVersions(List<VersionDto> versionDtos)
+        public async Task<IActionResult> PublishVersions(VersionDto versionDto)
         {
-            _logger.LogDebug(AppLogEvents.Controller, "PublishVersions invoked with data: {versionDtos}", versionDtos);
+            _logger.LogDebug(AppLogEvents.Controller, "PublishVersions invoked with data: {versionDtos}", versionDto);
 
-            if (versionDtos == null || versionDtos.Count == 0)
+            if (versionDto == null || versionDto.Modules.Count == 0)
             {
-                _logger.LogWarning(AppLogEvents.Controller, "Data list for PublishVersions is empty");
-                return NotFound(ApiResponse<bool>.ErrorResponse(["Empty collection of versions to publish"]).Serialize());
+                _logger.LogWarning(AppLogEvents.Controller, "Data for PublishVersions is empty");
+                return NotFound(ApiResponse<bool>.ErrorResponse(["Empty version to publish"]).Serialize());
             }
 
-            foreach (var versionDto in versionDtos)
+            if (!await _permissionService.ValidatePermissions(versionDto, _settings, User?.Identity?.Name))
             {
-                if (!await _permissionService.ValidatePermissions(versionDto, _settings, User?.Identity?.Name))
-                {
-                    _logger.LogWarning(AppLogEvents.Controller, "User is not permitted to operate on these modules");
-                    return NotFound(ApiResponse<bool>.ErrorResponse(["User is not permitted to operate on these modules"]).Serialize());
-                }
+                _logger.LogWarning(AppLogEvents.Controller, "User is not permitted to operate on these modules");
+                return NotFound(ApiResponse<bool>.ErrorResponse(["User is not permitted to operate on these modules"]).Serialize());
             }
 
             List<string> result = [];
-            foreach (VersionDto version in versionDtos)
-            {
-                _logger.LogDebug(AppLogEvents.Controller, "Publishing version: {version}", version);
-                List<string> errors = _publicationService.Publish(_settings, version).Errors;
 
-                if (errors.Count > 0)
-                {
-                    _logger.LogWarning(AppLogEvents.Controller, "Publish returned: {Errors}", errors);
-                    result.AddRange(errors);
-                }
+            _logger.LogDebug(AppLogEvents.Controller, "Publishing version: {version}", versionDto);
+            List<string> errors = _publicationService.Publish(_settings, versionDto).Errors;
+
+            if (errors.Count > 0)
+            {
+                _logger.LogWarning(AppLogEvents.Controller, "Publish returned: {Errors}", errors);
+                result.AddRange(errors);
             }
 
             _logger.LogInformation(AppLogEvents.Controller, "PublishVersions returned: {result}", result);
@@ -58,35 +53,31 @@ namespace eRM_VersionHub.Controllers
 
         [HttpDelete]
         [Authorize(Roles = "user")]
-        public async Task<IActionResult> UnpublishVersions(List<VersionDto> versionDtos)
+        public async Task<IActionResult> UnpublishVersions(VersionDto versionDto)
         {
-            _logger.LogDebug(AppLogEvents.Controller, "UnpublishVersions invoked with data: {versionDtos}", versionDtos);
+            _logger.LogDebug(AppLogEvents.Controller, "UnpublishVersions invoked with data: {versionDtos}", versionDto);
 
-            if (versionDtos == null || versionDtos.Count == 0)
+            if (versionDto == null || versionDto.Modules.Count == 0)
             {
-                _logger.LogWarning(AppLogEvents.Controller, "Data list for UnpublishVersions is empty");
-                return NotFound(ApiResponse<bool>.ErrorResponse(["Empty collection of versions to unpublish"]).Serialize());
+                _logger.LogWarning(AppLogEvents.Controller, "Data for UnpublishVersions is empty");
+                return NotFound(ApiResponse<bool>.ErrorResponse(["Empty version to unpublish"]).Serialize());
             }
 
-            foreach (var versionDto in versionDtos)
+            if (!await _permissionService.ValidatePermissions(versionDto, _settings, User?.Identity?.Name))
             {
-                if (!await _permissionService.ValidatePermissions(versionDto, _settings, User?.Identity?.Name))
-                {
-                    _logger.LogWarning(AppLogEvents.Controller, "User is not permitted to operate on these modules");
-                    return NotFound(ApiResponse<bool>.ErrorResponse(["User is not permitted to operate on these modules"]).Serialize());
-                }
+                _logger.LogWarning(AppLogEvents.Controller, "User is not permitted to operate on these modules");
+                return NotFound(ApiResponse<bool>.ErrorResponse(["User is not permitted to operate on these modules"]).Serialize());
             }
 
             List<string> result = [];
-            foreach (var version in versionDtos)
+
+            _logger.LogDebug(AppLogEvents.Controller, "Unpublishing version: {version}", versionDto);
+            List<string> errors = _publicationService.Unpublish(_settings, versionDto).Errors;
+
+            if (errors.Count > 0)
             {
-                _logger.LogDebug(AppLogEvents.Controller, "Unpublishing version: {version}", version);
-                List<string> errors = _publicationService.Unpublish(_settings, version).Errors;
-                if (errors.Count > 0)
-                {
-                    _logger.LogWarning(AppLogEvents.Controller, "Unpublish returned: {errors}", errors);
-                    result.AddRange(errors);
-                }
+                _logger.LogWarning(AppLogEvents.Controller, "Unpublish returned: {errors}", errors);
+                result.AddRange(errors);
             }
 
             _logger.LogInformation(AppLogEvents.Controller, "UnpublishVersions returned: {result}", result);
