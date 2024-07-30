@@ -57,7 +57,7 @@ describe('AppService', () => {
       tick();
 
       expect(loadedApps).toEqual(mockApps);
-      expect(apiServiceSpy.get).toHaveBeenCalledWith('Apps/admin');
+      expect(apiServiceSpy.get).toHaveBeenCalledWith('Apps');
 
       service.apps$.subscribe((apps) => {
         expect(apps).toEqual(mockApps);
@@ -77,7 +77,7 @@ describe('AppService', () => {
       tick();
 
       expect(loadedApps).toEqual([]);
-      expect(apiServiceSpy.get).toHaveBeenCalledWith('Apps/admin');
+      expect(apiServiceSpy.get).toHaveBeenCalledWith('Apps');
     }));
   });
 
