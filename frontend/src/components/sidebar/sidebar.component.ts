@@ -60,7 +60,6 @@ export class SidebarComponent implements OnInit {
     private favoriteService: FavoriteService
   ) {
     this.favoriteApps$ = favoriteService.favoriteApps$;
-    this.favoriteService.favoriteApps$.subscribe((apps) => console.log(apps));
     this.apps$ = combineLatest([
       this.appService.apps$,
       this.favoriteApps$,
@@ -165,12 +164,10 @@ export class SidebarComponent implements OnInit {
     event.stopPropagation();
     if (app.IsFavourite) {
       //dont remove subscribe()
-      this.favoriteService
-        .removeFromFavorite(app, 'admin')
-        .subscribe((app) => console.log(app));
+      this.favoriteService.removeFromFavorite(app, 'admin').subscribe();
     } else {
       //dont remove subscribe()
-      this.favoriteService.addToFavorite(app, 'admin');
+      this.favoriteService.addToFavorite(app, 'admin').subscribe();
     }
   }
   getFavoriteIcon(app: App): string {
