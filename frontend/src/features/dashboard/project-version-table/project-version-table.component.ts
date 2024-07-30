@@ -23,7 +23,14 @@ import {
   transition,
   animate,
 } from '@angular/animations';
-import { Subscription } from 'rxjs';
+import {
+  catchError,
+  finalize,
+  forkJoin,
+  Observable,
+  Subscription,
+  tap,
+} from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -39,6 +46,7 @@ import { VersionUtilsService } from '../../../services/version-utils.service';
 import { MatChip } from '@angular/material/chips';
 import { PublicationService } from '../../../services/publication.service';
 import { ApiResponse } from '../../../models/api-response.model';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-project-version-table',
@@ -206,32 +214,30 @@ export class ProjectVersionTableComponent
           Modules: unpublishedModules,
         };
 
-        const promises: Promise<any>[] = [];
+        const observables: Observable<ApiResponse<any>>[] = [];
 
         if (publishedModules.length > 0) {
-          promises.push(
-            this.publicationService
-              .publishVersion(versionDtoPublish)
-              .toPromise()
+          observables.push(
+            this.publicationService.publishVersion(versionDtoPublish)
           );
         }
 
         if (unpublishedModules.length > 0) {
-          promises.push(
-            this.publicationService
-              .unPublishVersion(versionDtoUnPublish)
-              .toPromise()
+          observables.push(
+            this.publicationService.unPublishVersion(versionDtoUnPublish)
           );
         }
 
-        Promise.all(promises)
-          .then((responses) => {
-            let publishError = false;
-            let unpublishError = false;
-            let failedPublishModules: string[] = [];
-            let failedUnpublishModules: string[] = [];
+        let completedCount = 0;
+        let publishError = false;
+        let unpublishError = false;
+        let failedPublishModules: string[] = [];
+        let failedUnpublishModules: string[] = [];
 
-            responses.forEach((response: ApiResponse<boolean>, index) => {
+        observables.forEach((observable, index) => {
+          observable.subscribe({
+            next: (response: ApiResponse<boolean>) => {
+              console.log(`Response for observable ${index}:`, response);
               if (!response.Success) {
                 if (index === 0 && publishedModules.length > 0) {
                   publishError = true;
@@ -242,59 +248,72 @@ export class ProjectVersionTableComponent
                     (m) => m.Name
                   );
                 }
+                console.log(response);
+                this.handleCompletion(
+                  flattenedVersion,
+                  result,
+                  publishError,
+                  unpublishError,
+                  failedPublishModules,
+                  failedUnpublishModules
+                );
               }
-            });
-
-            if (publishError || unpublishError) {
-              let errorMessage = '';
-              if (publishError && unpublishError) {
-                errorMessage = `Failed to publish: ${failedPublishModules.join(
-                  ', '
-                )}. Failed to unpublish: ${failedUnpublishModules.join(', ')}.`;
-              } else if (publishError) {
-                errorMessage = `Failed to publish: ${failedPublishModules.join(
-                  ', '
-                )}.`;
-              } else if (unpublishError) {
-                errorMessage = `Failed to unpublish: ${failedUnpublishModules.join(
-                  ', '
-                )}.`;
-              }
-
-              this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
-
-              throw new Error(errorMessage);
-            }
-
-            // Update modules and refresh data only if there were no errors
-            flattenedVersion.Modules.forEach((module) => {
-              if (
-                this.moduleChanges[module.Name + flattenedVersion.orignalID] !==
-                undefined
-              ) {
-                module.IsPublished =
-                  this.moduleChanges[module.Name + flattenedVersion.orignalID];
-              }
-            });
-            flattenedVersion.Tag = result.selectedTag;
-
-            this.snackBar.open('Changes applied successfully', 'Close', {
-              duration: 3000,
-            });
-
-            this.moduleChanges = {}; // Clear the changes
-            this.refreshData();
-          })
-          .catch((error) => {
-            this.handleError('Error applying changes', error);
-          })
-          .finally(() => {
-            this.isLoading = false;
-            flattenedVersion.isLoading = false;
-            this.refreshData();
+            },
+            error: (error) => {
+              console.error(`Error in observable ${index}:`, error);
+              this.handleError('Error applying changes', error);
+            },
           });
+        });
       }
     });
+  }
+
+  private handleCompletion(
+    flattenedVersion: FlattenedVersion,
+    result: any,
+    publishError: boolean,
+    unpublishError: boolean,
+    failedPublishModules: string[],
+    failedUnpublishModules: string[]
+  ) {
+    this.isLoading = false;
+    flattenedVersion.isLoading = false;
+
+    if (publishError || unpublishError) {
+      let errorMessage = '';
+      if (publishError && unpublishError) {
+        errorMessage = `Failed to publish: ${failedPublishModules.join(
+          ', '
+        )}. Failed to unpublish: ${failedUnpublishModules.join(', ')}.`;
+      } else if (publishError) {
+        errorMessage = `Failed to publish: ${failedPublishModules.join(', ')}.`;
+      } else if (unpublishError) {
+        errorMessage = `Failed to unpublish: ${failedUnpublishModules.join(
+          ', '
+        )}.`;
+      }
+
+      this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
+    } else {
+      flattenedVersion.Modules.forEach((module) => {
+        if (
+          this.moduleChanges[module.Name + flattenedVersion.orignalID] !==
+          undefined
+        ) {
+          module.IsPublished =
+            this.moduleChanges[module.Name + flattenedVersion.orignalID];
+        }
+      });
+      flattenedVersion.Tag = result.selectedTag;
+
+      this.snackBar.open('Changes applied successfully', 'Close', {
+        duration: 3000,
+      });
+    }
+
+    this.moduleChanges = {}; // Clear the changes
+    this.refreshData();
   }
 
   private handleError(error: any, errorMessage: string): void {
@@ -441,7 +460,9 @@ export class ProjectVersionTableComponent
     );
   }
   areAllModulesSelected(element: any): boolean {
-  return element.Modules.every((module: any) => this.isModuleSelected(element, module));
+    return element.Modules.every((module: any) =>
+      this.isModuleSelected(element, module)
+    );
   }
 
   private refreshData() {

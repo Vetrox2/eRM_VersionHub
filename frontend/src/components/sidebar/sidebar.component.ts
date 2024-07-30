@@ -165,10 +165,12 @@ export class SidebarComponent implements OnInit {
     event.stopPropagation();
     if (app.IsFavourite) {
       //dont remove subscribe()
-      this.favoriteService.removeFromFavorite(app, 'admin').subscribe();
+      this.favoriteService
+        .removeFromFavorite(app, 'admin')
+        .subscribe((app) => console.log(app));
     } else {
       //dont remove subscribe()
-      this.favoriteService.addToFavorite(app, 'admin').subscribe();
+      this.favoriteService.addToFavorite(app, 'admin');
     }
   }
   getFavoriteIcon(app: App): string {
