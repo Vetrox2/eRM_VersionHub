@@ -42,9 +42,10 @@ describe('PublicationService', () => {
 
     service.publishVersion(mockVersion).subscribe((response) => {
       expect(response).toEqual(mockResponse);
-      expect(apiServiceSpy.post).toHaveBeenCalledWith('Publication', [
-        mockVersion,
-      ]);
+      expect(apiServiceSpy.post).toHaveBeenCalledWith(
+        'Publication',
+        mockVersion
+      );
       done();
     });
   });
@@ -67,9 +68,10 @@ describe('PublicationService', () => {
 
     service.unPublishVersion(mockVersion).subscribe((response) => {
       expect(response).toEqual(mockResponse);
-      expect(apiServiceSpy.delete).toHaveBeenCalledWith('Publication', [
-        mockVersion,
-      ]);
+      expect(apiServiceSpy.delete).toHaveBeenCalledWith(
+        'Publication',
+        mockVersion
+      );
       done();
     });
   });
