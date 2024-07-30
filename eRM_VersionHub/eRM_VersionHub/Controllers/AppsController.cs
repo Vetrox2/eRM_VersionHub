@@ -28,7 +28,7 @@ namespace eRM_VersionHub.Controllers
 
             _logger.LogDebug(AppLogEvents.Controller, "GetStructure invoked with paramter: {UserName}", UserName);
             var response = await _appDataScanner.GetAppsStructure(_settings, UserName);
-            _logger.LogDebug(AppLogEvents.Controller, "GetAppsStructure returned: {UserName}", UserName);
+            _logger.LogDebug(AppLogEvents.Controller, "GetAppsStructure returned: {response}", response);
 
             if (response.Data == null || response.Data.Count == 0)
             {
@@ -37,6 +37,25 @@ namespace eRM_VersionHub.Controllers
             }
 
             _logger.LogInformation(AppLogEvents.Controller, "GetStructure returned: {Data}", response.Data);
+            return Ok(response.Serialize());
+        }
+
+        [HttpGet("AppsNames")]
+        [Authorize(Roles = "admin")]
+        public IActionResult GetAppsNames()
+        {
+            _logger.LogDebug(AppLogEvents.Controller, "GetAppsNames invoked");
+
+            var response = _appDataScanner.GetAppsNames(_settings);
+            _logger.LogDebug(AppLogEvents.Controller, "GetAppsNames returned: {response}", response);
+
+            if (!response.Success || response.Data == null || response.Data.Count == 0)
+            {
+                _logger.LogWarning(AppLogEvents.Controller, "GetAppsNames returned: {Errors}", response.Errors);
+                return NotFound(response.Serialize());
+            }
+
+            _logger.LogInformation(AppLogEvents.Controller, "GetAppsNames returned data: {Data}", response.Data);
             return Ok(response.Serialize());
         }
     }

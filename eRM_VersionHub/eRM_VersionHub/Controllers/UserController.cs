@@ -1,4 +1,5 @@
 ﻿using eRM_VersionHub.Models;
+using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,48 +13,30 @@ namespace eRM_VersionHub.Controllers
         private readonly ILogger<UserController> _logger = logger;
         private readonly IUserService _userService = userService;
 
-        [HttpGet]
+        [HttpGet("UsersWithApps")]
         [Authorize(Roles = "admin")]
-        public async Task<IActionResult> GetUsers()
+        public async Task<IActionResult> GetUsersWithApps()
         {
-            _logger.LogDebug(AppLogEvents.Controller, "Invoked GetUsers");
-            ApiResponse<List<User>> result = await _userService.GetUserList();
-            _logger.LogDebug(AppLogEvents.Controller, "GetUserList result: {result}", result);
+            _logger.LogDebug(AppLogEvents.Controller, "Invoked GetUsersWithApps");
+            var result = await _userService.GetUsersWithApps();
+            _logger.LogDebug(AppLogEvents.Controller, "GetUsersWithApps result: {result}", result);
 
-            if (result.Success)
+            if (!result.Success || result.Data == null)
             {
-                _logger.LogInformation(AppLogEvents.Controller, "GetUsers returned: {Data}", result.Data);
-                return Ok(result.Data);
+                _logger.LogWarning(AppLogEvents.Controller, "GetUser returned error(s): {Errors}", result.Errors);
+                return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
             }
 
-            _logger.LogWarning(AppLogEvents.Controller, "GetUsers returned error(s): {Errors}", result.Errors);
-            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
+            _logger.LogInformation(AppLogEvents.Controller, "GetUser returned: {Data}", result.Data);
+            return Ok(result.Serialize());
         }
 
-        [HttpGet("{Username}")]
-        [Authorize(Roles = "admin")]
-        public async Task<IActionResult> GetUser(string Username)
+        [HttpPost("{userName}")]
+        [Authorize(Roles = "user")]
+        public async Task<IActionResult> AddUser(string userName)
         {
-            _logger.LogDebug(AppLogEvents.Controller, "Invoked GetUser with parameter: {Username}", Username);
-            ApiResponse<User?> result = await _userService.GetUser(Username);
-            _logger.LogDebug(AppLogEvents.Controller, "GetUser result: {result}", result);
-
-            if (result.Success)
-            {
-                _logger.LogInformation(AppLogEvents.Controller, "GetUser returned: {Data}", result.Data);
-                return Ok(result.Data);
-            }
-
-            _logger.LogWarning(AppLogEvents.Controller, "GetUser returned error(s): {Errors}", result.Errors);
-            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
-        }
-
-        [HttpPost]
-        [Authorize(Roles = "admin")]
-        public async Task<IActionResult> AddUser([FromBody] User user)
-        {
-            _logger.LogDebug(AppLogEvents.Controller, "Invoked AddUser with data: {user}", user);
-            ApiResponse<User?> result = await _userService.CreateUser(user);
+            _logger.LogDebug(AppLogEvents.Controller, "Invoked AddUser with data: {user}", userName);
+            ApiResponse<User?> result = await _userService.CreateUser(new User() { Username = userName, CreationDate = DateTime.Now});
             _logger.LogDebug(AppLogEvents.Controller, "CreateUser result: {result}", result);
 
             if (result.Success)
@@ -63,43 +46,7 @@ namespace eRM_VersionHub.Controllers
             }
 
             _logger.LogWarning(AppLogEvents.Controller, "AddUser returned error(s): {Errors}", result.Errors);
-            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
-        }
-
-        [HttpPut]
-        [Authorize(Roles = "admin")]
-        public async Task<IActionResult> UpdateUser([FromBody] User user)
-        {
-            _logger.LogDebug(AppLogEvents.Controller, "Invoked UpdateUser with data: {user}", user);
-            ApiResponse<User?> result = await _userService.UpdateUser(user);
-            _logger.LogDebug(AppLogEvents.Controller, "UpdateUser result: {result}", result);
-
-            if (result.Success)
-            {
-                _logger.LogInformation(AppLogEvents.Controller, "UpdateUser returned: {Data}", result.Data);
-                return Ok(result.Data);
-            }
-
-            _logger.LogWarning(AppLogEvents.Controller, "UpdateUser returned error(s): {Errors}", result.Errors);
-            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
-        }
-
-        [HttpDelete("{Username}")]
-        [Authorize(Roles = "admin")]
-        public async Task<IActionResult> DeleteUser(string Username)
-        {
-            _logger.LogDebug(AppLogEvents.Controller, "Invoked DeleteUser with parameter: {Username}", Username);
-            ApiResponse<User?> result = await _userService.DeleteUser(Username);
-            _logger.LogDebug(AppLogEvents.Controller, "DeleteUser result: {result}", result);
-
-            if (result.Success)
-            {
-                _logger.LogInformation(AppLogEvents.Controller, "DeleteUser returned: {Data}", result.Data);
-                return Ok(result.Data);
-            }
-
-            _logger.LogWarning(AppLogEvents.Controller, "DeleteUser returned error(s): {Errors}", result.Errors);
-            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
+            return Problem("User already exist or sth else went wrong", statusCode: 400);
         }
     }
 }

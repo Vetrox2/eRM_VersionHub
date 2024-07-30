@@ -1,10 +1,11 @@
-﻿using eRM_VersionHub.Models;
+﻿using eRM_VersionHub.Dtos;
+using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories.Interfaces;
 using eRM_VersionHub.Services.Interfaces;
 
 namespace eRM_VersionHub.Services.Database
 {
-    public class UserService(IUserRepository repository, ILogger<UserService> logger) : IUserService
+    public class UserService(IUserRepository repository, ILogger<UserService> logger, IPermissionService permissionService) : IUserService
     {
         private readonly ILogger<UserService> _logger = logger;
         private readonly IUserRepository _repository = repository;
@@ -25,6 +26,29 @@ namespace eRM_VersionHub.Services.Database
 
             _logger.LogInformation(AppLogEvents.Service, "GetUserList returned: {result}", result);
             return result;
+        }
+
+        public async Task<ApiResponse<List<UserDto>>> GetUsersWithApps()
+        {
+            _logger.LogDebug(AppLogEvents.Service, "Invoked GetUserList");
+            var result = await _repository.GetUserList();
+
+            if (!result.Success || result.Data == null)
+            {
+                _logger.LogWarning(AppLogEvents.Controller, "GetUser returned error(s): {Errors}", result.Errors);
+                return ApiResponse<List<UserDto>>.ErrorResponse(result.Errors);
+            }
+
+            _logger.LogInformation(AppLogEvents.Service, "GetUserList returned: {result}", result);
+
+            var userDtos = new List<UserDto>();
+            foreach (var user in result.Data)
+            {
+                var perms = await permissionService.GetPermissionList(user.Username);
+                userDtos.Add(new UserDto() { Username = user.Username, AppsNames = perms.Data.Select(perm => perm.AppID).Distinct().ToList() });
+            }
+
+            return ApiResponse<List<UserDto>>.SuccessResponse(userDtos);
         }
 
         public async Task<ApiResponse<User?>> GetUser(string Username)
