@@ -45,7 +45,7 @@ namespace eRM_VersionHub.Services.Database
             foreach (var user in result.Data)
             {
                 var perms = await permissionService.GetPermissionList(user.Username);
-                userDtos.Add(new UserDto() { Username = user.Username, AppsNames = perms.Data.Select(perm => perm.AppID).ToList() });
+                userDtos.Add(new UserDto() { Username = user.Username, AppsNames = perms.Data.Select(perm => perm.AppID).Distinct().ToList() });
             }
 
             return ApiResponse<List<UserDto>>.SuccessResponse(userDtos);

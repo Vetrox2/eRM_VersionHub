@@ -13,7 +13,7 @@ namespace eRM_VersionHub.Controllers
         private readonly ILogger<UserController> _logger = logger;
         private readonly IUserService _userService = userService;
 
-        [HttpGet]
+        [HttpGet("UsersWithApps")]
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> GetUsersWithApps()
         {
