@@ -21,9 +21,12 @@
     </div>
   </div>
   <div class="icon-container">
-    <button mat-raised-button>
-      <span><mat-icon>person</mat-icon></span>
+    <button mat-button [matMenuTriggerFor]="menu">
+      <mat-icon>person</mat-icon>
     </button>
+    <mat-menu #menu="matMenu">
+      <button mat-menu-item (click)="hanldeLogout()">Logout</button>
+    </mat-menu>
   </div>
 </header>
 <div class="app-content">
