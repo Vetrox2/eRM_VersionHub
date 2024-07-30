@@ -155,7 +155,7 @@ namespace eRM_VersionHub_Tester.Services
                 );
 
             // Act
-            var response = await _appDataScanner.GetAppsStructure(GetAppSettings(),token);
+            var response = await _appDataScanner.GetAppsStructure(GetAppSettings(), token);
             var structure = response.Data;
 
             // Assert

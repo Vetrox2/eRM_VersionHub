@@ -6,8 +6,8 @@ namespace eRM_VersionHub.Services
 {
     public class AppDataScanner(IFavoriteService favoriteService, IPermissionService permissionService, ILogger<AppDataScanner> logger) : IAppDataScanner
     {
-        private IFavoriteService _favoriteService = favoriteService;
-        private IPermissionService _permissionService = permissionService;
+        private readonly IFavoriteService _favoriteService = favoriteService;
+        private readonly IPermissionService _permissionService = permissionService;
         private readonly ILogger<AppDataScanner> _logger = logger;
         private ApiResponse<List<AppStructureDto>> response;
 
@@ -54,7 +54,7 @@ namespace eRM_VersionHub.Services
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoking GetAppsStructure with paramters: {userToken}, {settings}", userToken, settings);
             response = new();
-            
+
             if (!Directory.Exists(settings.InternalPackagesPath) || !Directory.Exists(settings.ExternalPackagesPath) || !Directory.Exists(settings.AppsPath))
             {
                 _logger.LogError(AppLogEvents.Service, "At least one of the path in the settings does not exist");
@@ -70,7 +70,7 @@ namespace eRM_VersionHub.Services
                 _logger.LogError(AppLogEvents.Service, "Internal app structure is null");
                 return response;
             }
-            
+
             structure = await SetFavorites(structure, userToken);
             _logger.LogDebug(AppLogEvents.Service, "SetFavorites returned: {structure}", structure);
 
@@ -80,6 +80,25 @@ namespace eRM_VersionHub.Services
             response.Data = structure;
             _logger.LogInformation(AppLogEvents.Service, "GetAppsStructure returned: {response}", response);
             return response;
+        }
+
+        public ApiResponse<List<string>> GetAppsNames(MyAppSettings settings)
+        {
+            _logger.LogDebug(AppLogEvents.Service, "Invoking GetAppsNames");
+
+            if (!Directory.Exists(settings.AppsPath))
+            {
+                _logger.LogError(AppLogEvents.Service, "AppsPath in the settings does not exist");
+                return ApiResponse<List<string>>.ErrorResponse(["Fatal error"]);
+            }
+
+            var info = GetDirectoryInfo(settings.AppsPath);
+            var appsNames = info?.Select(x => x.Name).ToList();
+
+            _logger.LogDebug(AppLogEvents.Service, "GetAppsNames returned: {appsNames}", appsNames);
+
+            return appsNames == null ? 
+                ApiResponse<List<string>>.ErrorResponse(["Fatal error"]) : ApiResponse<List<string>>.SuccessResponse(appsNames);
         }
 
         private async Task<List<AppStructureDto>?> GetInternalAppStructure(string appsPath, string appJsonName, string internalPackagesPath, string token)
@@ -120,7 +139,7 @@ namespace eRM_VersionHub.Services
 
                 var moduleModels = GetModuleModels(internalPackagesPath, appJSModel.GetModulesNames());
                 _logger.LogDebug(AppLogEvents.Service, "GetModuleModels returned: {moduleModels}", moduleModels);
-                
+
                 var appStructureDto = CreateAppStructureDto(appJSModel, moduleModels);
                 _logger.LogDebug(AppLogEvents.Service, "CreateAppStructureDto returned: {appStructureDto}", appStructureDto);
 

@@ -1,26 +1,19 @@
 ﻿using Dapper;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories.Interfaces;
+using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Data;
+using System.Text.RegularExpressions;
 
 namespace eRM_VersionHub.Repositories
 {
-    public class DbRepository : IDbRepository
+    public class DbRepository(ILogger<DbRepository> logger, ISqlConnectionFactory connectionFactory) : IDbRepository
     {
-        private static string? configuration;
-        private readonly IDbConnection _db;
-        private readonly ILogger _logger;
+        private readonly ILogger _logger = logger;
 
-        public DbRepository(IOptions<AppSettings> appSettings, ILogger<DbRepository> logger)
-        {
-            configuration = appSettings.Value.MyAppSettings.ConnectionString;
-            _db = new NpgsqlConnection(configuration);
-
-            _logger = logger;
-            _logger.LogDebug(AppLogEvents.Database, "Started a database connection with settings: {configuration}", configuration);
-        }
 
         public class ColumnDefinition
         {
@@ -30,39 +23,67 @@ namespace eRM_VersionHub.Repositories
             public bool NotNull { get; set; }
             public bool Unique { get; set; }
 
-            public override string ToString() => $"{Name} {Type} {(PrimaryKey? " PRIMARY KEY" : "")} {(NotNull? "NOT NULL" : "")} {(Unique ? " UNIQUE" : "")}";
+            public override string ToString() => $"{Name} {Type} {(PrimaryKey ? " PRIMARY KEY" : "")} {(NotNull ? "NOT NULL" : "")} {(Unique ? " UNIQUE" : "")}";
         }
+        private static readonly Regex ValidIdentifierRegex = new Regex(@"^[a-zA-Z0-9_]+$");
+
+
+        private static bool IsValidIdentifier(string identifier)
+        {
+            return ValidIdentifierRegex.IsMatch(identifier);
+        }
+
+        private static string SanitizeIdentifier(string identifier)
+        {
+            // Double quote the identifier to escape it properly for SQL
+            return $"\"{identifier.Replace("\"", "\"\"")}\"";
+        }
+
+
 
         public async Task<ApiResponse<bool>> CreateTable(string tableName, List<ColumnDefinition> columns)
         {
             _logger.LogDebug(AppLogEvents.Database, "Invoked CreateTable with data: {tableName}\n{columns}", tableName, columns);
+
+            if (!IsValidIdentifier(tableName))
+            {
+                return ApiResponse<bool>.ErrorResponse(new List<string> { "Invalid table name." });
+            }
+
             try
             {
+                using var _db = connectionFactory.CreateConnection();
+
+
                 var columnDefinitions = columns.Select(c => c.ToString());
-                var AllColumns = string.Join(",\n", columnDefinitions);
-                var sql = $"CREATE TABLE IF NOT EXISTS {tableName} ({AllColumns});";
+                var allColumns = string.Join(",\n", columnDefinitions);
+                var sql = $"CREATE TABLE IF NOT EXISTS {SanitizeIdentifier(tableName)} ({allColumns});";
 
                 _logger.LogDebug(AppLogEvents.Database, "CreateTable is executing an SQL query: {sql}, ({tableName}, {columnDefinitions})", sql, tableName, columnDefinitions);
                 await _db.ExecuteAsync(sql);
 
-                _logger.LogInformation(AppLogEvents.Database, "CreateTable invoked succesfully");
+                _logger.LogInformation(AppLogEvents.Database, "CreateTable invoked successfully");
+
+
                 return ApiResponse<bool>.SuccessResponse(true);
+
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(AppLogEvents.Database, "While executing CreateTable, this execption has been thrown: {Message}\n{StackTrace}",
+                _logger.LogWarning(AppLogEvents.Database, "While executing CreateTable, this exception has been thrown: {Message}\n{StackTrace}",
                     ex.Message, ex.StackTrace);
 
-                return ApiResponse<bool>.ErrorResponse(
-                    new List<string> { $"Error creating table: {ex.Message}" }
-                );
+                return ApiResponse<bool>.ErrorResponse(new List<string> { $"Error creating table: {ex.Message}" });
             }
         }
+
 
         public async Task<ApiResponse<bool>> TableExists(string tableName)
         {
             _logger.LogDebug(AppLogEvents.Database, "Invoked TableExists with parameter: {tableName}", tableName);
             var sql = "SELECT 1 FROM information_schema.tables WHERE table_name = @TableName";
+
+            using var _db = connectionFactory.CreateConnection();
 
             _logger.LogDebug(AppLogEvents.Database, "TableExists is executing an SQL query: {sql}", sql);
             var result = await _db.ExecuteScalarAsync<bool>(sql, new { TableName = tableName });
@@ -73,6 +94,7 @@ namespace eRM_VersionHub.Repositories
                 _logger.LogInformation(AppLogEvents.Database, "TableExists invoked succesfully");
                 return ApiResponse<bool>.SuccessResponse(true);
             }
+
 
             _logger.LogWarning(AppLogEvents.Database, "Table {tableName} doesn't exist", tableName);
             return ApiResponse<bool>.ErrorResponse(["Table doesn't exist"]);
@@ -87,6 +109,7 @@ namespace eRM_VersionHub.Repositories
             {
                 _logger.LogDebug(AppLogEvents.Database, "GetAsync of type {type} is executing an SQL query: {command}, {parms}", type, command, parms);
 
+                using var _db = connectionFactory.CreateConnection();
                 IEnumerable<T> query = await _db.QueryAsync<T>(command, parms);
                 T? result = query.FirstOrDefault();
 
@@ -102,8 +125,8 @@ namespace eRM_VersionHub.Repositories
             }
             catch (Exception ex)
             {
-                 _logger.LogWarning(AppLogEvents.Database, "While executing GetAsync of type {type}, this execption has been thrown: {Message}\n{StackTrace}",
-                    type, ex.Message, ex.StackTrace);
+                _logger.LogWarning(AppLogEvents.Database, "While executing GetAsync of type {type}, this execption has been thrown: {Message}\n{StackTrace}",
+                   type, ex.Message, ex.StackTrace);
                 return ApiResponse<T?>.ErrorResponse([ex.Message]);
             }
         }
@@ -117,13 +140,14 @@ namespace eRM_VersionHub.Repositories
             {
                 _logger.LogDebug(AppLogEvents.Database, "GetAll of type {type} is executing an SQL query: {command}, {parms}", type, command, parms);
 
+                using var _db = connectionFactory.CreateConnection();
                 IEnumerable<T> query = await _db.QueryAsync<T>(command, parms);
                 List<T> result = query.ToList();
 
                 _logger.LogDebug(AppLogEvents.Database, "Result of GetAll of type {type}: {result}", type, query);
                 if (result == null)
                 {
-                     _logger.LogWarning(AppLogEvents.Database, "This query returned null: {command}, {parms}", command, parms);
+                    _logger.LogWarning(AppLogEvents.Database, "This query returned null: {command}, {parms}", command, parms);
                     return ApiResponse<List<T>>.ErrorResponse(["No data available"]);
                 }
 
@@ -147,6 +171,7 @@ namespace eRM_VersionHub.Repositories
             {
                 _logger.LogDebug(AppLogEvents.Database, "EditData of type {type} is executing an SQL query: {command}, {parms}", type, command, parms);
 
+                using var _db = connectionFactory.CreateConnection();
                 IEnumerable<T> query = await _db.QueryAsync<T>(command, parms);
                 T? result = query.FirstOrDefault();
 

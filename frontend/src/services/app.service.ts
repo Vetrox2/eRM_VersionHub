@@ -27,7 +27,7 @@ export class AppService {
   }
   loadApps(): Observable<App[]> {
     console.log('loading');
-    return this.apiService.get<ApiResponse<App[]>>('Apps/admin').pipe(
+    return this.apiService.get<ApiResponse<App[]>>('Apps').pipe(
       map((response) => {
         const apps = response.Data || [];
         this.appsSubject.next(apps);

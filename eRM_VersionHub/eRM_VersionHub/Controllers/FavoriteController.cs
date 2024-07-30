@@ -1,5 +1,6 @@
 ﻿using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace eRM_VersionHub.Controllers
@@ -12,6 +13,7 @@ namespace eRM_VersionHub.Controllers
         private readonly IFavoriteService _favoritesService = favoritesService;
 
         [HttpGet("{Username}")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> GetFavorites(string Username)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked GetFavorites with paramter: {Username}", Username);
@@ -28,24 +30,8 @@ namespace eRM_VersionHub.Controllers
             return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddFavorite([FromBody] Favorite favorite)
-        {
-            _logger.LogDebug(AppLogEvents.Controller, "Invoked AddFavorite with data: {favorite}", favorite);
-            ApiResponse<Favorite?> result = await _favoritesService.CreateFavorite(favorite);
-            _logger.LogDebug(AppLogEvents.Controller, "CreateFavorite result: {result}", result);
-
-            if (result.Success)
-            {
-                _logger.LogInformation(AppLogEvents.Controller, "AddFavorite returned: {Data}", result.Data);
-                return Ok(result.Data);
-            }
-
-            _logger.LogWarning(AppLogEvents.Controller, "AddFavorite returned error(s): {Errors}", result.Errors);
-            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
-        }
-
         [HttpPost("{UserName}/{app_id}")]
+        [Authorize(Roles = "user")]
         public async Task<IActionResult> AddFavorite(string UserName, string app_id)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked AddToFavorites with paramters: {UserName}, {app_id}", UserName, app_id);
@@ -65,6 +51,7 @@ namespace eRM_VersionHub.Controllers
         }
 
         [HttpDelete("{UserName}/{app_id}")]
+        [Authorize(Roles = "user")]
         public async Task<IActionResult> DeleteFavorite(string UserName, string app_id)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked RemoveFromFavorites with paramters: {UserName}, {app_id}", UserName, app_id);

@@ -29,31 +29,6 @@ import { Subscription } from 'rxjs';
     SearchComponent,
     MatSidenavModule,
   ],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss',
+  template: `<router-outlet></router-outlet>`,
 })
-export class AppComponent implements OnInit, OnDestroy {
-  isSidebarActive = false;
-  private newItemSelectedSubscription: Subscription | undefined;
-  private appService = inject(AppService);
-
-  ngOnInit() {
-    this.newItemSelectedSubscription = this.appService.selectedApp$.subscribe(
-      (selectedApp) => {
-        if (selectedApp) {
-          this.isSidebarActive = false;
-        }
-      }
-    );
-  }
-
-  ngOnDestroy() {
-    if (this.newItemSelectedSubscription) {
-      this.newItemSelectedSubscription.unsubscribe();
-    }
-  }
-
-  toggleSidebar() {
-    this.isSidebarActive = !this.isSidebarActive;
-  }
-}
+export class AppComponent {}

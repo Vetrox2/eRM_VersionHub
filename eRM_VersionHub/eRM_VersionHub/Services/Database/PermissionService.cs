@@ -1,4 +1,5 @@
-﻿using eRM_VersionHub.Models;
+﻿using eRM_VersionHub.Dtos;
+using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories.Interfaces;
 using eRM_VersionHub.Services.Interfaces;
 
@@ -34,6 +35,30 @@ namespace eRM_VersionHub.Services.Database
 
             _logger.LogInformation(AppLogEvents.Service, "DeletePermission returned: {result}", result);
             return result;
+        }
+
+        public async Task<bool> ValidatePermissions(VersionDto version, MyAppSettings settings, string? userName)
+        {
+            if (string.IsNullOrEmpty(userName))
+                return false;
+
+            var response = await repository.GetPermissionList(userName);
+            if (!response.Success || response.Data == null || response.Data.Count == 0)
+                return false;
+
+            List<string> modulesList = [];
+            foreach (var appPerm in response.Data)
+            {
+                var appModel = AppDataScanner.GetAppJsonModel(Path.Combine(settings.AppsPath, appPerm.AppID, settings.ApplicationConfigFile));
+                if (appModel != null)
+                    modulesList.AddRange(appModel.Modules.Select(module => module.ModuleId));
+            }
+
+            foreach (var module in version.Modules)
+                if (!modulesList.Contains(module.Name))
+                    return false;
+
+            return true;
         }
     }
 }

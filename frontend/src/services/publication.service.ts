@@ -11,10 +11,10 @@ export class PublicationService {
   constructor(private apiService: ApiService) {}
 
   publishVersion(version: Version): Observable<ApiResponse<any>> {
-    return this.apiService.post('Publication', [version]);
+    return this.apiService.post('Publication', version);
   }
 
   unPublishVersion(version: Version): Observable<ApiResponse<any>> {
-    return this.apiService.delete('Publication', [version]);
+    return this.apiService.delete('Publication', version);
   }
 }

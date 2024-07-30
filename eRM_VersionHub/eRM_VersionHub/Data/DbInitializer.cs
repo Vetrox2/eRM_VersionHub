@@ -99,9 +99,9 @@ namespace eRM_VersionHub.Data
             if (!result.Success)
             {
                 _logger.LogError(AppLogEvents.Database, "CreateFavoriteTable returned: {Errors}", result.Errors);
-                 Console.WriteLine(
-                    $"Failed to create Favorites table: {string.Join(", ", result.Errors)}"
-                );
+                Console.WriteLine(
+                   $"Failed to create Favorites table: {string.Join(", ", result.Errors)}"
+               );
             }
 
             _logger.LogInformation(AppLogEvents.Database, "CreateFavoriteTable returned: {result}", result.Data);
