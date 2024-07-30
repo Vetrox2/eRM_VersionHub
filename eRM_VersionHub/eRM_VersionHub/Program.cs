@@ -38,6 +38,7 @@ builder.Services.AddSingleton<IDbRepository, DbRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddSingleton<IPermissionRepository, PermissionRepository>();
+builder.Services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
 
 builder.Services.AddScoped<IDbService, DbService>();
 builder.Services.AddScoped<IUserService, UserService>();
