@@ -28,7 +28,7 @@
     <ng-container *ngIf="filteredApps$ | async as filteredApps">
       <ng-container *ngIf="appPermissions$ | async as permissions">
         <div *ngFor="let appName of filteredApps" class="app-item">
-          <span class="app-name">{{ appName }}</span>
+          <span class="app-name" style="margin: 1rem;">{{ appName }}</span>
           <button
             mat-icon-button
             [color]="permissions[appName] ? 'warn' : 'primary'"

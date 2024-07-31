@@ -10,6 +10,7 @@
     <ng-container *ngIf="users.length > 0; else noUsersFound">
       <mat-nav-list>
         <mat-list-item
+          
           *ngFor="let user of users; trackBy: trackByUsername"
           (click)="selectUser(user)"
           [ngClass]="{
@@ -23,6 +24,7 @@
                 ? 'var(--primary-color)'
                 : ''
           }"
+          
         >
           <div class="user-item">
             <div
@@ -31,7 +33,9 @@
               matTooltipClass="user-name-tooltip"
               [matTooltipShowDelay]="800"
             >
-              {{ user.Username }}
+            <span [ngStyle]="{
+              color: (selectedUser$ | async)?.Username === user.Username ? 'white' : 'black'
+            }">{{ user.Username }}</span>
             </div>
           </div>
         </mat-list-item>
