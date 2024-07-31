@@ -23,11 +23,11 @@
   <div class="icon-container">
     <ng-container *ngIf="isAdmin$ | async">
       <button routerLink="/admin" mat-button>
-        <mat-icon style="font-size: 1.25rem; width: 100%;margin: 0;"  class="white-color">manage_accounts</mat-icon>
+        <mat-icon>manage_accounts</mat-icon>
       </button>
     </ng-container>
     <button mat-button [matMenuTriggerFor]="menu">
-      <mat-icon style="font-size: 1.25rem; width: 100%;margin: 0;" class="white-color">person</mat-icon>
+      <mat-icon>person</mat-icon>
     </button>
     <mat-menu #menu="matMenu">
       <button mat-menu-item (click)="handleLogout()">Logout</button>
