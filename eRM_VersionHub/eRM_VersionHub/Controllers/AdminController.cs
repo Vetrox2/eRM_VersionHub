@@ -1,4 +1,5 @@
 ﻿using eRM_VersionHub.Models;
+using eRM_VersionHub.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,7 +11,7 @@ namespace eRM_VersionHub.Controllers
     {
         [HttpGet]
         [Authorize(Roles = "user")]
-        public IActionResult IsAdmin()
+        public async Task<IActionResult> IsAdmin()
         {
             if (User == null)
                 return NotFound();
@@ -18,9 +19,16 @@ namespace eRM_VersionHub.Controllers
             var username = User.Identity?.Name;
             username = username ?? "ERROR";
 
-            return User.IsInRole("admin") ? 
-                Ok(ApiResponse<string>.SuccessResponse($"User {username} is an admin")) :
-                NotFound(ApiResponse<string>.ErrorResponse([$"User {username} is not an admin"]));
+            var res = new ApiResponse<string> { Data = "x", Errors = [] };
+            return User.IsInRole("admin")
+                ? Ok(
+                    ApiResponse<string>.SuccessResponse($"User {username} is an admin").Serialize()
+                )
+                : NotFound(
+                    ApiResponse<string>
+                        .ErrorResponse([$"User {username} is not an admin"])
+                        .Serialize()
+                );
         }
     }
 }
