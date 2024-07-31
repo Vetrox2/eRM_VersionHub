@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { UserSidebarComponent } from '../../../../components/sidebar/user-sidebar/user-sidebar/user-sidebar.component';
-import { UserAppPermissionsComponent } from '../../../user-app-permissions/user-app-permissions.component';
+import { UserSidebarComponent } from '../../../components/sidebar/user-sidebar/user-sidebar/user-sidebar.component';
+import { UserAppPermissionsComponent } from '../../user-app-permissions/user-app-permissions.component';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '../../../../services/auth.service';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-admin-dashboard',

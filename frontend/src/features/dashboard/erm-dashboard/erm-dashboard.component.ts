@@ -1,18 +1,18 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
-import { AppService } from '../../services/app.service';
 import { MatIconModule } from '@angular/material/icon';
-import { ProjectVersionTableComponent } from '../../features/dashboard/project-version-table/project-version-table.component';
-import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatButton } from '@angular/material/button';
-import { AuthService } from '../../services/auth.service';
-import { AdminService } from '../../services/admin.service';
 import { AsyncPipe, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { SidebarComponent } from '../../../components/sidebar/sidebar.component';
+import { ProjectVersionTableComponent } from '../../project-version-table/project-version-table.component';
+import { AppService } from '../../../services/app.service';
+import { AuthService } from '../../../services/auth.service';
+import { AdminService } from '../../../services/admin.service';
 
 @Component({
-  selector: 'app-erm-dashboard.page',
+  selector: 'app-erm-dashboard',
   standalone: true,
   imports: [
     MatIconModule,
@@ -24,8 +24,8 @@ import { RouterLink } from '@angular/router';
     NgIf,
     RouterLink,
   ],
-  templateUrl: './erm-dashboard.page.component.html',
-  styleUrl: './erm-dashboard.page.component.scss',
+  templateUrl: './erm-dashboard.component.html',
+  styleUrl: './erm-dashboard.component.scss',
 })
 export class ErmDashboardPageComponent implements OnInit, OnDestroy {
   isSidebarActive = false;

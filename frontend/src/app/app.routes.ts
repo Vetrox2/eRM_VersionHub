@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { LoginPageComponent } from '../pages/login.page/login.page.component';
+import { LoginPageComponent } from '../pages/login-page/login-page.component';
 import { AuthGuard } from '../auth.guard';
 
 export const routes: Routes = [
@@ -12,16 +12,16 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () =>
-          import(
-            '../pages/erm-dashboard.page/erm-dashboard.page.component'
-          ).then((m) => m.ErmDashboardPageComponent),
+          import('../pages/erm-page/erm-page.component').then(
+            (m) => m.ErmPageComponent
+          ),
       },
       {
         path: 'admin',
         loadComponent: () =>
-          import(
-            '../features/dashboard/admin-dashboard/admin-dashboard/admin-dashboard.component'
-          ).then((m) => m.AdminDashboardComponent),
+          import('../pages/admin-page/admin-page.component').then(
+            (m) => m.AdminPageComponent
+          ),
       },
     ],
   },

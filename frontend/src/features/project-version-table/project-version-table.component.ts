@@ -35,19 +35,19 @@ import {
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
-import { App } from '../../../models/app.model';
-import { Tag, Version } from '../../../models/version.model';
-import { Module } from '../../../models/module.model';
-import { AppService } from '../../../services/app.service';
-import { DefaultModalComponent } from '../../../components/modals/default-modal/default-modal.component';
-import { SearchService } from '../../../services/search-service.service';
-import { SearchComponent } from '../../../components/search/search.component';
-import { FlattenedVersion } from '../../../models/flattened-version.model';
-import { VersionUtilsService } from '../../../services/version-utils.service';
+import { App } from '../../models/app.model';
+import { Tag, Version } from '../../models/version.model';
+import { Module } from '../../models/module.model';
+import { AppService } from '../../services/app.service';
+import { DefaultModalComponent } from '../../components/modals/default-modal/default-modal.component';
+import { SearchService } from '../../services/search-service.service';
+import { SearchComponent } from '../../components/search/search.component';
+import { FlattenedVersion } from '../../models/flattened-version.model';
+import { VersionUtilsService } from '../../services/version-utils.service';
 import { MatChip } from '@angular/material/chips';
-import { PublicationService } from '../../../services/publication.service';
-import { ApiResponse } from '../../../models/api-response.model';
-import { environment } from '../../../environments/environment';
+import { PublicationService } from '../../services/publication.service';
+import { ApiResponse } from '../../models/api-response.model';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-project-version-table',
