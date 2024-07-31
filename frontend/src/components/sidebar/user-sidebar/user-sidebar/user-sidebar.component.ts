@@ -56,6 +56,7 @@ export class UserSidebarComponent implements OnInit {
         if (users.length === 0) {
           this.error = 'No users found.';
         }
+        this.userSelectionService.setSelectedUser(users[0]);
       },
       (error) => {
         this.loading = false;

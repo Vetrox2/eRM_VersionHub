@@ -26,7 +26,6 @@ export class AppService {
     this.tagSubject.next(tag);
   }
   loadApps(): Observable<App[]> {
-    console.log('loading');
     return this.apiService.get<ApiResponse<App[]>>('Apps').pipe(
       map((response) => {
         const apps = response.Data || [];
