@@ -29,6 +29,6 @@ import { Subscription } from 'rxjs';
     SearchComponent,
     MatSidenavModule,
   ],
-  template: `<router-outlet></router-outlet>`,
+  template: ` <router-outlet></router-outlet>`,
 })
 export class AppComponent {}
