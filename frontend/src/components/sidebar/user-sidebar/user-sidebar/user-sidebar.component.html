@@ -1,0 +1,53 @@
+<div class="sidebar-container">
+  <div>
+    <app-search
+      [showIcons]="true"
+      placeholder="Search users"
+      (valueChanged)="onSearchValueChanged($event)"
+    ></app-search>
+  </div>
+  <ng-container *ngIf="filteredUsers$ | async as users">
+    <ng-container *ngIf="users.length > 0; else noUsersFound">
+      <mat-nav-list>
+        <mat-list-item
+          
+          *ngFor="let user of users; trackBy: trackByUsername"
+          (click)="selectUser(user)"
+          [ngClass]="{
+            selected: (selectedUser$ | async)?.Username === user.Username,
+            'selected-hover':
+              (selectedUser$ | async)?.Username === user.Username
+          }"
+          [ngStyle]="{
+            'background-color':
+              (selectedUser$ | async)?.Username === user.Username
+                ? 'var(--primary-color)'
+                : ''
+          }"
+          
+        >
+          <div class="user-item">
+            <div
+              class="user-name"
+              [matTooltip]="user.Username"
+              matTooltipClass="user-name-tooltip"
+              [matTooltipShowDelay]="800"
+            >
+            <span [ngStyle]="{
+              color: (selectedUser$ | async)?.Username === user.Username ? 'white' : 'black'
+            }">{{ user.Username }}</span>
+            </div>
+          </div>
+        </mat-list-item>
+      </mat-nav-list>
+    </ng-container>
+  </ng-container>
+
+  <ng-template #noUsersFound>
+    <div *ngIf="loading" class="loading">Loading users...</div>
+    <div *ngIf="!loading && error" class="error">
+      {{ error }}
+    </div>
+    <div *ngIf="!loading && !error" class="no-users">No users found.</div>
+  </ng-template>
+</div>

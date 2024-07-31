@@ -1,0 +1,175 @@
+@use "@angular/material" as mat;
+
+// Define some variables for consistent spacing and sizing
+$header-height: 5rem;
+$sidebar-width: 14rem;
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.searchbar {
+  display: flex;
+}
+
+.app-header {
+  position: relative;
+  z-index: 1001;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1rem;
+  background-color: var(--primary-color);
+  color: white;
+  min-height: $header-height;
+
+  .logo-icon {
+    transform: scale(1.2);
+  }
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.logo-wrapper {
+  max-width: 4rem;
+  max-height: 4rem;
+  margin-right: 1rem;
+}
+
+.logo-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.title-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.app-subtitle {
+  margin: 0;
+  font-size: 0.8em;
+}
+
+.icon-container {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: center;
+  justify-items: center;
+  button {
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: 0 0.5rem;
+  }
+}
+
+.app-content {
+  display: flex;
+  flex-grow: 1;
+  overflow: hidden;
+  height: calc(100vh - #{$header-height});
+}
+
+.mobile-only {
+  display: none;
+}
+.desktop-only {
+  display: block;
+}
+.app-sidebar {
+  width: $sidebar-width;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+  overflow-y: auto;
+  background-color: #f5f5f5;
+  transition: transform 0.3s ease-in-out;
+}
+
+.app-main {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.burger-menu {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+.sidebar-header {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background-color: var(--primary-color);
+    color: white;
+
+    .back-button {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      margin-right: 1rem;
+    }
+
+    h3 {
+      margin: 0;
+    }
+  }
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 0;
+    width: 100%;
+    height: 100vh;
+    transform: translateX(-100%);
+    z-index: 1002; // Above header
+  }
+
+  .app-sidebar.active {
+    transform: translateX(0%);
+  }
+
+  .app-main {
+    width: 100%;
+  }
+  .mobile-only {
+    display: block;
+  }
+  .desktop-only {
+    display: none;
+  }
+
+  .app-content {
+    flex-direction: column;
+  }
+}
+.white-color
+{
+  color: white;
+}
+.icon-center
+{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

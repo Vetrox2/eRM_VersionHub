@@ -1,102 +1,238 @@
 ﻿using eRM_VersionHub.Dtos;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
-using System.IO.Compression;
-using System.Security.Cryptography;
 
 namespace eRM_VersionHub.Services
 {
-    public class PublicationService : IPublicationService
+    public class PublicationService(ILogger<PublicationService> logger) : IPublicationService
     {
-        private readonly static int _maxNumberOfAttempts = 5;
-        
+        private readonly ILogger<PublicationService> _logger = logger;
+
         public ApiResponse<bool> Publish(MyAppSettings settings, VersionDto version)
         {
-            foreach (ModuleDto module in version.Modules)
+            _logger.LogDebug(AppLogEvents.Service, "Invoked Publish with data: {settings}\n{version}", settings, version);
+
+            if (ValidateVersionDto(version))
+                return ApiResponse<bool>.ErrorResponse(["Empty collection of modules to publish"]);
+
+            List<string> errors = [];
+
+            if (ValidateAllModulesExistence(version, settings, errors))
             {
-                string versionPath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
-                if (!Directory.Exists(versionPath))
+                _logger.LogWarning(AppLogEvents.Service, "Publish returned: {errors}", errors);
+                return ApiResponse<bool>.ErrorResponse(errors);
+            }
+
+            foreach (var module in version.Modules)
+            {
+                var (doContinue, returnError) = ChangeTagIfModuleIsPublished(settings, version, module);
+                if (doContinue)
+                    continue;
+                if (returnError)
+                    return ApiResponse<bool>.ErrorResponse([$"System could not change published tag on module \"{module.Name}\" version \"{version.ID}\"" +
+                        $". Rollbacking publication of this version."]);
+
+                var sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
+                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID, version.PublishedTag));
+
+                PrepareTargetPath(settings.ExternalPackagesPath, module.Name, targetPath);
+                var response = CopyContent(sourcePath, targetPath);
+
+                _logger.LogDebug(AppLogEvents.Service, "CopyContent returned: {response}", response);
+
+                if (!response.Success)
                 {
-                    return ApiResponse<bool>.ErrorResponse([$"Module \"{module.Name}\" version \"{version.ID}\" does not exist"]);
+                    _logger.LogWarning(AppLogEvents.Service, "Unpublishing due to failure of copying {sourcePath} to {targetPath}", sourcePath, targetPath);
+                    Unpublish(settings, version);
+
+                    response.Errors.Add($"System could not publish module \"{module.Name}\" version \"{version.ID}\". Rollbacking publication of this version.");
+                    _logger.LogWarning(AppLogEvents.Service, "Publish returned: {Errors}", response.Errors);
+
+                    return ApiResponse<bool>.ErrorResponse(response.Errors);
                 }
             }
 
-            foreach (ModuleDto module in version.Modules)
-            {
-                string versionPath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
-                string internalZipPath = Path.Combine(settings.InternalPackagesPath, module.Name, $"{version.Name}.zip");
-                using (FileStream internalZipStream = File.Open(internalZipPath, FileMode.Create, FileAccess.ReadWrite))
-                {
-                    ZipFile.CreateFromDirectory(versionPath, internalZipStream);
-                    internalZipStream.Flush();
-                    string internalZipStringHash = StreamHashString(internalZipStream);
-                    internalZipStream.Close();
-                    bool response = CopyContent(internalZipPath, settings.ExternalPackagesPath, module.Name, version.Name, internalZipStringHash);
-                    if (!response)
-                    {
-                        Unpublish(settings, version);
-                        return ApiResponse<bool>.ErrorResponse([$"System could not publish module \"{module.Name}\" version \"{version.ID}\". Rollbacking publication of this version."]);
-                    }
-                }
-            }
-            return ApiResponse<bool>.ErrorResponse([]);
+            _logger.LogInformation(AppLogEvents.Service, "Successful publication of: {version}", version);
+            return ApiResponse<bool>.SuccessResponse(true);
         }
 
         public ApiResponse<bool> Unpublish(MyAppSettings settings, VersionDto version)
         {
-            IEnumerable<string> skippedModules = version.Modules.Select(module => 
+            _logger.LogDebug(AppLogEvents.Service, "Invoked Unpublish with data: {settings}\n{version}", settings, version);
+
+            if (ValidateVersionDto(version))
+                return ApiResponse<bool>.ErrorResponse(["Empty collection of modules to unpublish"]);
+
+            List<string> errors = [];
+
+            foreach (var module in version.Modules)
             {
-                string targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, version.ID);
-                if (Directory.Exists(targetPath))
+                var publishedVersionID = GetPublishedVersionID(settings, module, version);
+                _logger.LogDebug(AppLogEvents.Service, "Unpublishing module: {module.Name}, {publishedVersionID}", module.Name, publishedVersionID);
+
+                if (string.IsNullOrEmpty(publishedVersionID))
                 {
-                    Directory.Delete(targetPath, true);
+                    _logger.LogWarning(AppLogEvents.Service, "This version is not published: {publishedVersionID}", publishedVersionID);
+                    continue;
                 }
-                return $"Module \"{module.Name}\" version \"{version.ID}\"";
-            });
-            return ApiResponse<bool>.ErrorResponse(skippedModules.ToList());
-        }
 
-        private static string StreamHashString(FileStream stream)
-        {
-            stream.Seek(0, SeekOrigin.Begin);
-            byte[] byteHash = MD5.HashData(stream);
-            return BitConverter.ToString(byteHash).Replace("-", "");
-        }
+                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, publishedVersionID);
+                var targetLock = FolderLockManager.GetOrAdd(targetPath);
 
-        private static bool CopyContent(string internalZipPath, string externalPackagesPath, string moduleName, string version, string internalZipStringHash, int attempt = 0)
-        {
-            string fileName = Path.GetFileName(externalPackagesPath);
-            string versionFolder = Path.Combine(externalPackagesPath, moduleName, version);
-            Directory.CreateDirectory(versionFolder);
-            string externalZipPath = Path.Combine(versionFolder, fileName);
-
-            File.Copy(internalZipPath, externalZipPath, true);
-
-            using (FileStream externalZipStream = File.Open(externalZipPath, FileMode.Open, FileAccess.Read))
-            {
-                string externalZipStringHash = StreamHashString(externalZipStream);
-                if (internalZipStringHash == externalZipStringHash)
+                lock (targetLock)
                 {
-                    using (ZipArchive externalZip = new(externalZipStream, ZipArchiveMode.Read, false))
+                    try
                     {
-                        externalZip.ExtractToDirectory(versionFolder);
+                        _logger.LogDebug(AppLogEvents.Service, "Deleting folder: {targetPath}", targetPath);
+                        Directory.Delete(targetPath, true);
                     }
-                    
-                    File.Delete(externalZipPath);
-                    File.Delete(internalZipPath);
-                    return true;
+                    catch
+                    {
+                        _logger.LogDebug(AppLogEvents.Service, "An error occurred while deleting the version: {module.Name} {publishedVersionID}",
+                            module.Name, publishedVersionID);
+                        errors.Add($"An error occurred while deleting the version: {module.Name} {publishedVersionID}");
+                    }
+                    finally
+                    {
+                        FolderLockManager.TryRemove(targetPath);
+                    }
                 }
             }
 
-            File.Delete(externalZipPath);
-            if (attempt < _maxNumberOfAttempts)
+            _logger.LogInformation(AppLogEvents.Service, "Unpublishing version: {version}", version);
+            return ApiResponse<bool>.ErrorResponse(errors);
+        }
+
+        private bool ValidateVersionDto(VersionDto version)
+        {
+            if (version == null || version.Modules == null)
             {
-                return CopyContent(internalZipPath, externalPackagesPath, moduleName, version, internalZipStringHash, attempt + 1);
+                _logger.LogWarning(AppLogEvents.Service, "Version list is empty");
+                return true;
             }
-            else
+
+            return false;
+        }
+
+        private bool ValidateAllModulesExistence(VersionDto version, MyAppSettings settings, List<string> errors)
+        {
+            foreach (var module in version.Modules)
             {
-                return false;
+                string sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
+                _logger.LogDebug(AppLogEvents.Service, "Checking version in: {sourcePath}", sourcePath);
+
+                if (!Directory.Exists(sourcePath))
+                {
+                    _logger.LogWarning(AppLogEvents.Service, "This version doesn't exist: {Name}, {ID}", module.Name, version.ID);
+                    errors.Add($"Module \"{module.Name}\" version \"{version.ID}\" does not exist");
+                }
             }
+
+            return errors.Count > 0;
+        }
+
+        private string? GetPublishedVersionID(MyAppSettings settings, ModuleDto module, VersionDto version)
+        {
+            var publishedModule = AppDataScanner.GetModuleModels(settings.ExternalPackagesPath, [module.Name]);
+            return publishedModule[0].Versions.FirstOrDefault(publishedVersion => TagService.CompareVersions(publishedVersion, version.ID));
+        }
+
+        private (bool doContinue, bool returnError) ChangeTagIfModuleIsPublished(MyAppSettings settings, VersionDto version, ModuleDto module)
+        {
+            var publishedVersionID = GetPublishedVersionID(settings, module, version);
+
+            if (!string.IsNullOrEmpty(publishedVersionID))
+            {
+                _logger.LogDebug(AppLogEvents.Service, "Module is already published: {module.Name}, {publishedVersionID}.\nTrying to change its tag",
+                    module.Name, publishedVersionID);
+
+                var success = TagService.ChangeTagOnPath(settings.ExternalPackagesPath, module.Name, publishedVersionID, TagService.SwapVersionTag(version.ID, version.PublishedTag));
+
+                if (success)
+                {
+                    _logger.LogInformation(AppLogEvents.Service, "Successfully changing tag for: {module.Name}, {publishedVersionID}", module.Name, publishedVersionID);
+                    return (true, false);
+                }
+
+                _logger.LogWarning(AppLogEvents.Service, "Unpublishing due to failure of changing tag in module: {module.Name}, {publishedVersionID}", module.Name, publishedVersionID);
+                Unpublish(settings, version);
+                return (false, true);
+            }
+
+            return (false, false);
+        }
+
+        private void PrepareTargetPath(string ExternalPackagesPath, string module, string targetPath)
+        {
+            _logger.LogDebug(AppLogEvents.Service, "Preparing target path with data: {ExternalPackagesPath}, {module}, {targetPath}",
+                ExternalPackagesPath, module, targetPath);
+            var modulePath = Path.Combine(ExternalPackagesPath, module);
+
+            if (!Directory.Exists(modulePath))
+            {
+                _logger.LogWarning(AppLogEvents.Service, "Creating directory that doesn't exist: {modulePath}", modulePath);
+                Directory.CreateDirectory(modulePath);
+            }
+
+            if (Directory.Exists(targetPath))
+            {
+                _logger.LogWarning(AppLogEvents.Service, "Deleting directory that exists: {modulePath}", targetPath);
+                Directory.Delete(targetPath, true);
+            }
+
+            _logger.LogInformation(AppLogEvents.Service, "Creating directory: {targetPath}", targetPath);
+            Directory.CreateDirectory(targetPath);
+        }
+
+        private ApiResponse<bool> CopyContent(string sourcePath, string targetPath)
+        {
+            _logger.LogDebug(AppLogEvents.Service, "Copying {sourcePath} to {targetPath}", sourcePath, targetPath);
+
+            var sourceLock = FolderLockManager.GetOrAdd(sourcePath);
+            var targetLock = FolderLockManager.GetOrAdd(targetPath);
+
+            lock (sourceLock)
+            {
+                lock (targetLock)
+                {
+                    try
+                    {
+                        foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+                        {
+                            var newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, dirPath));
+                            _logger.LogDebug(AppLogEvents.Service, "Copying {dirPath} to {newPath}", dirPath, newPath);
+
+                            if (!Directory.Exists(newPath))
+                            {
+                                _logger.LogDebug(AppLogEvents.Service, "Creating directory {newPath}", newPath);
+                                Directory.CreateDirectory(newPath);
+                            }
+                        }
+
+                        foreach (string filePath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+                        {
+                            var newPath = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, filePath));
+                            _logger.LogDebug(AppLogEvents.Service, "Copying {filePath} to {newPath}", filePath, newPath);
+                            File.Copy(filePath, newPath, true);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(AppLogEvents.Service, "When copying content, this exception was thrown: {Message}\n{StackTrace}", ex.Message, ex.StackTrace);
+                        return ApiResponse<bool>.ErrorResponse([]);
+                    }
+                    finally
+                    {
+                        FolderLockManager.TryRemove(sourcePath);
+                        FolderLockManager.TryRemove(targetPath);
+                    }
+                }
+            }
+
+            _logger.LogInformation(AppLogEvents.Service, "This version has been copied: {sourcePath}", sourcePath);
+            return ApiResponse<bool>.SuccessResponse(true);
+
+            //add checksum
         }
     }
 }

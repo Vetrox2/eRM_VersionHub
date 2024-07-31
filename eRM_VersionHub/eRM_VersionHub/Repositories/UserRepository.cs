@@ -1,7 +1,7 @@
 ﻿using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories.Interfaces;
 
-namespace eRM_VersionHub.Repositories.Database
+namespace eRM_VersionHub.Repositories
 {
     public class UserRepository(IDbRepository dbRepository, ILogger<UserRepository> logger) : IUserRepository
     {
@@ -13,6 +13,7 @@ namespace eRM_VersionHub.Repositories.Database
             _logger.LogDebug(AppLogEvents.Repository, "Invoked CreateUser with data: {user}", user);
             ApiResponse<User?> result = await _dbRepository.EditData<User>(
                 "INSERT INTO users(username, creation_date) VALUES (@Username, @CreationDate) RETURNING *", user);
+
             _logger.LogInformation(AppLogEvents.Repository, "CreateUser returned: {result}", result);
             return result;
         }
@@ -21,6 +22,7 @@ namespace eRM_VersionHub.Repositories.Database
         {
             _logger.LogDebug(AppLogEvents.Repository, "Invoked GetUserList");
             ApiResponse<List<User>> result = await _dbRepository.GetAll<User>("SELECT * FROM users", new { });
+
             _logger.LogInformation(AppLogEvents.Repository, "GetUserList returned: {result}", result);
             return result;
         }
@@ -30,6 +32,7 @@ namespace eRM_VersionHub.Repositories.Database
             _logger.LogDebug(AppLogEvents.Repository, "Invoked GetUser with data: {Username}", Username);
             ApiResponse<User?> result = await _dbRepository.GetAsync<User>(
                 "SELECT * FROM users where username=@Username", new { Username });
+
             _logger.LogInformation(AppLogEvents.Repository, "GetUser returned: {result}", result);
             return result;
         }
@@ -39,6 +42,7 @@ namespace eRM_VersionHub.Repositories.Database
             _logger.LogDebug(AppLogEvents.Repository, "Invoked UpdateUser with data: {user}", user);
             ApiResponse<User?> result = await _dbRepository.EditData<User>(
                 "UPDATE users SET creation_date=@CreationDate WHERE username=@Username RETURNING *", user);
+
             _logger.LogInformation(AppLogEvents.Repository, "UpdateUser returned: {result}", result);
             return result;
         }
@@ -48,6 +52,7 @@ namespace eRM_VersionHub.Repositories.Database
             _logger.LogDebug(AppLogEvents.Repository, "Invoked DeleteUser with data: {Username}", Username);
             ApiResponse<User?> result = await _dbRepository.EditData<User>(
                 "DELETE FROM users WHERE username=@Username RETURNING *", new { Username });
+
             _logger.LogInformation(AppLogEvents.Repository, "DeleteUser returned: {result}", result);
             return result;
         }

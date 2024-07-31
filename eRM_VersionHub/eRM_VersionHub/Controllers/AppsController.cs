@@ -1,35 +1,62 @@
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
 namespace eRM_VersionHub.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
-    public class AppsController(IOptions<AppSettings> appSettings, IAppDataScanner appDataScanner)
-        : ControllerBase
+    [Route("api/[controller]")]
+    public class AppsController(IOptions<AppSettings> appSettings, IAppDataScanner appDataScanner, ILogger<AppsController> logger) : ControllerBase
     {
         private readonly MyAppSettings _settings = appSettings.Value.MyAppSettings;
         private readonly IAppDataScanner _appDataScanner = appDataScanner;
+        private readonly ILogger<AppsController> _logger = logger;
 
-        [HttpGet("{UserName}")]
-        public async Task<IActionResult> GetStructure(string UserName)
+        [HttpGet]
+        [Authorize(Roles = "user")]
+        public async Task<IActionResult> GetStructure()
         {
-            var structure = await _appDataScanner.GetAppsStructure(
-                _settings.AppsPath,
-                _settings.ApplicationConfigFile,
-                _settings.InternalPackagesPath,
-                _settings.ExternalPackagesPath,
-                UserName
-            );
-            if (structure == null || structure.Count == 0)
-                return NotFound(ApiResponse<string>.ErrorResponse(["Some error"]).Serialize());
+            var UserName = User.Identity?.Name;
+            if (string.IsNullOrEmpty(UserName))
+            {
+                _logger.LogWarning(AppLogEvents.Controller, "GetStructure invoked but userName not found");
+                return NotFound(ApiResponse<bool>.ErrorResponse(["UserName not found"]));
+            }
 
-            return Ok(
-                ApiResponse<List<Dtos.AppStructureDto>>.SuccessResponse(structure).Serialize()
-            );
+            _logger.LogDebug(AppLogEvents.Controller, "GetStructure invoked with paramter: {UserName}", UserName);
+            var response = await _appDataScanner.GetAppsStructure(_settings, UserName);
+            _logger.LogDebug(AppLogEvents.Controller, "GetAppsStructure returned: {response}", response);
+
+            if (response.Data == null || response.Data.Count == 0)
+            {
+                _logger.LogWarning(AppLogEvents.Controller, "GetStructure returned: {Errors}", response.Errors);
+                return NotFound(response.Serialize());
+            }
+
+            _logger.LogInformation(AppLogEvents.Controller, "GetStructure returned: {Data}", response.Data);
+            return Ok(response.Serialize());
+        }
+
+        [HttpGet("AppsNames")]
+        [Authorize(Roles = "admin")]
+        public IActionResult GetAppsNames()
+        {
+            _logger.LogDebug(AppLogEvents.Controller, "GetAppsNames invoked");
+
+            var response = _appDataScanner.GetAppsNames(_settings);
+            _logger.LogDebug(AppLogEvents.Controller, "GetAppsNames returned: {response}", response);
+
+            if (!response.Success || response.Data == null || response.Data.Count == 0)
+            {
+                _logger.LogWarning(AppLogEvents.Controller, "GetAppsNames returned: {Errors}", response.Errors);
+                return NotFound(response.Serialize());
+            }
+
+            _logger.LogInformation(AppLogEvents.Controller, "GetAppsNames returned data: {Data}", response.Data);
+            return Ok(response.Serialize());
         }
     }
 }

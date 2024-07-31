@@ -1,41 +1,71 @@
-<ng-container *ngIf="apps$ | async as apps">
-  <ng-container *ngIf="apps.length > 0; else noApps">
-    <mat-nav-list>
-      <mat-list-item
-        *ngFor="let app of apps; trackBy: trackById"
-        (click)="selectItem(app)"
-        [ngClass]="{
-          selected: (selectedItem$ | async) === app,
-          'selected-hover': (selectedItem$ | async) === app
-        }"
-        [style.background-color]="
-          (selectedItem$ | async) === app ? 'var(--primary-color)' : ''
-        "
-      >
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-          "
-          [style.color]="(selectedItem$ | async) === app ? 'white' : ''"
-        >
-          {{ app.Name }}
-          <app-menu-icons
-            [menuItems]="menuItems"
-            (menuSelection)="handleMenuSelection($event, app)"
-          ></app-menu-icons>
-        </div>
-      </mat-list-item>
-    </mat-nav-list>
-  </ng-container>
-</ng-container>
-
-<ng-template #noApps>
-  <div *ngIf="loading" class="loading">Loading apps...</div>
-  <div *ngIf="!loading && error" class="error">
-    {{ error }}
+<div class="sidebar-container">
+  <div>
+    <app-search
+      [showIcons]="true"
+      placeholder="Search apps"
+      (valueChanged)="onSearchValueChanged($event)"
+    ></app-search>
   </div>
-  <div *ngIf="!loading && !error" class="no-apps">No apps available.</div>
-</ng-template>
+  <div style="display: flex; justify-content: center">
+    <app-toggle-app-selector
+      (ActiveOption)="setAppsCategory($event)"
+      [activeValue]="currentTab"
+    ></app-toggle-app-selector>
+  </div>
+  <mat-divider></mat-divider>
+  <ng-container *ngIf="apps$ | async as apps">
+    <ng-container *ngIf="apps.length > 0; else noAppsFound">
+      <mat-nav-list>
+        <mat-list-item
+          *ngFor="let app of apps; trackBy: trackById"
+          (click)="selectItem(app)"
+          [ngClass]="{
+            selected: (selectedItem$ | async) === app,
+            'selected-hover': (selectedItem$ | async) === app
+          }"
+          [style.background-color]="
+            (selectedItem$ | async) === app ? 'var(--primary-color)' : ''
+          "
+        >
+          <div
+            class="app-item"
+            [style.color]="(selectedItem$ | async) === app ? 'white' : ''"
+          >
+            <div
+              class="app-name"
+              [matTooltip]="app.Name"
+              matTooltipClass="app-name-tooltip"
+              [matTooltipShowDelay]="800"
+            >
+              {{ app.Name }}
+            </div>
+            <mat-icon
+              class="favorite-icon"
+              (click)="handleFavoriteSelection($event, app)"
+              [style.color]="
+                app.IsFavourite && (selectedItem$ | async) !== app
+                  ? 'var(--primary-color)'
+                  : ''
+              "
+            >
+              {{ getFavoriteIcon(app) }}
+            </mat-icon>
+          </div>
+        </mat-list-item>
+      </mat-nav-list>
+    </ng-container>
+  </ng-container>
+
+  <ng-template #noAppsFound>
+    <div *ngIf="loading" class="loading">Loading apps...</div>
+    <div *ngIf="!loading && error" class="error">
+      {{ error }}
+    </div>
+    <div *ngIf="!loading && !error" class="no-apps">
+      <ng-container *ngIf="isFiltering; else noApps">
+        No apps match your search.
+      </ng-container>
+      <ng-template #noApps> No apps available. </ng-template>
+    </div>
+  </ng-template>
+</div>

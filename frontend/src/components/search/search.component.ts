@@ -1,68 +1,61 @@
-import { Component, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
+import { SearchService } from '../../services/search-service.service';
+import { MatButtonModule } from '@angular/material/button';
 
 @Component({
   selector: 'app-search',
   standalone: true,
-  imports: [MatInputModule, MatIconModule, MatFormFieldModule, FormsModule],
+  imports: [
+    MatInputModule,
+    MatIconModule,
+    MatFormFieldModule,
+    FormsModule,
+    MatButtonModule,
+  ],
   template: `
-    <mat-form-field appearance="outline" class="compact-search">
-      <mat-label>Search</mat-label>
+    <mat-form-field class="search-field" appearance="fill">
+      @if (showIcons) {
+      <mat-icon matIconPrefix>search</mat-icon>
+      }
       <input
         matInput
-        type="text"
-        [value]="searchTerm()"
-        (input)="updateSearch($event)"
-        placeholder="Search..."
+        [placeholder]="placeholder"
+        name="search"
+        [(ngModel)]="value"
+        (ngModelChange)="onInputChange()"
       />
-      <mat-icon matSuffix>search</mat-icon>
+      @if (showIcons && value.length > 0) {
+      <button
+        matSuffix
+        aria-label="Clear"
+        (click)="clearSearch()"
+        class="clear-button"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+      }
     </mat-form-field>
   `,
-  styles: [
-    `
-      .compact-search {
-        width: 150px; /* Adjust as needed */
-      }
-      .compact-search .mat-mdc-text-field-wrapper {
-        padding-top: 0;
-        padding-bottom: 0;
-        height: 36px;
-      }
-      .compact-search .mat-mdc-form-field-flex {
-        min-height: 36px;
-        align-items: center;
-      }
-      .compact-search
-        .mat-mdc-text-field-wrapper.mdc-text-field--outlined
-        .mat-mdc-form-field-infix {
-        padding-top: 4px;
-        padding-bottom: 4px;
-      }
-      .compact-search .mat-mdc-form-field-infix {
-        font-size: 14px;
-      }
-      .compact-search .mat-mdc-form-field-subscript-wrapper {
-        display: none;
-      }
-      .compact-search .mat-icon {
-        font-size: 18px;
-        width: 14px;
-        height: 14px;
-      }
-      .compact-search .mdc-notched-outline__notch {
-        border-right: none;
-      }
-    `,
-  ],
+  styleUrls: ['./search.component.scss'],
 })
 export class SearchComponent {
-  searchTerm = signal('');
+  constructor(private searchService: SearchService) {}
+  @Input() showIcons: boolean = true;
+  @Input() placeholder: string = 'Search';
+  @Output() valueChanged = new EventEmitter<string>();
 
-  updateSearch(event: Event) {
-    const target = event.target as HTMLInputElement;
-    this.searchTerm.set(target.value);
+  value: string = '';
+
+  onInputChange() {
+    this.valueChanged.emit(this.value);
+  }
+
+  clearSearch() {
+    this.value = '';
+    this.onInputChange();
   }
 }

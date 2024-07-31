@@ -1,38 +1,7 @@
-﻿using eRM_VersionHub.Dtos;
-using eRM_VersionHub.Models;
-using eRM_VersionHub.Services.Interfaces;
-
-namespace eRM_VersionHub.Services
+﻿namespace eRM_VersionHub.Services
 {
-    public class TagService : ITagService
+    public static class TagService
     {
-
-        public ApiResponse<string> SetTag(MyAppSettings _settings, string appID, string versionID, string newTag = "")
-        {
-            var appModel = AppDataScanner.GetAppJsonModel(Path.Combine(_settings.AppsPath, appID, _settings.ApplicationConfigFile));
-            if (appModel == null || appModel.Modules.Count == 0)
-                return ApiResponse<string>.ErrorResponse(["App not found"]);
-
-            appModel.Modules.ForEach(module =>
-            {
-                var (newName, _) = SplitVersionID(versionID);
-                if (!string.IsNullOrEmpty(newTag))
-                    newName += $"-{newTag}";
-
-                var internalPath = Path.Combine(_settings.InternalPackagesPath, module.ModuleId, versionID);
-                var externalPath = Path.Combine(_settings.ExternalPackagesPath, module.ModuleId, versionID);
-
-                var newInternalPath = Path.Combine(_settings.InternalPackagesPath, module.ModuleId, newName);
-                var newExternalPath = Path.Combine(_settings.ExternalPackagesPath, module.ModuleId, newName);
-
-                if (Directory.Exists(internalPath))
-                    Directory.Move(internalPath, newInternalPath);
-                if (Directory.Exists(externalPath))
-                    Directory.Move(externalPath, newExternalPath);
-            });
-
-            return ApiResponse<string>.SuccessResponse("Success");
-        }
 
         public static (string Name, string Tag) SplitVersionID(string versionID)
         {
@@ -49,7 +18,106 @@ namespace eRM_VersionHub.Services
                 Name = versionID.Substring(0, index);
                 Tag = versionID[(index + 1)..];
             }
+
             return (Name, Tag);
+        }
+
+        public static string GetVersionWithoutTag(string versionID)
+        {
+            var index = versionID.IndexOf('-');
+            return index == -1 ? versionID : versionID.Substring(0, index);
+        }
+
+        public static string GetTag(string versionID)
+        {
+            var index = versionID.IndexOf('-');
+            return index == -1 ? "" : versionID.Substring(index + 1);
+        }
+
+        public static string SwapVersionTag(string versionID, string newTag)
+        {
+            var (newVersionID, _) = SplitVersionID(versionID);
+            if (!string.IsNullOrEmpty(newTag))
+            {
+                newVersionID += $"-{newTag}";
+            }
+
+            return newVersionID;
+        }
+
+        /// <summary>
+        /// Compares version numbers without their tags.
+        /// </summary>
+        public static bool CompareVersions(string versionID1, string versionID2)
+            => GetVersionWithoutTag(versionID1) == GetVersionWithoutTag(versionID2);
+
+        public static bool ChangeTagOnPath(string packagesPath, string moduleId, string versionID, string newVersionID)
+        {
+
+            if (!TagService.CompareVersions(versionID, newVersionID))
+            {
+                return false;
+            }
+
+            var oldPath = string.Empty;
+            var newPath = Path.Combine(packagesPath, moduleId, newVersionID);
+            var publishedModulePath = Path.Combine(packagesPath, moduleId);
+
+            if (!Directory.Exists(publishedModulePath))
+            {
+                return false;
+            }
+
+            var info = new DirectoryInfo(publishedModulePath);
+            var allPublishedVersions = info.GetDirectories().ToList();
+
+            foreach (var publishedVersion in allPublishedVersions)
+            {
+                if (GetVersionWithoutTag(publishedVersion.Name) == (GetVersionWithoutTag(versionID)))
+                {
+                    oldPath = Path.Combine(packagesPath, moduleId, publishedVersion.Name);
+                    break;
+                }
+            }
+
+            if (string.IsNullOrEmpty(oldPath))
+            {
+                return false;
+            }
+
+            if (oldPath == newPath)
+                return true;
+
+            if (Directory.Exists(oldPath))
+            {
+                var oldLock = FolderLockManager.GetOrAdd(oldPath);
+                var newLock = FolderLockManager.GetOrAdd(newPath);
+
+                lock (oldLock)
+                {
+                    lock (newLock)
+                    {
+
+                        try
+                        {
+                            Directory.Move(oldPath, newPath);
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                        finally
+                        {
+                            FolderLockManager.TryRemove(oldPath);
+                            FolderLockManager.TryRemove(newPath);
+                        }
+
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }

@@ -29,6 +29,6 @@ namespace eRM_VersionHub.Models
             };
         }
 
-        public override string ToString() => JsonManager.Serialize<ApiResponse<T>>(this);
+        public override string ToString() => this.Serialize();
     }
 }

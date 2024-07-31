@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   postgres: 
-    image: postgres:16.3-alpine3.20
+    image: postgres:alpine
     environment:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
@@ -18,7 +16,29 @@ services:
           memory: 200M 
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  
+    networks:
+      - network
+
+  postgres_test:
+    image: postgres:alpine
+    environment:
+      - POSTGRES_PASSWORD=postgres_test
+      - POSTGRES_DB=testdb
+    ports:
+     - "5433:5432"
+    deploy:
+      resources:
+        limits: 
+          cpus: "0.50"
+          memory: 400M
+        reservations:
+          cpus: "0.25"
+          memory: 200M 
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - network
+
   pgweb:
     image: sosedoff/pgweb
     restart: unless-stopped
@@ -28,6 +48,35 @@ services:
      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
     depends_on:
       - postgres
+    networks:
+      - network
+
+  pgweb_test:
+    image: sosedoff/pgweb
+    restart: unless-stopped
+    ports:
+     - "8082:8081"
+    environment:
+     - DATABASE_URL=postgres://postgres:postgres_test@postgres_test:5432/testdb?sslmode=disable
+    depends_on:
+      - postgres_test
+    networks:
+      - network
+    
+  frontend:
+    image: fawkes2k/erm_versionhub-frontend:latest
+    restart: unless-stopped
+    ports:
+    - "4200:4200"
+    networks:
+      - network
 
 volumes:
   postgres_data:
+  postgres_test_data:
+  frontend:
+  
+networks:
+  network:
+    name: erm_versionhub
+    external: true

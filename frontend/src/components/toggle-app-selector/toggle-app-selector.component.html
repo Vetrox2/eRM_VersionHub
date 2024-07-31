@@ -1,0 +1,10 @@
+<mat-button-toggle-group
+  aria-label="App Category Seleciton"
+  [(value)]="_activeValue"
+  [hideMultipleSelectionIndicator]="true"
+  hideSingleSelectionIndicator="true"
+  (change)="onSelectionChange($event.value)"
+>
+  <mat-button-toggle value="All">Show All</mat-button-toggle>
+  <mat-button-toggle value="Favorites">Favorites</mat-button-toggle>
+</mat-button-toggle-group>

@@ -1,0 +1,49 @@
+<header class="app-header">
+  <div class="logo-container">
+    <span class="logo-wrapper desktop-only">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 100 100"
+        class="logo-svg"
+      >
+        <path
+          d="M25 25 L50 35 L75 25 L75 75 L50 65 L25 75 Z"
+          fill="currentColor"
+        />
+      </svg>
+    </span>
+    <button class="burger-menu mobile-only" (click)="toggleSidebar()">
+      <mat-icon>menu</mat-icon>
+    </button>
+    <div class="title-container">
+      <h3 class="app-title">eRM</h3>
+      <p class="app-subtitle">EZD.JST</p>
+    </div>
+  </div>
+  <div class="icon-container">
+    <button mat-button routerLink="/dashboard">
+      <mat-icon style="font-size: 1.25rem; width: 100%;margin: 0;"  class="white-color">arrow_back</mat-icon>
+    </button>
+    <button mat-button [matMenuTriggerFor]="menu">
+      <mat-icon style="font-size: 1.25rem; width: 100%;margin: 0;"   class="white-color">person</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu">
+      <button mat-menu-item (click)="handleLogout()">Logout</button>
+    </mat-menu>
+  </div>
+</header>
+<div class="app-content">
+  <aside class="app-sidebar" [class.active]="isSidebarActive">
+    <div class="sidebar-header">
+      <button class="back-button" (click)="toggleSidebar()">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h3>Users</h3>
+    </div>
+    <app-user-sidebar></app-user-sidebar>
+  </aside>
+
+  <main class="app-main">
+    <app-user-app-permissions></app-user-app-permissions>
+  </main>
+</div>

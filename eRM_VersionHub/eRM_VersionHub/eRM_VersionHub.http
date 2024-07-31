@@ -1,6 +1,2 @@
 @eRM_VersionHub_HostAddress = http://localhost:5204
-
-GET {{eRM_VersionHub_HostAddress}}/weatherforecast/
-Accept: application/json
-
 ###

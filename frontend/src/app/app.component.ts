@@ -1,13 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { AppService } from '../services/app.service';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../components/sidebar/sidebar.component';
-import { ProjectVersionTableComponent } from '../features/dashboard/project-version-table/project-version-table.component';
-import { CustomCheckboxChipComponent } from '../components/custom-checkbox-chip/custom-checkbox-chip.component';
+import { ProjectVersionTableComponent } from '../features/project-version-table/project-version-table.component';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
-import { MatIcon, MatIconModule } from '@angular/material/icon';
-import { FavoritesTabComponent } from '../features/dashboard/favorites-tab/favorites-tab.component';
-import { MatButton } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { SearchComponent } from '../components/search/search.component';
+import { MatInputModule } from '@angular/material/input';
+import { FormsModule } from '@angular/forms';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -16,15 +20,15 @@ import { MatButton } from '@angular/material/button';
     RouterOutlet,
     SidebarComponent,
     ProjectVersionTableComponent,
-    CustomCheckboxChipComponent,
     MatChipsModule,
     MatDividerModule,
     MatIconModule,
-    FavoritesTabComponent,
-    MatIcon,
-    MatButton,
+    MatButtonModule,
+    MatInputModule,
+    FormsModule,
+    SearchComponent,
+    MatSidenavModule,
   ],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss',
+  template: ` <router-outlet></router-outlet>`,
 })
 export class AppComponent {}

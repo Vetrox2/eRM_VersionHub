@@ -1,10 +1,13 @@
-﻿namespace eRM_VersionHub.Models
+﻿using eRM_VersionHub.Services;
+
+namespace eRM_VersionHub.Models
 {
     public class AppSettings
     {
         public LoggingSettings Logging { get; set; }
         public string AllowedHosts { get; set; }
         public MyAppSettings MyAppSettings { get; set; }
+        public KeycloakSettings KeycloakSettings { get; set; }
     }
 
     public class LoggingSettings
@@ -25,6 +28,15 @@
         public string ApplicationConfigFile { get; set; }
         public string InternalPackagesPath { get; set; }
         public string ExternalPackagesPath { get; set; }
+
+        public override string ToString() => this.Serialize();
     }
 
+    public class KeycloakSettings
+    {
+        public string MetadataAddress { get; set; }
+        public string Authority { get; set; }
+        public string ClientId { get; set; }
+        public string ClientSecret { get; set; }
+    }
 }

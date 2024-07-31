@@ -13,6 +13,7 @@ namespace eRM_VersionHub.Services.Database
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked CreateFavorite with data: {favorite}", favorite);
             ApiResponse<Favorite?> result = await _repository.CreateFavorite(favorite);
+
             _logger.LogInformation(AppLogEvents.Service, "CreateFavorite returned: {result}", result);
             return result;
         }
@@ -21,6 +22,7 @@ namespace eRM_VersionHub.Services.Database
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked GetFavoriteList with parameter: {Username}", Username);
             ApiResponse<List<Favorite>> result = await _repository.GetFavoriteList(Username);
+
             _logger.LogInformation(AppLogEvents.Service, "GetFavoriteList returned: {result}", result);
             return result;
         }
@@ -29,6 +31,7 @@ namespace eRM_VersionHub.Services.Database
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked DeleteFavorite with data: {favorite}", favorite);
             ApiResponse<Favorite?> result = await _repository.DeleteFavorite(favorite);
+
             _logger.LogInformation(AppLogEvents.Service, "DeleteFavorite returned: {result}", result);
             return result;
         }

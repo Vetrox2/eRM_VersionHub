@@ -1,4 +1,6 @@
-﻿namespace eRM_VersionHub.Dtos
+﻿using eRM_VersionHub.Services;
+
+namespace eRM_VersionHub.Dtos
 {
     public class AppStructureDto
     {
@@ -6,5 +8,6 @@
         public string Name { get; set; }
         public bool IsFavourite { get; set; }
         public List<VersionDto> Versions { get; set; }
+        public override string ToString() => this.Serialize();
     }
 }

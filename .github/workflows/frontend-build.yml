@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - development
+    paths:
+      - frontend/**
+
+env:
+  CURRENT_TAG: "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:$GITHUB_SHA-dev"
+  LATEST_TAG: "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:latest"
 
 jobs:
   build:
@@ -19,11 +25,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:$GITHUB_SHA-dev" frontend
+          docker build -t $CURRENT_TAG frontend
           
       - name: Push Docker image
         run: |
-          docker tag "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:$GITHUB_SHA-dev" "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:latest"
+          docker tag $CURRENT_TAG $LATEST_TAG
           echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:$GITHUB_SHA-dev"
-          docker push "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:latest" 
+          docker push $CURRENT_TAG
+          docker push $LATEST_TAG

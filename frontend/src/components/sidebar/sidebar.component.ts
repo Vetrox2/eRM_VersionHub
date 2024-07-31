@@ -8,10 +8,18 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { SearchComponent } from '../search/search.component';
 import { SelectionToggleComponent } from '../selection-toggle/selection-toggle/selection-toggle.component';
 import { App } from '../../models/app.model';
-import { Observable, of } from 'rxjs';
-import { AppService } from '../../services/app-service.service';
-import { catchError, map } from 'rxjs/operators';
-import { MenuIconsComponent, MenuItem } from '../menu/menu.component';
+import { BehaviorSubject, combineLatest, Observable, of } from 'rxjs';
+import { AppService } from '../../services/app.service';
+import {
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  map,
+  take,
+} from 'rxjs/operators';
+import { ToggleAppSelectorComponent } from '../toggle-app-selector/toggle-app-selector.component';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { FavoriteService } from '../../services/favorite.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -22,6 +30,7 @@ import { MenuIconsComponent, MenuItem } from '../menu/menu.component';
     MatListModule,
     MatIconModule,
     MatButtonModule,
+    MatTooltipModule,
     NgClass,
     NgFor,
     NgIf,
@@ -30,39 +39,117 @@ import { MenuIconsComponent, MenuItem } from '../menu/menu.component';
     MatFormFieldModule,
     SearchComponent,
     SelectionToggleComponent,
-    MenuIconsComponent,
+    SearchComponent,
+    ToggleAppSelectorComponent,
   ],
 })
 export class SidebarComponent implements OnInit {
+  private searchTerm$ = new BehaviorSubject<string>('');
+  private currentTabAppsCategory$ = new BehaviorSubject<string>('All');
+  private firstRun = true;
+  isFiltering = false;
+  favoriteApps$: Observable<App[]>;
   apps$: Observable<App[]>;
   selectedItem$: Observable<App | null>;
   loading = true;
   error: string | null = null;
+  currentTab: 'All' | 'Favorites' = 'All';
 
-  menuItems: MenuItem[] = [
-    { icon: 'publish', label: 'Publish', action: 'publish' },
-    { icon: 'cancel', label: 'Unpublish', action: 'unpublish' },
-    { icon: 'favorite', label: 'Add to favorites', action: 'favorite' },
-  ];
-
-  constructor(private appService: AppService) {
-    this.apps$ = this.appService.getApps().pipe(
-      map((apps) => {
+  constructor(
+    private appService: AppService,
+    private favoriteService: FavoriteService
+  ) {
+    this.favoriteApps$ = favoriteService.favoriteApps$;
+    this.apps$ = combineLatest([
+      this.appService.apps$,
+      this.favoriteApps$,
+      this.currentTabAppsCategory$,
+      this.searchTerm$.pipe(debounceTime(300), distinctUntilChanged()),
+    ]).pipe(
+      map(([apps, favoriteApps, currentTab, searchTerm]) => {
         this.loading = false;
-        return apps;
-      }),
-      catchError((err) => {
-        this.loading = false;
-        this.error = 'Failed to load apps. Please try again later.';
-        console.error('Error loading apps:', err);
-        return of([]);
+        this.isFiltering = !!searchTerm;
+        const filteredApps = this.filterApps(
+          apps,
+          favoriteApps,
+          currentTab,
+          searchTerm
+        );
+        return filteredApps;
       })
     );
-    this.selectedItem$ = this.appService.getSelectedApp();
+
+    this.selectedItem$ = this.appService.selectedApp$;
+  }
+
+  setAppsCategory(appsCategory: 'All' | 'Favorites') {
+    this.currentTab = appsCategory;
+    this.currentTabAppsCategory$.next(appsCategory);
+  }
+  private filterApps(
+    apps: App[],
+    favoriteApps: App[],
+    isFavorites: string,
+    searchTerm: string
+  ): App[] {
+    let filteredApps =
+      isFavorites === 'All'
+        ? apps
+        : isFavorites === 'Favorites'
+        ? favoriteApps
+        : apps;
+
+    if (searchTerm) {
+      filteredApps = filteredApps.filter((app) =>
+        app.Name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return filteredApps;
+  }
+
+  onSearchValueChanged(value: string) {
+    this.searchTerm$.next(value);
   }
 
   ngOnInit() {
-    this.appService.loadApps();
+    this.loadApps();
+  }
+
+  private loadApps() {
+    this.loading = true;
+    this.appService.apps$.subscribe({
+      next: () => {
+        this.loading = false;
+        this.initializeSelectedApp();
+      },
+      error: (error) => {
+        this.loading = false;
+        this.error = 'Failed to load apps. Please try again.';
+        console.error('Error loading apps:', error);
+      },
+    });
+  }
+
+  private initializeSelectedApp() {
+    combineLatest([this.apps$])
+      .pipe(
+        filter(([apps]) => apps.length > 0),
+        take(1)
+      )
+      .subscribe(([apps]) => {
+        const favoriteApps = apps.filter((app) => app.IsFavourite);
+        if (this.firstRun) {
+          if (favoriteApps.length > 0) {
+            this.appService.setSelectedApp(favoriteApps[0]);
+            this.setAppsCategory('Favorites');
+          } else {
+            this.appService.setSelectedApp(apps[0]);
+            this.setAppsCategory('All');
+          }
+          this.firstRun = false;
+        }
+      });
   }
 
   selectItem(item: App) {
@@ -73,20 +160,17 @@ export class SidebarComponent implements OnInit {
     return app.ID;
   }
 
-  handleMenuSelection(action: string, app: App) {
-    console.log(`Action ${action} selected for app ${app.Name}`);
-    switch (action) {
-      case 'publish':
-        // Handle publish action
-        break;
-      case 'unpublish':
-        // Handle unpublish action
-        break;
-      case 'favorite':
-        this.appService.addToFavorite(app, 'admin');
-        break;
-      default:
-        console.warn(`Unknown action: ${action}`);
+  handleFavoriteSelection(event: Event, app: App) {
+    event.stopPropagation();
+    if (app.IsFavourite) {
+      //dont remove subscribe()
+      this.favoriteService.removeFromFavorite(app, 'admin').subscribe();
+    } else {
+      //dont remove subscribe()
+      this.favoriteService.addToFavorite(app, 'admin').subscribe();
     }
+  }
+  getFavoriteIcon(app: App): string {
+    return app.IsFavourite ? 'favorite' : 'favorite_border';
   }
 }
