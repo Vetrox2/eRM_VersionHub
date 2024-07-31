@@ -1,6 +1,9 @@
 ﻿using Dapper;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories;
+using eRM_VersionHub.Services.Database;
+using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Options;
 using Moq;
 using Npgsql;
@@ -11,6 +14,7 @@ namespace eRM_VersionHub_Tester.Repositories
     public class DbRepositoryTests : IAsyncLifetime
     {
         private readonly Mock<ILogger<DbRepository>> _mockLogger;
+        private readonly ISqlConnectionFactory _connectionFactory;
         private const string TestConnectionString =
             "Host=localhost;Port=5433;Database=testdb;Username=postgres;Password=postgres_test";
         private DbRepository _dbRepository;
@@ -33,7 +37,8 @@ namespace eRM_VersionHub_Tester.Repositories
                     }
                 );
 
-            _dbRepository = new DbRepository(mockOptions.Object, _mockLogger.Object);
+            _connectionFactory = new SqlConnectionFactory(mockOptions.Object);
+            _dbRepository = new DbRepository(_mockLogger.Object, _connectionFactory);
             _testSchemaName = $"test_schema_{Guid.NewGuid():N}";
         }
 

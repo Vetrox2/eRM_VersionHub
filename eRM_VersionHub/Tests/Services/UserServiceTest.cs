@@ -1,6 +1,7 @@
 ﻿using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories.Interfaces;
 using eRM_VersionHub.Services.Database;
+using eRM_VersionHub.Services.Interfaces;
 using Moq;
 
 namespace eRM_VersionHub_Tester.Services
@@ -8,6 +9,7 @@ namespace eRM_VersionHub_Tester.Services
     public class UserServiceTests
     {
         private readonly Mock<IUserRepository> _mockRepository;
+        private readonly Mock<IPermissionService> _mockPermissionService;
         private readonly Mock<ILogger<UserService>> _mockLogger;
         private readonly UserService _userService;
 
@@ -15,7 +17,8 @@ namespace eRM_VersionHub_Tester.Services
         {
             _mockRepository = new Mock<IUserRepository>();
             _mockLogger = new Mock<ILogger<UserService>>();
-            _userService = new UserService(_mockRepository.Object, _mockLogger.Object);
+            _mockPermissionService = new Mock<IPermissionService>();
+            _userService = new UserService(_mockRepository.Object, _mockLogger.Object, _mockPermissionService.Object);
         }
 
         [Fact]
