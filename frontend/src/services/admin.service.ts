@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { ApiService } from './api.service';
-import { ApiResponse, ApiResponse2 } from '../models/api-response.model';
+import { ApiResponse } from '../models/api-response.model';
 import { UserApps } from '../models/user-apps.model';
 import { AppService } from './app.service';
 import { App } from '../models/app.model';
