@@ -5,19 +5,19 @@ import {
   tick,
 } from '@angular/core/testing';
 import { ProjectVersionTableComponent } from './project-version-table.component';
-import { AppService } from '../../../services/app.service';
-import { PublicationService } from '../../../services/publication.service';
-import { SearchService } from '../../../services/search-service.service';
-import { VersionUtilsService } from '../../../services/version-utils.service';
+import { AppService } from '../../services/app.service';
+import { PublicationService } from '../../services/publication.service';
+import { SearchService } from '../../services/search-service.service';
+import { VersionUtilsService } from '../../services/version-utils.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of, throwError } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { FlattenedVersion } from '../../../models/flattened-version.model';
-import { Version } from '../../../models/version.model';
-import { Module } from '../../../models/module.model';
-import { mockApps } from '../../../testing/mock-data';
-import { ApiResponse } from '../../../models/api-response.model';
+import { FlattenedVersion } from '../../models/flattened-version.model';
+import { Version } from '../../models/version.model';
+import { Module } from '../../models/module.model';
+import { mockApps } from '../../testing/mock-data';
+import { ApiResponse } from '../../models/api-response.model';
 
 describe('ProjectVersionTableComponent', () => {
   let component: ProjectVersionTableComponent;

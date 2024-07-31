@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { AppService } from '../services/app.service';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../components/sidebar/sidebar.component';
-import { ProjectVersionTableComponent } from '../features/dashboard/project-version-table/project-version-table.component';
+import { ProjectVersionTableComponent } from '../features/project-version-table/project-version-table.component';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
