@@ -14,76 +14,39 @@
         <span class="stat-value">{{ user?.AppsNames?.length || 0 }}</span>
       </div>
     </div>
-    <!-- <div class="bulk-actions">
-      <button
-        mat-raised-button
-        color="primary"
-        (click)="addAllPermissions(user.Username)"
-      >
-        <mat-icon>add_circle</mat-icon>
-        Add All Permissions
-      </button>
-      <button
-        mat-raised-button
-        color="warn"
-        (click)="removeAllPermissions(user.Username)"
-      >
-        <mat-icon>remove_circle</mat-icon>
-        Remove All Permissions
-      </button>
-    </div> -->
   </div>
 
   <app-search
     (valueChanged)="filterApps($event)"
     placeholder="Search Apps"
     [showIcons]="true"
+    class="app-search"
   >
   </app-search>
 
-  <!-- <mat-accordion> -->
-  <ng-container *ngIf="filteredApps$ | async as filteredApps">
-    <ng-container *ngIf="appPermissions$ | async as permissions">
-      <mat-expansion-panel *ngFor="let appName of filteredApps">
-        <mat-expansion-panel-header>
-          <mat-panel-title>
-            {{ appName }}
-          </mat-panel-title>
-          <mat-panel-description>
-            <button
-              mat-icon-button
-              [color]="permissions[appName] ? 'warn' : 'primary'"
-              (click)="
-                togglePermission(user.Username, appName, permissions[appName]);
-                $event.stopPropagation()
-              "
-              [matTooltip]="
-                permissions[appName] ? 'Remove Permission' : 'Add Permission'
-              "
-            >
-              <mat-icon>{{ permissions[appName] ? "delete" : "add" }}</mat-icon>
-            </button>
-          </mat-panel-description>
-        </mat-expansion-panel-header>
-
-        <!-- <ng-template matExpansionPanelContent>
-            <mat-list>
-              <h3 mat-subheader>Modules</h3>
-              <ng-container *ngIf="getModules(appName) | async as modules">
-                <mat-list-item *ngFor="let module of modules">
-                  <p>{{ module.Name }}</p>
-                  <p>
-                    Published: {{ module.IsPublished ? "Yes" : "No" }} |
-                    Optional: {{ module.IsOptional ? "Yes" : "No" }}
-                  </p>
-                </mat-list-item>
-              </ng-container>
-            </mat-list>
-          </ng-template> -->
-      </mat-expansion-panel>
+  <div class="app-list">
+    <ng-container *ngIf="filteredApps$ | async as filteredApps">
+      <ng-container *ngIf="appPermissions$ | async as permissions">
+        <div *ngFor="let appName of filteredApps" class="app-item">
+          <span class="app-name">{{ appName }}</span>
+          <button
+            mat-icon-button
+            [color]="permissions[appName] ? 'warn' : 'primary'"
+            (click)="
+              togglePermission(user.Username, appName, permissions[appName])
+            "
+            [matTooltip]="
+              permissions[appName] ? 'Remove Permission' : 'Add Permission'
+            "
+          >
+            <mat-icon>{{
+              permissions[appName] ? "remove_circle" : "add_circle"
+            }}</mat-icon>
+          </button>
+        </div>
+      </ng-container>
     </ng-container>
-  </ng-container>
-  <!-- </mat-accordion> -->
+  </div>
 </div>
 
 <ng-template #noUserSelected>
