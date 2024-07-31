@@ -21,11 +21,9 @@
     </div>
   </div>
   <div class="icon-container">
-    <ng-container *ngIf="isAdmin$ | async">
-      <button routerLink="/admin" mat-button>
-        <mat-icon>manage_accounts</mat-icon>
-      </button>
-    </ng-container>
+    <button mat-button routerLink="/dashboard">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
     <button mat-button [matMenuTriggerFor]="menu">
       <mat-icon>person</mat-icon>
     </button>
@@ -40,14 +38,12 @@
       <button class="back-button" (click)="toggleSidebar()">
         <mat-icon>arrow_back</mat-icon>
       </button>
-      <h3>Menu</h3>
+      <h3>Users</h3>
     </div>
-    <app-sidebar></app-sidebar>
+    <app-user-sidebar></app-user-sidebar>
   </aside>
 
   <main class="app-main">
-    <div>
-      <app-project-version-table></app-project-version-table>
-    </div>
+    <app-user-app-permissions></app-user-app-permissions>
   </main>
 </div>

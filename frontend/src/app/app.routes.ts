@@ -16,6 +16,13 @@ export const routes: Routes = [
             '../pages/erm-dashboard.page/erm-dashboard.page.component'
           ).then((m) => m.ErmDashboardPageComponent),
       },
+      {
+        path: 'admin',
+        loadComponent: () =>
+          import(
+            '../features/dashboard/admin-dashboard/admin-dashboard/admin-dashboard.component'
+          ).then((m) => m.AdminDashboardComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '/login' },

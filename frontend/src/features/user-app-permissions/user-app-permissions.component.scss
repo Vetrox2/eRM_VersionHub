@@ -1,0 +1,85 @@
+.user-permissions-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.user-summary {
+  background-color: #f5f5f5;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+
+  h2 {
+    margin-top: 0;
+    color: #333;
+  }
+
+  .summary-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 15px;
+
+    .stat {
+      text-align: center;
+
+      .stat-label {
+        font-size: 14px;
+        color: #666;
+      }
+
+      .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+      }
+    }
+  }
+}
+
+.app-search {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.app-list {
+  .app-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+
+    .app-name {
+      flex-grow: 1;
+    }
+  }
+}
+
+.no-user-message {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+.bulk-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+
+  button {
+    flex: 1;
+    margin: 0 10px;
+
+    &:first-child {
+      margin-left: 0;
+    }
+
+    &:last-child {
+      margin-right: 0;
+    }
+
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+}
