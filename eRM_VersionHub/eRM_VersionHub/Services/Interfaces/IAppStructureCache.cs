@@ -7,5 +7,6 @@ namespace eRM_VersionHub.Services.Interfaces
         Task<List<AppStructureDto>?> GetAppStructureAsync();
         Task SetAppStructureAsync(List<AppStructureDto> appStructure);
         Task InvalidateAppStructureAsync();
+        Task UpdateModuleStatus(VersionDto version, bool publish);
     }
 }

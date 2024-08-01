@@ -4,7 +4,7 @@ using eRM_VersionHub.Services.Interfaces;
 
 namespace eRM_VersionHub.Services
 {
-    public class PublicationService(ILogger<PublicationService> logger) : IPublicationService
+    public class PublicationService(ILogger<PublicationService> logger, IAppStructureCache cache) : IPublicationService
     {
         private readonly ILogger<PublicationService> _logger = logger;
 
@@ -52,6 +52,7 @@ namespace eRM_VersionHub.Services
                 }
             }
 
+            cache.UpdateModuleStatus(version, true);
             _logger.LogInformation(AppLogEvents.Service, "Successful publication of: {version}", version);
             return ApiResponse<bool>.SuccessResponse(true);
         }
@@ -99,6 +100,7 @@ namespace eRM_VersionHub.Services
                 }
             }
 
+            cache.UpdateModuleStatus(version, false);
             _logger.LogInformation(AppLogEvents.Service, "Unpublishing version: {version}", version);
             return ApiResponse<bool>.ErrorResponse(errors);
         }

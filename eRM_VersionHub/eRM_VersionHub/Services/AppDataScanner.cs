@@ -63,7 +63,7 @@ namespace eRM_VersionHub.Services
                 return _response;
             }
 
-            var structure = await GetCurrentAppStructure();
+            var structure = await _cache.GetAppStructureAsync() ?? await GetCurrentStructureAndSaveToCache();
             if (structure == null) 
                 return _response;
             
@@ -98,16 +98,9 @@ namespace eRM_VersionHub.Services
                 ApiResponse<List<string>>.ErrorResponse(["Fatal error"]) : ApiResponse<List<string>>.SuccessResponse(appsNames);
         }
 
-        private async Task<List<AppStructureDto>?> GetCurrentAppStructure()
+        public async Task<List<AppStructureDto>?> GetCurrentStructureAndSaveToCache()
         {
-            _logger.LogDebug(AppLogEvents.Service, "Invoking GetCurrentAppStructure with paramters: {appsPath}, {appJsonName}, {internalPackagesPath}", 
-                _settings.AppsPath, _settings.ApplicationConfigFile, _settings.InternalPackagesPath);
-
-            var appsStructure = await _cache.GetAppStructureAsync();
-            if(appsStructure != null) 
-                return appsStructure;
-
-            appsStructure = ScanInternalDisc();
+            var appsStructure = ScanInternalDisc();
             if (appsStructure == null)
             {
                 _logger.LogError(AppLogEvents.Service, "Internal app structure is null");
@@ -117,7 +110,7 @@ namespace eRM_VersionHub.Services
             appsStructure = SetPublished(_settings.ExternalPackagesPath, appsStructure);
             _logger.LogDebug(AppLogEvents.Service, "SetPublished returned: {structure}", appsStructure);
 
-            _cache.SetAppStructureAsync(appsStructure);
+            await _cache.SetAppStructureAsync(appsStructure);
             return appsStructure;
         }
 
