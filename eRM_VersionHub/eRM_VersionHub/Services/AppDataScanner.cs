@@ -1,15 +1,16 @@
 ﻿using eRM_VersionHub.Dtos;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace eRM_VersionHub.Services
 {
-    public class AppDataScanner(IFavoriteService favoriteService, IPermissionService permissionService, ILogger<AppDataScanner> logger) : IAppDataScanner
+    public class AppDataScanner(IFavoriteService _favoriteService, IPermissionService _permissionService, 
+        ILogger<AppDataScanner> _logger, IOptions<AppSettings> _appSettings, IAppStructureCache _cache) : IAppDataScanner
     {
-        private readonly IFavoriteService _favoriteService = favoriteService;
-        private readonly IPermissionService _permissionService = permissionService;
-        private readonly ILogger<AppDataScanner> _logger = logger;
-        private ApiResponse<List<AppStructureDto>> response;
+        private ApiResponse<List<AppStructureDto>> _response;
+        private MyAppSettings _settings = _appSettings.Value.MyAppSettings;
 
         public static ApplicationJsonModel? GetAppJsonModel(string jsonFilePath)
         {
@@ -50,49 +51,45 @@ namespace eRM_VersionHub.Services
             return info.GetDirectories()?.ToList();
         }
 
-        public async Task<ApiResponse<List<AppStructureDto>>> GetAppsStructure(MyAppSettings settings, string userToken)
+        public async Task<ApiResponse<List<AppStructureDto>>> GetAppsStructure(string userToken)
         {
-            _logger.LogDebug(AppLogEvents.Service, "Invoking GetAppsStructure with paramters: {userToken}, {settings}", userToken, settings);
-            response = new();
+            _response = new();
+            _logger.LogDebug(AppLogEvents.Service, "Invoking GetAppsStructure with parameters: {userToken}, {settings}", userToken, _settings);
 
-            if (!Directory.Exists(settings.InternalPackagesPath) || !Directory.Exists(settings.ExternalPackagesPath) || !Directory.Exists(settings.AppsPath))
+            if (ValidatePaths())
             {
                 _logger.LogError(AppLogEvents.Service, "At least one of the path in the settings does not exist");
-                response.Errors.Add("Fatal error");
-                return response;
+                _response.Errors.Add("Fatal error");
+                return _response;
             }
 
-            var structure = await GetInternalAppStructure(settings.AppsPath, settings.ApplicationConfigFile, settings.InternalPackagesPath, userToken);
-            _logger.LogDebug(AppLogEvents.Service, "GetInternalAppStructure returned: {structure}", structure);
-
+            var structure = await GetCurrentAppStructure();
+            if (structure == null) 
+                return _response;
+            
+            structure = await FilterByPermissions(structure, userToken);
             if (structure == null)
-            {
-                _logger.LogError(AppLogEvents.Service, "Internal app structure is null");
-                return response;
-            }
+                return _response;
 
             structure = await SetFavorites(structure, userToken);
             _logger.LogDebug(AppLogEvents.Service, "SetFavorites returned: {structure}", structure);
 
-            structure = SetPublished(settings.ExternalPackagesPath, structure);
-            _logger.LogDebug(AppLogEvents.Service, "SetPublished returned: {structure}", structure);
-
-            response.Data = structure;
-            _logger.LogInformation(AppLogEvents.Service, "GetAppsStructure returned: {response}", response);
-            return response;
+            _response.Data = structure;
+            _logger.LogInformation(AppLogEvents.Service, "GetAppsStructure returned: {response}", _response);
+            return _response;
         }
 
-        public ApiResponse<List<string>> GetAppsNames(MyAppSettings settings)
+        public ApiResponse<List<string>> GetAppsNames()
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoking GetAppsNames");
 
-            if (!Directory.Exists(settings.AppsPath))
+            if (!Directory.Exists(_settings.AppsPath))
             {
                 _logger.LogError(AppLogEvents.Service, "AppsPath in the settings does not exist");
                 return ApiResponse<List<string>>.ErrorResponse(["Fatal error"]);
             }
 
-            var info = GetDirectoryInfo(settings.AppsPath);
+            var info = GetDirectoryInfo(_settings.AppsPath);
             var appsNames = info?.Select(x => x.Name).ToList();
 
             _logger.LogDebug(AppLogEvents.Service, "GetAppsNames returned: {appsNames}", appsNames);
@@ -101,43 +98,53 @@ namespace eRM_VersionHub.Services
                 ApiResponse<List<string>>.ErrorResponse(["Fatal error"]) : ApiResponse<List<string>>.SuccessResponse(appsNames);
         }
 
-        private async Task<List<AppStructureDto>?> GetInternalAppStructure(string appsPath, string appJsonName, string internalPackagesPath, string token)
+        private async Task<List<AppStructureDto>?> GetCurrentAppStructure()
         {
-            _logger.LogDebug(AppLogEvents.Service, "Invoking GetInternalAppStructure with paramters: {appsPath}, {appJsonName}, {internalPackagesPath}, {token}", appsPath, appJsonName, internalPackagesPath, token);
+            _logger.LogDebug(AppLogEvents.Service, "Invoking GetCurrentAppStructure with paramters: {appsPath}, {appJsonName}, {internalPackagesPath}", 
+                _settings.AppsPath, _settings.ApplicationConfigFile, _settings.InternalPackagesPath);
+
+            var appsStructure = await _cache.GetAppStructureAsync();
+            if(appsStructure != null) 
+                return appsStructure;
+
+            appsStructure = ScanInternalDisc();
+            if (appsStructure == null)
+            {
+                _logger.LogError(AppLogEvents.Service, "Internal app structure is null");
+                return null;
+            }
+
+            appsStructure = SetPublished(_settings.ExternalPackagesPath, appsStructure);
+            _logger.LogDebug(AppLogEvents.Service, "SetPublished returned: {structure}", appsStructure);
+
+            _cache.SetAppStructureAsync(appsStructure);
+            return appsStructure;
+        }
+
+        private List<AppStructureDto>? ScanInternalDisc()
+        {
             var appsStructure = new List<AppStructureDto>();
-
-            var perms = await _permissionService.GetPermissionList(token);
-            _logger.LogDebug(AppLogEvents.Service, "GetPermissionList returned: {perms}", perms);
-
-            var appsNames = GetDirectoryInfo(appsPath);
-            _logger.LogDebug(AppLogEvents.Service, "GetDirectoryInfo returned: {perms}", perms);
+            var appsNames = GetDirectoryInfo(_settings.AppsPath);
 
             if (appsNames == null)
             {
                 _logger.LogWarning(AppLogEvents.Service, "Applications data not found");
-                response.Errors.Add("Applications data not found");
-                return null;
-            }
-
-            if (perms == null || !perms.Success || perms.Data.Count == 0)
-            {
-                _logger.LogWarning(AppLogEvents.Service, "User permissions not found");
-                response.Errors.Add("User permissions not found");
+                _response.Errors.Add("Applications data not found");
                 return null;
             }
 
             foreach (var app in appsNames)
             {
-                var appJSModel = GetAppJsonModel(Path.Combine(appsPath, app.Name, appJsonName));
+                var appJSModel = GetAppJsonModel(Path.Combine(_settings.AppsPath, app.Name, _settings.ApplicationConfigFile));
                 _logger.LogDebug(AppLogEvents.Service, "GetAppJsonModel returned: {appJSModel}", appJSModel);
 
-                if (appJSModel == null || !perms.Data.Any(perm => perm.AppID == appJSModel.UniqueIdentifier))
+                if (appJSModel == null)
                 {
                     _logger.LogWarning(AppLogEvents.Service, "Application not found or user has no permissions for it: {appName}", app.Name);
                     continue;
                 }
 
-                var moduleModels = GetModuleModels(internalPackagesPath, appJSModel.GetModulesNames());
+                var moduleModels = GetModuleModels(_settings.InternalPackagesPath, appJSModel.GetModulesNames());
                 _logger.LogDebug(AppLogEvents.Service, "GetModuleModels returned: {moduleModels}", moduleModels);
 
                 var appStructureDto = CreateAppStructureDto(appJSModel, moduleModels);
@@ -146,7 +153,7 @@ namespace eRM_VersionHub.Services
                 if (appStructureDto == null)
                 {
                     _logger.LogWarning(AppLogEvents.Service, "Something went wrong during data creation for the application: {appName}", appJSModel.Name);
-                    response.Errors.Add($"Something went wrong during data creation for the application: {appJSModel.Name}");
+                    _response.Errors.Add($"Something went wrong during data creation for the application: {appJSModel.Name}");
                     continue;
                 }
 
@@ -191,6 +198,22 @@ namespace eRM_VersionHub.Services
 
             _logger.LogInformation(AppLogEvents.Service, "SetPublished returned: {appsStructure}", appsStructure);
             return appsStructure;
+        }
+
+        private async Task<List<AppStructureDto>?> FilterByPermissions(List<AppStructureDto> structure, string userToken)
+        {
+            var permResult = await _permissionService.GetPermissionList(userToken);
+            _logger.LogDebug(AppLogEvents.Service, "GetPermissionList returned: {permResult}", permResult);
+
+            if (permResult == null || !permResult.Success || permResult.Data.Count == 0)
+            {
+                _logger.LogWarning(AppLogEvents.Service, "User permissions not found");
+                _response.Errors.Add("User permissions not found");
+                return null;
+            }
+
+            var perms = permResult.Data.Select(perm => perm.AppID).ToList();
+            return structure.Where(app => perms.Contains(app.ID)).ToList();
         }
 
         private async Task<List<AppStructureDto>> SetFavorites(List<AppStructureDto> appsStructure, string token)
@@ -252,5 +275,8 @@ namespace eRM_VersionHub.Services
             _logger.LogInformation(AppLogEvents.Service, "CreateAppStructureDto returned: {appStructureDto}", appStructureDto);
             return appStructureDto;
         }
+
+        private bool ValidatePaths() => !Directory.Exists(_settings.InternalPackagesPath) || 
+            !Directory.Exists(_settings.ExternalPackagesPath) || !Directory.Exists(_settings.AppsPath);
     }
 }
