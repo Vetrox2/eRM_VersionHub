@@ -20,7 +20,7 @@ namespace eRM_VersionHub.Controllers
 
             return User.IsInRole("admin") ? 
                 Ok(ApiResponse<string>.SuccessResponse($"User {username} is an admin").Serialize()) :
-                Forbid(ApiResponse<string>.ErrorResponse([$"User {username} is not an admin"]).Serialize());
+                StatusCode(403, ApiResponse<string>.ErrorResponse([$"User {username} is not an admin"]).Serialize());
         }
     }
 }

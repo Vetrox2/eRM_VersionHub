@@ -41,7 +41,7 @@ namespace eRM_VersionHub.Controllers
             if (!await permissionService.ValidatePermissions(versionDto, _settings, User?.Identity?.Name))
             {
                 logger.LogWarning(AppLogEvents.Controller, "User is not permitted to operate on these modules");
-                return Forbid(ApiResponse<bool>.ErrorResponse(["User is not permitted to operate on these modules"]).Serialize());
+                return StatusCode(403, ApiResponse<bool>.ErrorResponse(["User is not permitted to operate on these modules"]).Serialize());
             }
 
             logger.LogDebug(AppLogEvents.Controller, "{operationName} version: {version}", operationName,versionDto);
