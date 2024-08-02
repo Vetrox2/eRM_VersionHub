@@ -49,6 +49,8 @@ builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IPublicationService, PublicationService>();
 builder.Services.AddScoped<IAppDataScanner, AppDataScanner>();
 
+builder.Services.AddHostedService<FileChangeWatcher>();
+
 // Configure Swagger
 builder.Services.AddSwaggerGen(options =>
 {
