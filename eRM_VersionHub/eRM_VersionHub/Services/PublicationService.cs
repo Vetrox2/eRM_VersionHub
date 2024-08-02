@@ -41,13 +41,8 @@ namespace eRM_VersionHub.Services
 
                     PrepareTargetPath(settings.ExternalPackagesPath, module.Name, targetPath);
 
-                    var stopwatch = Stopwatch.StartNew();
                     var response = CopyContent(sourcePath, targetPath);
-
-                    stopwatch.Stop();
-
-                    _logger.LogWarning(AppLogEvents.Service, "CopyContent returned: {response}, Time taken: {elapsedMilliseconds} ms", response, stopwatch.ElapsedMilliseconds);
-
+                    _logger.LogWarning(AppLogEvents.Service, "CopyContent returned: {response}", response);
 
                     if (!response.Success)
                         response.Errors.Add($"Publication of module \"{module.Name}\" version \"{version.ID}\" failed!.");
