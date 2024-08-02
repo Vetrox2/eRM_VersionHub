@@ -5,7 +5,7 @@ namespace eRM_VersionHub.Services.Interfaces
 {
     public interface IPublicationService
     {
-        public ApiResponse<bool> Publish(MyAppSettings settings, VersionDto version);
-        public ApiResponse<bool> Unpublish(MyAppSettings settings, VersionDto version);
+        public Task<ApiResponse<bool>> Publish(MyAppSettings settings, VersionDto version);
+        public Task<ApiResponse<bool>> Unpublish(MyAppSettings settings, VersionDto version);
     }
 }
