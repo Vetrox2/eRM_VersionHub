@@ -63,7 +63,7 @@ namespace eRM_VersionHub.Services
                 return _response;
             }
 
-            var structure = await _cache.GetAppStructureAsync() ?? await GetCurrentStructureAndSaveToCache();
+            var structure = await _cache.GetAppStructure() ?? await GetCurrentStructureAndSaveToCache();
             if (structure == null) 
                 return _response;
             
@@ -110,7 +110,7 @@ namespace eRM_VersionHub.Services
             appsStructure = SetPublished(_settings.ExternalPackagesPath, appsStructure);
             _logger.LogDebug(AppLogEvents.Service, "SetPublished returned: {structure}", appsStructure);
 
-            await _cache.SetAppStructureAsync(appsStructure);
+            await _cache.SetAppStructure(appsStructure);
             return appsStructure;
         }
 

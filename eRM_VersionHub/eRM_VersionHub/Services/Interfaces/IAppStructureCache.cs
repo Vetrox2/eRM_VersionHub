@@ -4,9 +4,9 @@ namespace eRM_VersionHub.Services.Interfaces
 {
     public interface IAppStructureCache
     {
-        Task<List<AppStructureDto>?> GetAppStructureAsync();
-        Task SetAppStructureAsync(List<AppStructureDto> appStructure);
-        Task InvalidateAppStructureAsync();
-        Task UpdateModuleStatus(VersionDto version, bool publish);
+        List<AppStructureDto>? GetAppStructure();
+        void SetAppStructure(List<AppStructureDto> appStructure);
+        void InvalidateAppStructure();
+        void UpdateModuleStatus(VersionDto version, bool publish);
     }
 }

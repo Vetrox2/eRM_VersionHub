@@ -9,27 +9,25 @@ namespace eRM_VersionHub.Services
     {
         private readonly string key = "appStructure";
 
-        public Task<List<AppStructureDto>?> GetAppStructureAsync()
+        public List<AppStructureDto>? GetAppStructure()
         {
             memoryCache.TryGetValue(key, out List<AppStructureDto> appStructure);
-            return Task.FromResult(appStructure);
+            return appStructure;
         }
 
-        public Task SetAppStructureAsync(List<AppStructureDto> appStructure)
+        public void SetAppStructure(List<AppStructureDto> appStructure)
         {
             memoryCache.Set(key, appStructure, new MemoryCacheEntryOptions{ SlidingExpiration = TimeSpan.FromMinutes(15) });
-            return Task.CompletedTask;
         }
 
-        public Task InvalidateAppStructureAsync()
+        public void InvalidateAppStructure()
         {
             memoryCache.Remove(key);
-            return Task.CompletedTask;
         }
 
-        public async Task UpdateModuleStatus(VersionDto version, bool isPublishAction)
+        public void UpdateModuleStatus(VersionDto version, bool isPublishAction)
         {
-            var appStructure = await GetAppStructureAsync();
+            var appStructure = GetAppStructure();
             if (appStructure == null)
             {
                 serviceProvider.GetRequiredService<IAppDataScanner>().GetCurrentStructureAndSaveToCache();
@@ -57,7 +55,7 @@ namespace eRM_VersionHub.Services
                     publishedVersion.PublishedTag = version.PublishedTag;
             }
 
-            SetAppStructureAsync(appStructure);
+            SetAppStructure(appStructure);
         }
     }
 }
