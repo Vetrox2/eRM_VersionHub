@@ -63,7 +63,7 @@ namespace eRM_VersionHub.Services
                 return _response;
             }
 
-            var structure = await _cache.GetAppStructure() ?? await GetCurrentStructureAndSaveToCache();
+            var structure = _cache.GetAppStructure() ?? GetCurrentStructureAndSaveToCache();
             if (structure == null) 
                 return _response;
             
@@ -98,7 +98,7 @@ namespace eRM_VersionHub.Services
                 ApiResponse<List<string>>.ErrorResponse(["Fatal error"]) : ApiResponse<List<string>>.SuccessResponse(appsNames);
         }
 
-        public async Task<List<AppStructureDto>?> GetCurrentStructureAndSaveToCache()
+        public List<AppStructureDto>? GetCurrentStructureAndSaveToCache()
         {
             var appsStructure = ScanInternalDisc();
             if (appsStructure == null)
@@ -110,7 +110,7 @@ namespace eRM_VersionHub.Services
             appsStructure = SetPublished(_settings.ExternalPackagesPath, appsStructure);
             _logger.LogDebug(AppLogEvents.Service, "SetPublished returned: {structure}", appsStructure);
 
-            await _cache.SetAppStructure(appsStructure);
+            _cache.SetAppStructure(appsStructure);
             return appsStructure;
         }
 

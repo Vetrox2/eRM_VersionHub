@@ -8,6 +8,6 @@ namespace eRM_VersionHub.Services.Interfaces
     {
         Task<ApiResponse<List<AppStructureDto>>> GetAppsStructure(string userToken);
         ApiResponse<List<string>> GetAppsNames();
-        Task<List<AppStructureDto>?> GetCurrentStructureAndSaveToCache();
+        List<AppStructureDto>? GetCurrentStructureAndSaveToCache();
     }
 }
