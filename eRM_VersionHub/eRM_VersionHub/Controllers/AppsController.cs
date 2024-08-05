@@ -9,10 +9,8 @@ namespace eRM_VersionHub.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AppsController(IOptions<AppSettings> appSettings, IAppDataScanner appDataScanner, ILogger<AppsController> logger) : ControllerBase
+    public class AppsController(IAppDataScanner appDataScanner, ILogger<AppsController> logger) : ControllerBase
     {
-        private readonly MyAppSettings _settings = appSettings.Value.MyAppSettings;
-
         [HttpGet]
         [Authorize(Roles = "user")]
         public async Task<IActionResult> GetStructure()
@@ -25,7 +23,7 @@ namespace eRM_VersionHub.Controllers
             }
 
             logger.LogDebug(AppLogEvents.Controller, "GetStructure invoked with parameter: {username}", username);
-            var response = await appDataScanner.GetAppsStructure(_settings, username);
+            var response = await appDataScanner.GetAppsStructure(username);
 
             if (response.Data == null || response.Data.Count == 0)
             {
@@ -43,7 +41,7 @@ namespace eRM_VersionHub.Controllers
         {
             logger.LogDebug(AppLogEvents.Controller, "GetAppsNames invoked");
 
-            var response = appDataScanner.GetAppsNames(_settings);
+            var response = appDataScanner.GetAppsNames();
             logger.LogDebug(AppLogEvents.Controller, "GetAppsNames returned: {response}", response);
 
             if (!response.Success || response.Data == null || response.Data.Count == 0)

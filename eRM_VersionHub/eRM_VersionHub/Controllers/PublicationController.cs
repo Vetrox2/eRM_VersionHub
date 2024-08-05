@@ -28,7 +28,7 @@ namespace eRM_VersionHub.Controllers
             return await HandleVersionOperation(versionDto, publicationService.Unpublish, "UnpublishVersions");
         }
 
-        private async Task<IActionResult> HandleVersionOperation(VersionDto versionDto, Func<MyAppSettings, VersionDto, ApiResponse<bool>> operation, string operationName)
+        private async Task<IActionResult> HandleVersionOperation(VersionDto versionDto, Func<MyAppSettings, VersionDto, Task<ApiResponse<bool>>> operation, string operationName)
         {
             logger.LogDebug(AppLogEvents.Controller, "PublishVersions invoked with data: {versionDtos}", versionDto);
 
@@ -41,11 +41,12 @@ namespace eRM_VersionHub.Controllers
             if (!await permissionService.ValidatePermissions(versionDto, _settings, User?.Identity?.Name))
             {
                 logger.LogWarning(AppLogEvents.Controller, "User is not permitted to operate on these modules");
-                return Forbid(ApiResponse<bool>.ErrorResponse(["User is not permitted to operate on these modules"]).Serialize());
+                return StatusCode(403, ApiResponse<bool>.ErrorResponse(["User is not permitted to operate on these modules"]).Serialize());
             }
 
             logger.LogDebug(AppLogEvents.Controller, "{operationName} version: {version}", operationName,versionDto);
-            var errors = operation(_settings, versionDto).Errors;
+            var response = await operation(_settings, versionDto);
+            var errors = response.Errors;
 
             if (errors.Count > 0)
             {

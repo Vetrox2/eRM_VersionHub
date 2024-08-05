@@ -1,14 +1,15 @@
 ﻿using eRM_VersionHub.Dtos;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Services.Interfaces;
+using System.Diagnostics;
 
 namespace eRM_VersionHub.Services
 {
-    public class PublicationService(ILogger<PublicationService> logger) : IPublicationService
+    public class PublicationService(ILogger<PublicationService> logger, IAppStructureCache cache) : IPublicationService
     {
         private readonly ILogger<PublicationService> _logger = logger;
 
-        public ApiResponse<bool> Publish(MyAppSettings settings, VersionDto version)
+        public async Task<ApiResponse<bool>> Publish(MyAppSettings settings, VersionDto version)
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked Publish with data: {settings}\n{version}", settings, version);
 
@@ -23,6 +24,7 @@ namespace eRM_VersionHub.Services
                 return ApiResponse<bool>.ErrorResponse(errors);
             }
 
+            List<Task<ApiResponse<bool>>> tasks = [];
             foreach (var module in version.Modules)
             {
                 var (doContinue, returnError) = ChangeTagIfModuleIsPublished(settings, version, module);
@@ -32,31 +34,39 @@ namespace eRM_VersionHub.Services
                     return ApiResponse<bool>.ErrorResponse([$"System could not change published tag on module \"{module.Name}\" version \"{version.ID}\"" +
                         $". Rollbacking publication of this version."]);
 
-                var sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
-                var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID, version.PublishedTag));
-
-                PrepareTargetPath(settings.ExternalPackagesPath, module.Name, targetPath);
-                var response = CopyContent(sourcePath, targetPath);
-
-                _logger.LogDebug(AppLogEvents.Service, "CopyContent returned: {response}", response);
-
-                if (!response.Success)
+                tasks.Add(Task.Run(() =>
                 {
-                    _logger.LogWarning(AppLogEvents.Service, "Unpublishing due to failure of copying {sourcePath} to {targetPath}", sourcePath, targetPath);
-                    Unpublish(settings, version);
+                    var sourcePath = Path.Combine(settings.InternalPackagesPath, module.Name, version.ID);
+                    var targetPath = Path.Combine(settings.ExternalPackagesPath, module.Name, TagService.SwapVersionTag(version.ID, version.PublishedTag));
 
-                    response.Errors.Add($"System could not publish module \"{module.Name}\" version \"{version.ID}\". Rollbacking publication of this version.");
-                    _logger.LogWarning(AppLogEvents.Service, "Publish returned: {Errors}", response.Errors);
+                    PrepareTargetPath(settings.ExternalPackagesPath, module.Name, targetPath);
 
-                    return ApiResponse<bool>.ErrorResponse(response.Errors);
-                }
+                    var response = CopyContent(sourcePath, targetPath);
+                    _logger.LogWarning(AppLogEvents.Service, "CopyContent returned: {response}", response);
+
+                    if (!response.Success)
+                        response.Errors.Add($"Publication of module \"{module.Name}\" version \"{version.ID}\" failed!.");
+
+                    return response;
+                }));
             }
 
+            var responsesArray = await Task.WhenAll(tasks);
+            var failedResponses = responsesArray.Where(r => !r.Success).ToList();
+            if (failedResponses.Count > 0)
+            {
+                _logger.LogWarning(AppLogEvents.Service, "Unpublishing due to failure of copying");
+                Unpublish(settings, version);
+
+                return ApiResponse<bool>.ErrorResponse(failedResponses.SelectMany(r => r.Errors).ToList());
+            }
+
+            cache.UpdateModuleStatus(version, true);
             _logger.LogInformation(AppLogEvents.Service, "Successful publication of: {version}", version);
             return ApiResponse<bool>.SuccessResponse(true);
         }
 
-        public ApiResponse<bool> Unpublish(MyAppSettings settings, VersionDto version)
+        public async Task<ApiResponse<bool>> Unpublish(MyAppSettings settings, VersionDto version)
         {
             _logger.LogDebug(AppLogEvents.Service, "Invoked Unpublish with data: {settings}\n{version}", settings, version);
 
@@ -99,6 +109,7 @@ namespace eRM_VersionHub.Services
                 }
             }
 
+            cache.UpdateModuleStatus(version, false);
             _logger.LogInformation(AppLogEvents.Service, "Unpublishing version: {version}", version);
             return ApiResponse<bool>.ErrorResponse(errors);
         }

@@ -34,6 +34,8 @@ builder.Services.AddEndpointsApiExplorer();
 DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 builder.Services.Configure<AppSettings>(builder.Configuration);
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<IAppStructureCache, AppStructureCache>();
 builder.Services.AddSingleton<IDbRepository, DbRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IFavoriteRepository, FavoriteRepository>();
@@ -46,6 +48,8 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IPublicationService, PublicationService>();
 builder.Services.AddScoped<IAppDataScanner, AppDataScanner>();
+
+builder.Services.AddHostedService<FileChangeWatcher>();
 
 // Configure Swagger
 builder.Services.AddSwaggerGen(options =>
