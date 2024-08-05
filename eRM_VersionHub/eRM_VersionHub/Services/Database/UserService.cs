@@ -27,6 +27,12 @@ namespace eRM_VersionHub.Services.Database
             _logger.LogInformation(AppLogEvents.Service, "GetUserList returned: {result}", result);
             return result;
         }
+        public async Task<ApiResponse<List<string>>> GetUserNamesList()
+        {
+            ApiResponse<List<User>> result = await _repository.GetUserList();
+            var usernames = result.Data.Select(u => u.Username).ToList();
+            return new ApiResponse<List<string>> { Data = usernames };
+        }
 
         public async Task<ApiResponse<List<UserDto>>> GetUsersWithApps()
         {
@@ -42,6 +48,7 @@ namespace eRM_VersionHub.Services.Database
             _logger.LogInformation(AppLogEvents.Service, "GetUserList returned: {result}", result);
 
             var userDtos = new List<UserDto>();
+            //var response = _appDataScanner.GetAppsNames(_settings)
             foreach (var user in result.Data)
             {
                 var perms = await permissionService.GetPermissionList(user.Username);
