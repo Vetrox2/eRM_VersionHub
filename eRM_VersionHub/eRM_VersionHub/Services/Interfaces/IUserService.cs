@@ -12,5 +12,7 @@ namespace eRM_VersionHub.Services.Interfaces
         Task<ApiResponse<User?>> UpdateUser(User user);
         Task<ApiResponse<User?>> DeleteUser(string Username);
         Task<ApiResponse<List<UserDto>>> GetUsersWithApps();
+        Task<ApiResponse<List<string>>> GetUserNamesList();
+
     }
 }

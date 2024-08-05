@@ -1,4 +1,5 @@
 ﻿using eRM_VersionHub.Models;
+using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,13 +18,13 @@ namespace eRM_VersionHub.Controllers
         public async Task<IActionResult> GetPermission(string Username)
         {
             _logger.LogDebug(AppLogEvents.Controller, "Invoked GetPermission with paramter: {Username}", Username);
-            ApiResponse<List<Permission>> result = await _permissionService.GetPermissionList(Username);
+            var result = await _permissionService.GetAllPermissionList(Username);
             _logger.LogDebug(AppLogEvents.Controller, "GetPermissionList result: {result}", result);
 
             if (result.Success)
             {
                 _logger.LogInformation(AppLogEvents.Controller, "GetPermission returned: {Data}", result.Data);
-                return Ok(result.Data);
+                return Ok(ApiResponse<AppPermissionDto>.SuccessResponse(result.Data).Serialize());
             }
 
             _logger.LogWarning(AppLogEvents.Controller, "GetFavorites returned error(s): {Errors}", result.Errors);

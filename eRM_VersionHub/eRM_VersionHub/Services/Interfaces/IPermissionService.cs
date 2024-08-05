@@ -10,5 +10,6 @@ namespace eRM_VersionHub.Services.Interfaces
         Task<ApiResponse<List<Permission>>> GetPermissionList(string Username);
         Task<ApiResponse<Permission?>> DeletePermission(Permission permission);
         Task<bool> ValidatePermissions(VersionDto version, MyAppSettings settings, string? userName);
+        Task<ApiResponse<AppPermissionDto>> GetAllPermissionList(string username);
     }
 }
