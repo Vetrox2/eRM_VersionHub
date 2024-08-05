@@ -2,13 +2,19 @@
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories.Interfaces;
 using eRM_VersionHub.Services.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace eRM_VersionHub.Services.Database
 {
-    public class PermissionService(IPermissionRepository repository, ILogger<PermissionService> logger) : IPermissionService
+
+    public class PermissionService(IPermissionRepository repository, ILogger<PermissionService> logger, IUserRepository userRepository, IOptions<AppSettings> appSettings, IServiceProvider serviceProvider) : IPermissionService
     {
         private readonly ILogger<PermissionService> _logger = logger;
         private readonly IPermissionRepository _repository = repository;
+        private IAppDataScanner _appDataScanner;
+        private readonly IOptions<AppSettings> _appSettings = appSettings;
+        private readonly IUserRepository _userRepository = userRepository;
+
 
         public async Task<ApiResponse<Permission?>> CreatePermission(Permission permission)
         {
@@ -27,6 +33,27 @@ namespace eRM_VersionHub.Services.Database
             _logger.LogInformation(AppLogEvents.Service, "GetPermissionList returned: {result}", result);
             return result;
         }
+
+        public async Task<ApiResponse<AppPermissionDto>> GetAllPermissionList(string username)
+        {
+            _appDataScanner = serviceProvider.GetRequiredService<IAppDataScanner>();
+            var apps = _appDataScanner.GetAppsNames(_appSettings.Value.MyAppSettings);
+            var targerUser = await userRepository.GetUser(username);
+            if (targerUser.Data == null || apps == null)
+            {
+                var s = ApiResponse<string>.ErrorResponse(["Internal server error"]);
+
+            }
+            var userPermissionList = await _repository.GetPermissionList(targerUser.Data.Username);
+            var permissionMap = new Dictionary<string, bool>();
+            foreach (var item in apps.Data)
+            {
+                permissionMap[item] = userPermissionList.Data.Any(p => p.AppID == item);
+            }
+
+            return ApiResponse<AppPermissionDto>.SuccessResponse(new AppPermissionDto() { User = targerUser.Data.Username, AppsPermission = permissionMap });
+        }
+
 
         public async Task<ApiResponse<Permission?>> DeletePermission(Permission permission)
         {
