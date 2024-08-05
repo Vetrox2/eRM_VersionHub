@@ -1,18 +1,25 @@
-import { Component, OnInit } from '@angular/core';
-import { Observable, combineLatest, map, of, switchMap } from 'rxjs';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { BehaviorSubject, Observable, Subject, combineLatest, of } from 'rxjs';
+import {
+  map,
+  takeUntil,
+  switchMap,
+  distinctUntilChanged,
+  catchError,
+  filter,
+  finalize,
+} from 'rxjs/operators';
 import { AdminService } from '../../services/admin.service';
 import { UserSelectionService } from '../../services/user-selection.service';
-import { AsyncPipe, NgFor, NgIf } from '@angular/common';
+import { AsyncPipe, KeyValuePipe, NgFor, NgIf } from '@angular/common';
 import { MatListModule } from '@angular/material/list';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { UserApps } from '../../models/user-apps.model';
-import { ApiResponse } from '../../models/api-response.model';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { SearchComponent } from '../../components/search/search.component';
-import { App } from '../../models/app.model';
-import { Module } from '../../models/module.model';
+import { AppPermission } from '../../models/app-permissions.model';
 
 @Component({
   selector: 'app-user-app-permissions',
@@ -24,142 +31,177 @@ import { Module } from '../../models/module.model';
     MatListModule,
     MatButtonModule,
     MatIconModule,
-    MatExpansionModule,
     MatTooltipModule,
     SearchComponent,
+    KeyValuePipe,
+    MatProgressSpinnerModule,
   ],
   templateUrl: './user-app-permissions.component.html',
   styleUrls: ['./user-app-permissions.component.scss'],
 })
-export class UserAppPermissionsComponent implements OnInit {
-  selectedUser$: Observable<UserApps | null>;
-  allApps$: Observable<string[]> = of([]);
-  detailedApps$: Observable<App[]> = of([]);
-  filteredApps$: Observable<string[]> = of([]);
-  appPermissions$: Observable<{ [key: string]: boolean }> = of({});
+export class UserAppPermissionsComponent implements OnDestroy, OnInit {
+  selectedUser$: Observable<string>;
+  permissions$: Observable<AppPermission | null>;
+  filteredApps$!: Observable<Record<string, boolean> | null>;
+
+  private permissionsSubject = new BehaviorSubject<AppPermission | null>(null);
+  private searchTerm$ = new BehaviorSubject<string>('');
+  private destroy$ = new Subject<void>();
+  isLoading = false;
 
   constructor(
     private adminService: AdminService,
-    private userSelectionService: UserSelectionService
+    private userSelectionService: UserSelectionService,
+    private snackBar: MatSnackBar
   ) {
-    this.selectedUser$ = this.userSelectionService.getSelectedUser();
+    this.selectedUser$ =
+      this.userSelectionService.selectedUserSubject.asObservable();
+    this.permissions$ = this.permissionsSubject.asObservable();
   }
+  loadingApps: Set<string> = new Set();
 
   ngOnInit() {
-    this.loadApps();
+    this.selectedUser$.subscribe((user) => {
+      if (user) {
+        this.isLoading = false;
+        this.initializePermissions();
+        this.initializeFilteredApps();
+      }
+    });
   }
 
-  loadApps() {
-    this.allApps$ = this.adminService
-      .getAllApps()
-      .pipe(map((response: ApiResponse<string[]>) => response.Data));
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
-    this.detailedApps$ = this.adminService.getAllAppsDetailed();
+  private initializePermissions() {
+    this.isLoading = true;
+    this.selectedUser$
+      .pipe(
+        filter((user) => !!user && user.length > 0),
+        switchMap((user) => this.adminService.getAppPermission(user)),
+        catchError((error) => {
+          this.showErrorSnackbar('Error fetching permissions');
+          return of(null);
+        }),
+        finalize(() => (this.isLoading = false)),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((permissions) => {
+        this.permissionsSubject.next(permissions);
+        this.isLoading = false;
+      });
+  }
 
-    this.filteredApps$ = this.allApps$;
-
-    this.appPermissions$ = combineLatest([
-      this.allApps$,
-      this.selectedUser$,
+  private initializeFilteredApps() {
+    this.filteredApps$ = combineLatest([
+      this.permissions$,
+      this.searchTerm$.pipe(distinctUntilChanged()),
     ]).pipe(
-      map(([allApps, user]) => {
-        const permissions: { [key: string]: boolean } = {};
-        allApps.forEach((appName) => {
-          permissions[appName] = user
-            ? user.AppsNames.includes(appName)
-            : false;
-        });
-        return permissions;
-      })
+      map(([permissions, searchTerm]) =>
+        this.filterAppsBySearchTerm(permissions, searchTerm)
+      ),
+      takeUntil(this.destroy$)
     );
   }
 
-  // getModules(appName: string): Observable<Module[]> {
-  //   return this.detailedApps$.pipe(
-  //     map((apps) => {
-  //       const app = apps.find((a) => a.Name === appName);
-  //       if (!app) return [];
-  //       return this.getUniqueModules(app);
-  //     })
-  //   );
-  // }
-
-  // getUniqueModules(app: App): Module[] {
-  //   const moduleMap = new Map<string, Module>();
-  //   app.Versions.forEach((version) => {
-  //     version.Modules.forEach((module) => {
-  //       if (!moduleMap.has(module.Name)) {
-  //         moduleMap.set(module.Name, module);
-  //       }
-  //     });
-  //   });
-  //   return Array.from(moduleMap.values());
-  // }
-
-  addAllPermissions(username: string) {
-    combineLatest([this.allApps$, this.appPermissions$])
-      .pipe(
-        map(([allApps, permissions]) =>
-          allApps.filter((app) => !permissions[app])
-        )
+  private filterAppsBySearchTerm(
+    permissions: AppPermission | null,
+    searchTerm: string
+  ): Record<string, boolean> | null {
+    if (!permissions) return null;
+    return Object.entries(permissions.AppsPermission)
+      .filter(([appName]) =>
+        appName.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .subscribe((appsToAdd) => {
-        appsToAdd.forEach((app) => this.addPermission(username, app));
-      });
-  }
-
-  removeAllPermissions(username: string) {
-    combineLatest([this.allApps$, this.appPermissions$])
-      .pipe(
-        map(([allApps, permissions]) =>
-          allApps.filter((app) => permissions[app])
-        )
-      )
-      .subscribe((appsToRemove) => {
-        appsToRemove.forEach((app) => this.removePermission(username, app));
-      });
+      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
   }
 
   filterApps(searchTerm: string) {
-    this.filteredApps$ = this.allApps$.pipe(
-      map((apps) =>
-        apps.filter((app) =>
-          app.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      )
-    );
+    this.searchTerm$.next(searchTerm);
   }
 
   togglePermission(username: string, appName: string, hasPermission: boolean) {
-    if (hasPermission) {
-      this.removePermission(username, appName);
-    } else {
-      this.addPermission(username, appName);
+    this.loadingApps.add(appName);
+    const action = hasPermission
+      ? this.adminService.addPermission(username, appName)
+      : this.adminService.removePermission(username, appName);
+
+    action
+      .pipe(
+        catchError((error) => {
+          console.error('Error in togglePermission:', error);
+          this.showErrorSnackbar(
+            'Error toggling permission. Please try again.'
+          );
+          // Return an observable to continue the chain
+          return of(null);
+        }),
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.loadingApps.delete(appName);
+          console.log('Finalized');
+        })
+      )
+      .subscribe({
+        next: (result) => {
+          if (result !== null) {
+            this.updateLocalPermissionsState(appName, hasPermission);
+            this.showSuccessSnackbar('Permission updated successfully');
+          } else {
+            // Revert the local state if there was an error
+            this.updateLocalPermissionsState(appName, !hasPermission);
+          }
+        },
+        complete: () => {
+          console.log('Completed');
+        },
+      });
+  }
+
+  private showSuccessSnackbar(message: string) {
+    this.snackBar.open(message, 'Close', {
+      duration: 3000,
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom',
+    });
+  }
+
+  private showErrorSnackbar(message: string) {
+    this.snackBar.open(message, 'Close', {
+      duration: 5000,
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom',
+    });
+  }
+
+  isAppLoading(appName: string): boolean {
+    return this.loadingApps.has(appName);
+  }
+
+  private updateLocalPermissionsState(appName: string, hasPermission: boolean) {
+    const currentPermissions = this.permissionsSubject.getValue();
+    if (currentPermissions) {
+      const updatedPermissions = {
+        ...currentPermissions,
+        AppsPermission: {
+          ...currentPermissions.AppsPermission,
+          [appName]: hasPermission,
+        },
+      };
+      this.permissionsSubject.next(updatedPermissions);
+      this.loadingApps.delete(appName);
     }
   }
 
-  private addPermission(username: string, appName: string) {
-    this.adminService.addPermission(username, appName).subscribe(() => {
-      this.refreshUserApps(username);
-    });
+  getAppCount(user: AppPermission): number {
+    return user?.AppsPermission ? Object.keys(user.AppsPermission).length : 0;
   }
 
-  private removePermission(username: string, appName: string) {
-    this.adminService.removePermission(username, appName).subscribe(() => {
-      this.refreshUserApps(username);
-    });
-  }
-
-  private refreshUserApps(username: string) {
-    this.adminService
-      .getUsersWithApps()
-      .subscribe((response: ApiResponse<UserApps[]>) => {
-        const updatedUser = response.Data.find(
-          (user) => user.Username === username
-        );
-        if (updatedUser) {
-          this.userSelectionService.setSelectedUser(updatedUser);
-        }
-      });
+  getPermittedAppCount(user: AppPermission): number {
+    return user?.AppsPermission
+      ? Object.values(user.AppsPermission).filter(Boolean).length
+      : 0;
   }
 }

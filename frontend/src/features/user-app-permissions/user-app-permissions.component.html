@@ -1,56 +1,68 @@
-<div
-  *ngIf="selectedUser$ | async as user; else noUserSelected"
+<!-- <div
+  *ngIf="selectedUser$ | async as selectedUser; else noUserSelected"
   class="user-permissions-container"
->
-  <div class="user-summary">
-    <h2>{{ user.Username }}'s App Permissions</h2>
-    <div class="summary-stats">
-      <div class="stat">
-        <span class="stat-label">Total Apps:</span>
-        <span class="stat-value">{{ (allApps$ | async)?.length || 0 }}</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">Permitted Apps:</span>
-        <span class="stat-value">{{ user?.AppsNames?.length || 0 }}</span>
+> -->
+@if (selectedUser$ && !isLoading) {
+<div>
+  <ng-container *ngIf="permissions$ | async as permissions">
+    <div *ngIf="permissions" class="user-summary">
+      <h2>{{ permissions.User }}'s App Permissions</h2>
+      <div class="summary-stats">
+        <div class="stat">
+          <span class="stat-label">Total Apps:</span>
+          <span class="stat-value">{{ getAppCount(permissions) }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Permitted Apps:</span>
+          <span class="stat-value">{{
+            getPermittedAppCount(permissions)
+          }}</span>
+        </div>
       </div>
     </div>
-  </div>
 
-  <app-search
-    (valueChanged)="filterApps($event)"
-    placeholder="Search Apps"
-    [showIcons]="true"
-    class="app-search"
-  >
-  </app-search>
+    <app-search
+      (valueChanged)="filterApps($event)"
+      placeholder="Search Apps"
+      [showIcons]="true"
+      class="app-search"
+    ></app-search>
 
-  <div class="app-list">
-    <ng-container *ngIf="filteredApps$ | async as filteredApps">
-      <ng-container *ngIf="appPermissions$ | async as permissions">
-        <div *ngFor="let appName of filteredApps" class="app-item">
-          <span class="app-name" style="margin: 1rem;">{{ appName }}</span>
-          <button
-            mat-icon-button
-            [color]="permissions[appName] ? 'warn' : 'primary'"
-            (click)="
-              togglePermission(user.Username, appName, permissions[appName])
-            "
-            [matTooltip]="
-              permissions[appName] ? 'Remove Permission' : 'Add Permission'
-            "
-          >
-            <mat-icon>{{
-              permissions[appName] ? "remove_circle" : "add_circle"
-            }}</mat-icon>
-          </button>
+    <div class="app-list">
+      <ng-container *ngIf="filteredApps$ | async as filteredApps">
+        <div *ngFor="let app of filteredApps | keyvalue" class="app-item">
+          <span class="app-name">{{ app.key }}</span>
+          <div class="action-container">
+            <ng-container *ngIf="!isAppLoading(app.key); else loadingSpinner">
+              <button
+                mat-icon-button
+                [color]="app.value ? 'warn' : 'primary'"
+                (click)="
+                  togglePermission(permissions.User, app.key, !app.value)
+                "
+                [matTooltip]="
+                  app.value ? 'Remove Permission' : 'Add Permission'
+                "
+                matTooltipShowDelay="1500"
+              >
+                <mat-icon>
+                  {{ app.value ? "remove_circle" : "add_circle" }}
+                </mat-icon>
+              </button>
+            </ng-container>
+            <ng-template #loadingSpinner>
+              <mat-spinner diameter="24"></mat-spinner>
+            </ng-template>
+          </div>
         </div>
       </ng-container>
-    </ng-container>
-  </div>
+    </div>
+  </ng-container>
 </div>
-
-<ng-template #noUserSelected>
-  <p class="no-user-message">
-    Please select a user from the sidebar to manage their app permissions.
-  </p>
-</ng-template>
+} @else {
+<mat-spinner
+  *ngIf="isLoading"
+  diameter="50"
+  class="loading-spinner"
+></mat-spinner>
+}
