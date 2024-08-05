@@ -7,44 +7,37 @@ using Microsoft.Extensions.Options;
 namespace eRM_VersionHub.Services.Database
 {
 
-    public class PermissionService(IPermissionRepository repository, ILogger<PermissionService> logger, IUserRepository userRepository, IOptions<AppSettings> appSettings, IServiceProvider serviceProvider) : IPermissionService
+    public class PermissionService(IPermissionRepository repository, ILogger<PermissionService> logger, IUserRepository userRepository, IServiceProvider serviceProvider) : IPermissionService
     {
-        private readonly ILogger<PermissionService> _logger = logger;
-        private readonly IPermissionRepository _repository = repository;
-        private IAppDataScanner _appDataScanner;
-        private readonly IOptions<AppSettings> _appSettings = appSettings;
-        private readonly IUserRepository _userRepository = userRepository;
-
-
         public async Task<ApiResponse<Permission?>> CreatePermission(Permission permission)
         {
-            _logger.LogDebug(AppLogEvents.Service, "Invoked CreatePermission with data: {permission}", permission);
-            ApiResponse<Permission?> result = await _repository.CreatePermission(permission);
+            logger.LogDebug(AppLogEvents.Service, "Invoked CreatePermission with data: {permission}", permission);
+            ApiResponse<Permission?> result = await repository.CreatePermission(permission);
 
-            _logger.LogInformation(AppLogEvents.Service, "CreatePermission returned: {result}", result);
+            logger.LogInformation(AppLogEvents.Service, "CreatePermission returned: {result}", result);
             return result;
         }
 
         public async Task<ApiResponse<List<Permission>>> GetPermissionList(string Username)
         {
-            _logger.LogDebug(AppLogEvents.Service, "Invoked GetPermissionList with parameter: {Username}", Username);
-            ApiResponse<List<Permission>> result = await _repository.GetPermissionList(Username);
+            logger.LogDebug(AppLogEvents.Service, "Invoked GetPermissionList with parameter: {Username}", Username);
+            ApiResponse<List<Permission>> result = await repository.GetPermissionList(Username);
 
-            _logger.LogInformation(AppLogEvents.Service, "GetPermissionList returned: {result}", result);
+            logger.LogInformation(AppLogEvents.Service, "GetPermissionList returned: {result}", result);
             return result;
         }
 
         public async Task<ApiResponse<AppPermissionDto>> GetAllPermissionList(string username)
         {
-            _appDataScanner = serviceProvider.GetRequiredService<IAppDataScanner>();
-            var apps = _appDataScanner.GetAppsNames(_appSettings.Value.MyAppSettings);
+            var appDataScanner = serviceProvider.GetRequiredService<IAppDataScanner>();
+            var apps = appDataScanner.GetAppsNames();
             var targerUser = await userRepository.GetUser(username);
             if (targerUser.Data == null || apps == null)
             {
                 var s = ApiResponse<string>.ErrorResponse(["Internal server error"]);
 
             }
-            var userPermissionList = await _repository.GetPermissionList(targerUser.Data.Username);
+            var userPermissionList = await repository.GetPermissionList(targerUser.Data.Username);
             var permissionMap = new Dictionary<string, bool>();
             foreach (var item in apps.Data)
             {
@@ -57,10 +50,10 @@ namespace eRM_VersionHub.Services.Database
 
         public async Task<ApiResponse<Permission?>> DeletePermission(Permission permission)
         {
-            _logger.LogDebug(AppLogEvents.Service, "Invoked DeletePermission with data: {permission}", permission);
-            ApiResponse<Permission?> result = await _repository.DeletePermission(permission);
+            logger.LogDebug(AppLogEvents.Service, "Invoked DeletePermission with data: {permission}", permission);
+            ApiResponse<Permission?> result = await repository.DeletePermission(permission);
 
-            _logger.LogInformation(AppLogEvents.Service, "DeletePermission returned: {result}", result);
+            logger.LogInformation(AppLogEvents.Service, "DeletePermission returned: {result}", result);
             return result;
         }
 
