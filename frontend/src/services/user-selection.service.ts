@@ -1,22 +1,19 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-
-interface UserWithApps {
-  Username: string;
-  AppsNames: string[];
-}
+import { AppPermission } from '../models/app-permissions.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserSelectionService {
-  private selectedUserSubject = new BehaviorSubject<UserWithApps | null>(null);
+  selectedUserSubject = new BehaviorSubject<string>('');
 
-  setSelectedUser(user: UserWithApps | null) {
+  setSelectedUser(user: string) {
     this.selectedUserSubject.next(user);
   }
 
-  getSelectedUser(): Observable<UserWithApps | null> {
-    return this.selectedUserSubject.asObservable();
+  getSelectedUser(): string {
+    const selectedUser = this.selectedUserSubject.getValue();
+    return selectedUser;
   }
 }
