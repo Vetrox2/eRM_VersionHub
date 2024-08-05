@@ -9,13 +9,17 @@ namespace eRM_VersionHub_Tester.Services
     {
         private readonly Mock<IPermissionRepository> _mockRepository;
         private readonly Mock<ILogger<PermissionService>> _mockLogger;
+        private readonly Mock<IUserRepository> _mockUserRepository;
+        private readonly Mock<IServiceProvider> _mockServiceProvider;
         private readonly PermissionService _permissionService;
 
         public PermissionServiceTests()
         {
             _mockRepository = new Mock<IPermissionRepository>();
             _mockLogger = new Mock<ILogger<PermissionService>>();
-            _permissionService = new PermissionService(_mockRepository.Object, _mockLogger.Object);
+            _mockUserRepository = new Mock<IUserRepository>();
+            _mockServiceProvider = new Mock<IServiceProvider>();
+            _permissionService = new PermissionService(_mockRepository.Object, _mockLogger.Object, _mockUserRepository.Object, _mockServiceProvider.Object);
         }
 
         [Fact]

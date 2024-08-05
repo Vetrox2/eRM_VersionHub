@@ -2,6 +2,7 @@ using eRM_VersionHub.Models;
 using eRM_VersionHub.Services;
 using eRM_VersionHub.Services.Interfaces;
 using eRM_VersionHub_Tester.Helpers;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace eRM_VersionHub_Tester.Services
@@ -12,8 +13,9 @@ namespace eRM_VersionHub_Tester.Services
         private readonly Mock<IFavoriteService> _mockFavoriteService;
         private readonly Mock<IPermissionService> _mockPermissionService;
         private readonly Mock<ILogger<AppDataScanner>> _mockLogger;
-        private readonly AppDataScanner _appDataScanner;
+        private readonly Mock<IAppStructureCache> _mockCache;
         private readonly FileStructureGenerator _fileStructureGenerator = new FileStructureGenerator();
+        private AppDataScanner _appDataScanner;
 
         private string appsPath, internalPath, externalPath, appJson, token = "userToken";
 
@@ -22,17 +24,19 @@ namespace eRM_VersionHub_Tester.Services
             _mockFavoriteService = new Mock<IFavoriteService>();
             _mockPermissionService = new Mock<IPermissionService>();
             _mockLogger = new Mock<ILogger<AppDataScanner>>();
-            _appDataScanner = new AppDataScanner(
-                _mockFavoriteService.Object,
-                _mockPermissionService.Object,
-                _mockLogger.Object
-            );
+            _mockCache = new Mock<IAppStructureCache>();
         }
 
         public Task InitializeAsync()
         {
-            (appsPath, appJson, internalPath, externalPath) =
-                _fileStructureGenerator.GenerateFileStructure();
+            (appsPath, appJson, internalPath, externalPath) = _fileStructureGenerator.GenerateFileStructure();
+            _appDataScanner = new AppDataScanner(
+                        _mockFavoriteService.Object,
+                        _mockPermissionService.Object,
+                        _mockLogger.Object,
+                        Options.Create(new AppSettings() { MyAppSettings = GetAppSettings() }),
+                        _mockCache.Object
+                    );
             return Task.CompletedTask;
         }
 
@@ -62,7 +66,7 @@ namespace eRM_VersionHub_Tester.Services
             settings.AppsPath = "abc";
 
             // Act
-            var structure = await _appDataScanner.GetAppsStructure(settings, token);
+            var structure = await _appDataScanner.GetAppsStructure(token);
 
             // Assert
             Assert.False(structure.Success);
@@ -88,7 +92,7 @@ namespace eRM_VersionHub_Tester.Services
             settings.InternalPackagesPath = "abc";
 
             // Act
-            var structure = await _appDataScanner.GetAppsStructure(settings, token);
+            var structure = await _appDataScanner.GetAppsStructure(token);
 
             // Assert
             Assert.False(structure.Success);
@@ -114,7 +118,7 @@ namespace eRM_VersionHub_Tester.Services
             settings.ExternalPackagesPath = "abc";
 
             // Act
-            var structure = await _appDataScanner.GetAppsStructure(settings, token);
+            var structure = await _appDataScanner.GetAppsStructure(token);
 
             // Assert
             Assert.False(structure.Success);
@@ -131,7 +135,7 @@ namespace eRM_VersionHub_Tester.Services
                     ApiResponse<List<Permission>>.SuccessResponse([]));
 
             // Act
-            var structure = await _appDataScanner.GetAppsStructure(GetAppSettings(), token);
+            var structure = await _appDataScanner.GetAppsStructure(token);
 
             // Assert
             Assert.False(structure.Success);
@@ -155,7 +159,7 @@ namespace eRM_VersionHub_Tester.Services
                 );
 
             // Act
-            var response = await _appDataScanner.GetAppsStructure(GetAppSettings(), token);
+            var response = await _appDataScanner.GetAppsStructure(token);
             var structure = response.Data;
 
             // Assert
@@ -233,7 +237,7 @@ namespace eRM_VersionHub_Tester.Services
                 );
 
             // Act
-            var response = await _appDataScanner.GetAppsStructure(GetAppSettings(), token);
+            var response = await _appDataScanner.GetAppsStructure(token);
             var structure = response.Data;
 
             // Assert
@@ -269,7 +273,7 @@ namespace eRM_VersionHub_Tester.Services
                 );
 
             // Act
-            var response = await _appDataScanner.GetAppsStructure(GetAppSettings(), token);
+            var response = await _appDataScanner.GetAppsStructure(token);
             var structure = response.Data;
 
             // Assert
@@ -307,7 +311,7 @@ namespace eRM_VersionHub_Tester.Services
                 );
 
             // Act
-            var response = await _appDataScanner.GetAppsStructure(GetAppSettings(), token);
+            var response = await _appDataScanner.GetAppsStructure(token);
             var structure = response.Data;
 
             // Assert

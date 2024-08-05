@@ -11,24 +11,16 @@ namespace eRM_VersionHub.Controllers
     {
         [HttpGet]
         [Authorize(Roles = "user")]
-        public async Task<IActionResult> IsAdmin()
+        public IActionResult IsAdmin()
         {
             if (User == null)
-                return NotFound();
+                return NotFound(ApiResponse<string>.ErrorResponse(["User not found"]).Serialize());
 
-            var username = User.Identity?.Name;
-            username = username ?? "ERROR";
+            var username = User.Identity?.Name ?? "Username unknown";
 
-            var res = new ApiResponse<string> { Data = "x", Errors = [] };
-            return User.IsInRole("admin")
-                ? Ok(
-                    ApiResponse<string>.SuccessResponse($"User {username} is an admin").Serialize()
-                )
-                : NotFound(
-                    ApiResponse<string>
-                        .ErrorResponse([$"User {username} is not an admin"])
-                        .Serialize()
-                );
+            return User.IsInRole("admin") ? 
+                Ok(ApiResponse<string>.SuccessResponse($"User {username} is an admin").Serialize()) :
+                StatusCode(403, ApiResponse<string>.ErrorResponse([$"User {username} is not an admin"]).Serialize());
         }
     }
 }
