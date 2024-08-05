@@ -6,36 +6,34 @@
       (valueChanged)="onSearchValueChanged($event)"
     ></app-search>
   </div>
-  <ng-container *ngIf="filteredUsers$ | async as users">
+  <ng-container *ngIf="filteredUsers">
     <ng-container *ngIf="users.length > 0; else noUsersFound">
       <mat-nav-list>
         <mat-list-item
-          
-          *ngFor="let user of users; trackBy: trackByUsername"
+          *ngFor="let user of filteredUsers"
           (click)="selectUser(user)"
           [ngClass]="{
-            selected: (selectedUser$ | async)?.Username === user.Username,
-            'selected-hover':
-              (selectedUser$ | async)?.Username === user.Username
+            selected: selectedUser === user,
+            'selected-hover': selectedUser === user
           }"
           [ngStyle]="{
             'background-color':
-              (selectedUser$ | async)?.Username === user.Username
-                ? 'var(--primary-color)'
-                : ''
+              selectedUser === user ? 'var(--primary-color)' : ''
           }"
-          
         >
           <div class="user-item">
             <div
               class="user-name"
-              [matTooltip]="user.Username"
+              [matTooltip]="user"
               matTooltipClass="user-name-tooltip"
               [matTooltipShowDelay]="800"
             >
-            <span [ngStyle]="{
-              color: (selectedUser$ | async)?.Username === user.Username ? 'white' : 'black'
-            }">{{ user.Username }}</span>
+              <span
+                [ngStyle]="{
+                  color: selectedUser === user ? 'white' : 'black'
+                }"
+                >{{ user }}</span
+              >
             </div>
           </div>
         </mat-list-item>
