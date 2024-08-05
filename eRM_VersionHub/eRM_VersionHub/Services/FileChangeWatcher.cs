@@ -27,11 +27,18 @@ namespace eRM_VersionHub.Services
             _logger = logger;
         }
 
+        /// <summary>
+        /// Invoked when module is added/deleted or when version is added/deleted/renamed
+        /// </summary>
         private void OnChanged(object sender, FileSystemEventArgs e)
         {
             _logger.LogInformation(AppLogEvents.Service, $"File {e.ChangeType}: {e.FullPath}");
             _cache.InvalidateAppStructure();
         }
+
+        /// <summary>
+        /// Invoked only when module's name is changed
+        /// </summary>
 
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
@@ -50,7 +57,6 @@ namespace eRM_VersionHub.Services
                 _watcher.EnableRaisingEvents = false;
             });
 
-            // Return a completed task since we're using the FileSystemWatcher events
             return Task.CompletedTask;
         }
 
