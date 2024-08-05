@@ -59,6 +59,9 @@ namespace eRM_VersionHub.Services
 
                 if(correctApp)
                     publishedVersion.PublishedTag = version.PublishedTag;
+
+                if (publishedVersion.Modules.All(module => !module.IsPublished))
+                    publishedVersion.PublishedTag = "";
             }
 
             SetAppStructure(appStructure);
