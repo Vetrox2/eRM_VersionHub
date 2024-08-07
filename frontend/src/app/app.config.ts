@@ -1,27 +1,42 @@
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig } from '@angular/core';
 import { provideRouter } from '@angular/router';
+
 import { routes } from './app.routes';
 import { provideClientHydration } from '@angular/platform-browser';
+import {
+  KeycloakService,
+  KeycloakBearerInterceptor,
+  KeycloakAngularModule,
+} from 'keycloak-angular';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import {
-  HttpClientModule,
+  HTTP_INTERCEPTORS,
+  HttpClient,
   provideHttpClient,
-  withInterceptors,
+  withInterceptorsFromDi,
 } from '@angular/common/http';
-import { AppService } from '../services/app.service';
-import { tokenInterceptor } from '../token.interceptor';
-import { AuthService } from '../services/auth.service';
-import { KeycloakService, KeycloakAngularModule } from 'keycloak-angular';
+import { initializeKeycloak } from '../init/keycloak-init.factory';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(withInterceptors([tokenInterceptor])),
     provideClientHydration(),
     provideAnimationsAsync(),
-    importProvidersFrom(HttpClientModule, KeycloakAngularModule),
+    KeycloakAngularModule,
     KeycloakService,
-    AuthService,
-    AppService,
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeKeycloak,
+      multi: true,
+      deps: [KeycloakService],
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: KeycloakBearerInterceptor,
+      multi: true,
+    },
+    provideHttpClient(
+      withInterceptorsFromDi() // tell httpClient to use interceptors from DI
+    ),
   ],
 };

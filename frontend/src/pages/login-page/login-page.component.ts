@@ -1,18 +1,21 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { Router, RouterState } from '@angular/router';
+import { NgIf } from '@angular/common';
+import { KeycloakService } from 'keycloak-angular';
 
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [MatButtonModule, MatCardModule, MatIconModule],
+  imports: [MatButtonModule, MatCardModule, MatIconModule, NgIf],
   template: `
     <div class="login-container">
       <mat-card>
         <mat-card-header>
-          <mat-card-title>Welcome to Our App</mat-card-title>
+          <mat-card-title>Welcome to eRM Publicator</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <p>Please log in to continue</p>
@@ -53,10 +56,18 @@ import { MatIconModule } from '@angular/material/icon';
     `,
   ],
 })
-export class LoginPageComponent {
-  constructor(private authService: AuthService) {}
+export class LoginPageComponent implements OnInit {
+  constructor(
+    private keycloakService: KeycloakService,
+    private router: Router
+  ) {}
 
-  login(): void {
-    this.authService.login();
+  ngOnInit(): void {
+    if (this.keycloakService.isLoggedIn()) {
+      this.router.navigate(['/dashboard']);
+    }
+  }
+  login() {
+    this.keycloakService.login();
   }
 }
