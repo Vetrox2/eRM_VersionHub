@@ -1,19 +1,22 @@
-﻿using Dapper;
-using eRM_VersionHub.Models;
-using eRM_VersionHub.Repositories.Interfaces;
-using eRM_VersionHub.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Npgsql;
-using System.Data;
+﻿using System.Data;
 using System.Text.RegularExpressions;
+using Dapper;
+using eRM_VersionHub.Middleware;
+using eRM_VersionHub.Models;
+using eRM_VersionHub.Services.Interfaces;
 
 namespace eRM_VersionHub.Repositories
 {
-    public class DbRepository(ILogger<DbRepository> logger, ISqlConnectionFactory connectionFactory) : IDbRepository
+    public class DbRepository : IDbRepository
     {
-        private readonly ILogger _logger = logger;
+        private readonly ILogger<DbRepository> _logger;
+        private readonly ISqlConnectionFactory _connectionFactory;
 
+        public DbRepository(ILogger<DbRepository> logger, ISqlConnectionFactory connectionFactory)
+        {
+            _logger = logger;
+            _connectionFactory = connectionFactory;
+        }
 
         public class ColumnDefinition
         {
@@ -23,10 +26,11 @@ namespace eRM_VersionHub.Repositories
             public bool NotNull { get; set; }
             public bool Unique { get; set; }
 
-            public override string ToString() => $"{Name} {Type} {(PrimaryKey ? " PRIMARY KEY" : "")} {(NotNull ? "NOT NULL" : "")} {(Unique ? " UNIQUE" : "")}";
+            public override string ToString() =>
+                $"{Name} {Type} {(PrimaryKey ? " PRIMARY KEY" : "")} {(NotNull ? "NOT NULL" : "")} {(Unique ? " UNIQUE" : "")}";
         }
-        private static readonly Regex ValidIdentifierRegex = new Regex(@"^[a-zA-Z0-9_]+$");
 
+        private static readonly Regex ValidIdentifierRegex = new Regex(@"^[a-zA-Z0-9_]+$");
 
         private static bool IsValidIdentifier(string identifier)
         {
@@ -35,161 +39,224 @@ namespace eRM_VersionHub.Repositories
 
         private static string SanitizeIdentifier(string identifier)
         {
-            // Double quote the identifier to escape it properly for SQL
             return $"\"{identifier.Replace("\"", "\"\"")}\"";
         }
 
-
-
-        public async Task<ApiResponse<bool>> CreateTable(string tableName, List<ColumnDefinition> columns)
+        public async Task<bool> CreateTable(string tableName, List<ColumnDefinition> columns)
         {
-            _logger.LogDebug(AppLogEvents.Database, "Invoked CreateTable with data: {tableName}\n{columns}", tableName, columns);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Invoked CreateTable with data: {tableName}\n{columns}",
+                tableName,
+                columns
+            );
 
             if (!IsValidIdentifier(tableName))
             {
-                return ApiResponse<bool>.ErrorResponse(new List<string> { "Invalid table name." });
+                throw new ArgumentException("Invalid table name.");
             }
 
             try
             {
-                using var _db = connectionFactory.CreateConnection();
-
+                using var _db = _connectionFactory.CreateConnection();
 
                 var columnDefinitions = columns.Select(c => c.ToString());
                 var allColumns = string.Join(",\n", columnDefinitions);
-                var sql = $"CREATE TABLE IF NOT EXISTS {SanitizeIdentifier(tableName)} ({allColumns});";
+                var sql =
+                    $"CREATE TABLE IF NOT EXISTS {SanitizeIdentifier(tableName)} ({allColumns});";
 
-                _logger.LogDebug(AppLogEvents.Database, "CreateTable is executing an SQL query: {sql}, ({tableName}, {columnDefinitions})", sql, tableName, columnDefinitions);
+                _logger.LogDebug(
+                    AppLogEvents.Database,
+                    "CreateTable is executing an SQL query: {sql}, ({tableName}, {columnDefinitions})",
+                    sql,
+                    tableName,
+                    columnDefinitions
+                );
                 await _db.ExecuteAsync(sql);
 
                 _logger.LogInformation(AppLogEvents.Database, "CreateTable invoked successfully");
-
-
-                return ApiResponse<bool>.SuccessResponse(true);
-
+                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(AppLogEvents.Database, "While executing CreateTable, this exception has been thrown: {Message}\n{StackTrace}",
-                    ex.Message, ex.StackTrace);
-
-                return ApiResponse<bool>.ErrorResponse(new List<string> { $"Error creating table: {ex.Message}" });
+                _logger.LogError(
+                    AppLogEvents.Database,
+                    ex,
+                    "Error creating table: {tableName}",
+                    tableName
+                );
+                throw new InvalidOperationException($"Error creating table: {ex.Message}", ex);
             }
         }
 
-
-        public async Task<ApiResponse<bool>> TableExists(string tableName)
+        public async Task<bool> TableExists(string tableName)
         {
-            _logger.LogDebug(AppLogEvents.Database, "Invoked TableExists with parameter: {tableName}", tableName);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Invoked TableExists with parameter: {tableName}",
+                tableName
+            );
             var sql = "SELECT 1 FROM information_schema.tables WHERE table_name = @TableName";
 
-            using var _db = connectionFactory.CreateConnection();
+            using var _db = _connectionFactory.CreateConnection();
 
-            _logger.LogDebug(AppLogEvents.Database, "TableExists is executing an SQL query: {sql}", sql);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "TableExists is executing an SQL query: {sql}",
+                sql
+            );
             var result = await _db.ExecuteScalarAsync<bool>(sql, new { TableName = tableName });
-            _logger.LogDebug(AppLogEvents.Database, "Result of query from function TableExists: {result}", result);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Result of query from function TableExists: {result}",
+                result
+            );
 
-            if (result == true)
+            if (result)
             {
-                _logger.LogInformation(AppLogEvents.Database, "TableExists invoked succesfully");
-                return ApiResponse<bool>.SuccessResponse(true);
+                _logger.LogInformation(AppLogEvents.Database, "TableExists invoked successfully");
+                return true;
             }
-
 
             _logger.LogWarning(AppLogEvents.Database, "Table {tableName} doesn't exist", tableName);
-            return ApiResponse<bool>.ErrorResponse(["Table doesn't exist"]);
+            return false;
         }
 
-        public async Task<ApiResponse<T?>> GetAsync<T>(string command, object parms)
+        public async Task<T?> GetAsync<T>(string command, object parms)
         {
             string type = typeof(T).Name;
-            _logger.LogDebug(AppLogEvents.Database, "Invoked GetAsync of type {type} with query: {command}, {parms}", type, command, parms);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Invoked GetAsync of type {type} with query: {command}, {parms}",
+                type,
+                command,
+                parms
+            );
 
             try
             {
-                _logger.LogDebug(AppLogEvents.Database, "GetAsync of type {type} is executing an SQL query: {command}, {parms}", type, command, parms);
+                using var _db = _connectionFactory.CreateConnection();
+                var result = await _db.QueryFirstOrDefaultAsync<T>(command, parms);
 
-                using var _db = connectionFactory.CreateConnection();
-                IEnumerable<T> query = await _db.QueryAsync<T>(command, parms);
-                T? result = query.FirstOrDefault();
-
-                _logger.LogDebug(AppLogEvents.Database, "Result of GetAsync of type {type}: {result}", type, query);
                 if (result == null)
                 {
-                    _logger.LogWarning(AppLogEvents.Database, "This query returned null: {command}, {parms}", command, parms);
-                    return ApiResponse<T?>.ErrorResponse(["Object was not found"]);
+                    _logger.LogWarning(
+                        AppLogEvents.Database,
+                        "This query returned null: {command}, {parms}",
+                        command,
+                        parms
+                    );
+                    throw new NotFoundException($"Object of type {type} was not found");
                 }
 
-                _logger.LogInformation(AppLogEvents.Database, "GetAsync of type {type} returned: {result}", type, result);
-                return ApiResponse<T?>.SuccessResponse(result);
+                _logger.LogInformation(
+                    AppLogEvents.Database,
+                    "GetAsync of type {type} returned successfully",
+                    type
+                );
+                return result;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not NotFoundException)
             {
-                _logger.LogWarning(AppLogEvents.Database, "While executing GetAsync of type {type}, this execption has been thrown: {Message}\n{StackTrace}",
-                   type, ex.Message, ex.StackTrace);
-                return ApiResponse<T?>.ErrorResponse([ex.Message]);
+                _logger.LogError(
+                    AppLogEvents.Database,
+                    ex,
+                    "Error executing GetAsync of type {type}",
+                    type
+                );
+                throw new InvalidOperationException($"Error executing query: {ex.Message}", ex);
             }
         }
 
-        public async Task<ApiResponse<List<T>>> GetAll<T>(string command, object parms)
+        public async Task<List<T>> GetAll<T>(string command, object parms)
         {
             string type = typeof(T).Name;
-            _logger.LogDebug(AppLogEvents.Database, "Invoked GetAll of type {type} with query: {command}, {parms}", type, command, parms);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Invoked GetAll of type {type} with query: {command}, {parms}",
+                type,
+                command,
+                parms
+            );
 
             try
             {
-                _logger.LogDebug(AppLogEvents.Database, "GetAll of type {type} is executing an SQL query: {command}, {parms}", type, command, parms);
+                using var _db = _connectionFactory.CreateConnection();
+                var result = (await _db.QueryAsync<T>(command, parms)).ToList();
 
-                using var _db = connectionFactory.CreateConnection();
-                IEnumerable<T> query = await _db.QueryAsync<T>(command, parms);
-                List<T> result = query.ToList();
-
-                _logger.LogDebug(AppLogEvents.Database, "Result of GetAll of type {type}: {result}", type, query);
-                if (result == null)
+                if (result == null || !result.Any())
                 {
-                    _logger.LogWarning(AppLogEvents.Database, "This query returned null: {command}, {parms}", command, parms);
-                    return ApiResponse<List<T>>.ErrorResponse(["No data available"]);
+                    _logger.LogWarning(
+                        AppLogEvents.Database,
+                        "This query returned no data: {command}, {parms}",
+                        command,
+                        parms
+                    );
+                    throw new NotFoundException($"No data available for type {type}");
                 }
 
-                _logger.LogInformation(AppLogEvents.Database, "GetAll of type {type} returned: {result}", type, result);
-                return ApiResponse<List<T>>.SuccessResponse(result);
+                _logger.LogInformation(
+                    AppLogEvents.Database,
+                    "GetAll of type {type} returned successfully",
+                    type
+                );
+                return result;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not NotFoundException)
             {
-                _logger.LogWarning(AppLogEvents.Database, "While executing GetAll of type {type}, this execption has been thrown: {Message}\n{StackTrace}",
-                    type, ex.Message, ex.StackTrace);
-                return ApiResponse<List<T>>.ErrorResponse([ex.Message]);
+                _logger.LogError(
+                    AppLogEvents.Database,
+                    ex,
+                    "Error executing GetAll of type {type}",
+                    type
+                );
+                throw new InvalidOperationException($"Error executing query: {ex.Message}", ex);
             }
         }
 
-        public async Task<ApiResponse<T?>> EditData<T>(string command, object parms)
+        public async Task<T?> EditData<T>(string command, object parms)
         {
             string type = typeof(T).Name;
-            _logger.LogDebug(AppLogEvents.Database, "Invoked EditData of type {type} with query: {command}, {parms}", type, command, parms);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Invoked EditData of type {type} with query: {command}, {parms}",
+                type,
+                command,
+                parms
+            );
 
             try
             {
-                _logger.LogDebug(AppLogEvents.Database, "EditData of type {type} is executing an SQL query: {command}, {parms}", type, command, parms);
+                using var _db = _connectionFactory.CreateConnection();
+                var result = await _db.QueryFirstOrDefaultAsync<T>(command, parms);
 
-                using var _db = connectionFactory.CreateConnection();
-                IEnumerable<T> query = await _db.QueryAsync<T>(command, parms);
-                T? result = query.FirstOrDefault();
-
-                _logger.LogDebug(AppLogEvents.Database, "Result of EditData of type {type}: {result}", type, query);
                 if (result == null)
                 {
-                    _logger.LogWarning(AppLogEvents.Database, "This query returned null: {command}, {parms}", command, parms);
-                    return ApiResponse<T?>.ErrorResponse(["Object was not found"]);
+                    _logger.LogWarning(
+                        AppLogEvents.Database,
+                        "This query returned null: {command}, {parms}",
+                        command,
+                        parms
+                    );
+                    throw new NotFoundException($"Object of type {type} was not found");
                 }
 
-                _logger.LogInformation(AppLogEvents.Database, "EditData of type {type} returned: {result}", type, result);
-                return ApiResponse<T?>.SuccessResponse(result);
+                _logger.LogInformation(
+                    AppLogEvents.Database,
+                    "EditData of type {type} returned successfully",
+                    type
+                );
+                return result;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not NotFoundException)
             {
-                _logger.LogWarning(AppLogEvents.Database, "While executing EditData of type {type}, this execption has been thrown: {Message}\n{StackTrace}",
-                    type, ex.Message, ex.StackTrace);
-                return ApiResponse<T?>.ErrorResponse([ex.Message]);
+                _logger.LogError(
+                    AppLogEvents.Database,
+                    ex,
+                    "Error executing EditData of type {type}",
+                    type
+                );
+                throw new InvalidOperationException($"Error executing query: {ex.Message}", ex);
             }
         }
     }
