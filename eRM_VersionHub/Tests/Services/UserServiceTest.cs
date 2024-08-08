@@ -18,44 +18,38 @@ namespace eRM_VersionHub_Tester.Services
             _mockRepository = new Mock<IUserRepository>();
             _mockLogger = new Mock<ILogger<UserService>>();
             _mockPermissionService = new Mock<IPermissionService>();
-            _userService = new UserService(_mockRepository.Object, _mockLogger.Object, _mockPermissionService.Object);
+            _userService = new UserService(
+                _mockRepository.Object,
+                _mockLogger.Object,
+                _mockPermissionService.Object
+            );
         }
 
         [Fact]
         public async Task CreateUser_ShouldCallRepositoryMethod()
         {
-            var username = "testUser";
-
-            var user = new User { Username = username, CreationDate = DateTime.UtcNow };
-            var expectedResponse = new ApiResponse<User?> { Errors = [], Data = user };
-            _mockRepository
-                .Setup(repo => repo.CreateUser(It.IsAny<User>()))
-                .ReturnsAsync(expectedResponse);
+            var user = new User { Username = "testUser", CreationDate = DateTime.UtcNow };
+            _mockRepository.Setup(repo => repo.CreateUser(It.IsAny<User>())).ReturnsAsync(user);
 
             var result = await _userService.CreateUser(user);
 
-            Assert.Equal(expectedResponse, result);
+            Assert.Equal(user, result);
             _mockRepository.Verify(repo => repo.CreateUser(user), Times.Once);
         }
 
         [Fact]
         public async Task GetUserList_ShouldCallRepositoryMethod()
         {
-            var username = "testUser";
-
-            var expectedResponse = new ApiResponse<List<User>>
+            var users = new List<User>
             {
-                Errors = [],
-                Data = new List<User>
-                {
-                    new User { Username = username, CreationDate = DateTime.UtcNow }
-                }
+                new User { Username = "user1", CreationDate = DateTime.UtcNow },
+                new User { Username = "user2", CreationDate = DateTime.UtcNow }
             };
-            _mockRepository.Setup(repo => repo.GetUserList()).ReturnsAsync(expectedResponse);
+            _mockRepository.Setup(repo => repo.GetUserList()).ReturnsAsync(users);
 
             var result = await _userService.GetUserList();
 
-            Assert.Equal(expectedResponse, result);
+            Assert.Equal(users, result);
             _mockRepository.Verify(repo => repo.GetUserList(), Times.Once);
         }
 
@@ -63,32 +57,24 @@ namespace eRM_VersionHub_Tester.Services
         public async Task GetUser_ShouldCallRepositoryMethod()
         {
             var username = "testUser";
-            var expectedResponse = new ApiResponse<User?>
-            {
-                Errors = [],
-                Data = new User { Username = username, CreationDate = DateTime.UtcNow }
-            };
-            _mockRepository.Setup(repo => repo.GetUser(username)).ReturnsAsync(expectedResponse);
+            var user = new User { Username = username, CreationDate = DateTime.UtcNow };
+            _mockRepository.Setup(repo => repo.GetUser(username)).ReturnsAsync(user);
 
             var result = await _userService.GetUser(username);
 
-            Assert.Equal(expectedResponse, result);
+            Assert.Equal(user, result);
             _mockRepository.Verify(repo => repo.GetUser(username), Times.Once);
         }
 
         [Fact]
         public async Task UpdateUser_ShouldCallRepositoryMethod()
         {
-            var username = "testUser";
-            var user = new User { Username = username, CreationDate = DateTime.UtcNow };
-            var expectedResponse = new ApiResponse<User?> { Errors = [], Data = user };
-            _mockRepository
-                .Setup(repo => repo.UpdateUser(It.IsAny<User>()))
-                .ReturnsAsync(expectedResponse);
+            var user = new User { Username = "testUser", CreationDate = DateTime.UtcNow };
+            _mockRepository.Setup(repo => repo.UpdateUser(It.IsAny<User>())).ReturnsAsync(user);
 
             var result = await _userService.UpdateUser(user);
 
-            Assert.Equal(expectedResponse, result);
+            Assert.Equal(user, result);
             _mockRepository.Verify(repo => repo.UpdateUser(user), Times.Once);
         }
 
@@ -96,16 +82,12 @@ namespace eRM_VersionHub_Tester.Services
         public async Task DeleteUser_ShouldCallRepositoryMethod()
         {
             var username = "testUser";
-            var expectedResponse = new ApiResponse<User?>
-            {
-                Errors = [],
-                Data = new User { Username = username, CreationDate = DateTime.UtcNow }
-            };
-            _mockRepository.Setup(repo => repo.DeleteUser(username)).ReturnsAsync(expectedResponse);
+            var user = new User { Username = username, CreationDate = DateTime.UtcNow };
+            _mockRepository.Setup(repo => repo.DeleteUser(username)).ReturnsAsync(user);
 
             var result = await _userService.DeleteUser(username);
 
-            Assert.Equal(expectedResponse, result);
+            Assert.Equal(user, result);
             _mockRepository.Verify(repo => repo.DeleteUser(username), Times.Once);
         }
     }
