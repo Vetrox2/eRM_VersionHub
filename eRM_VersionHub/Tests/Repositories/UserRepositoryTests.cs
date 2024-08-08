@@ -1,6 +1,6 @@
-﻿using eRM_VersionHub.Models;
+﻿using eRM_VersionHub.Middleware;
+using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories;
-using eRM_VersionHub.Repositories.Interfaces;
 using Moq;
 
 namespace eRM_VersionHub_Tester.Repositories
@@ -24,28 +24,26 @@ namespace eRM_VersionHub_Tester.Repositories
             var user = new User { Username = "testUser", CreationDate = DateTime.Now };
             _mockDbRepository
                 .Setup(repo => repo.EditData<User>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(ApiResponse<User?>.SuccessResponse(user));
+                .ReturnsAsync(user);
 
             var result = await _userRepository.CreateUser(user);
 
-            Assert.True(result.Success);
-            Assert.Equal(user, result.Data);
+            Assert.NotNull(result);
+            Assert.Equal(user.Username, result.Username);
+            Assert.Equal(user.CreationDate, result.CreationDate);
         }
 
         [Fact]
-        public async Task CreateUser_ShouldReturnErrorOnFailure()
+        public async Task CreateUser_ShouldThrowExceptionOnFailure()
         {
             var user = new User { Username = "testUser", CreationDate = DateTime.Now };
             _mockDbRepository
                 .Setup(repo => repo.EditData<User>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(
-                    ApiResponse<User?>.ErrorResponse(new List<string> { "Database error" })
-                );
+                .ReturnsAsync((User)null);
 
-            var result = await _userRepository.CreateUser(user);
-
-            Assert.False(result.Success);
-            Assert.Contains("Database error", result.Errors);
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _userRepository.CreateUser(user)
+            );
         }
 
         [Fact]
@@ -58,27 +56,23 @@ namespace eRM_VersionHub_Tester.Repositories
             };
             _mockDbRepository
                 .Setup(repo => repo.GetAll<User>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(ApiResponse<List<User>>.SuccessResponse(users));
+                .ReturnsAsync(users);
 
             var result = await _userRepository.GetUserList();
 
-            Assert.True(result.Success);
-            Assert.Equal(users, result.Data);
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+            Assert.Equal(users, result);
         }
 
         [Fact]
-        public async Task GetUserList_ShouldReturnErrorOnFailure()
+        public async Task GetUserList_ShouldThrowExceptionOnFailure()
         {
             _mockDbRepository
                 .Setup(repo => repo.GetAll<User>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(
-                    ApiResponse<List<User>>.ErrorResponse(new List<string> { "Database error" })
-                );
+                .ReturnsAsync((List<User>)null);
 
-            var result = await _userRepository.GetUserList();
-
-            Assert.False(result.Success);
-            Assert.Contains("Database error", result.Errors);
+            await Assert.ThrowsAsync<NotFoundException>(() => _userRepository.GetUserList());
         }
 
         [Fact]
@@ -87,27 +81,23 @@ namespace eRM_VersionHub_Tester.Repositories
             var user = new User { Username = "testUser", CreationDate = DateTime.Now };
             _mockDbRepository
                 .Setup(repo => repo.GetAsync<User>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(ApiResponse<User?>.SuccessResponse(user));
+                .ReturnsAsync(user);
 
             var result = await _userRepository.GetUser("testUser");
 
-            Assert.True(result.Success);
-            Assert.Equal(user, result.Data);
+            Assert.NotNull(result);
+            Assert.Equal(user.Username, result.Username);
+            Assert.Equal(user.CreationDate, result.CreationDate);
         }
 
         [Fact]
-        public async Task GetUser_ShouldReturnErrorOnFailure()
+        public async Task GetUser_ShouldThrowExceptionOnFailure()
         {
             _mockDbRepository
                 .Setup(repo => repo.GetAsync<User>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(
-                    ApiResponse<User?>.ErrorResponse(new List<string> { "Database error" })
-                );
+                .ReturnsAsync((User)null);
 
-            var result = await _userRepository.GetUser("testUser");
-
-            Assert.False(result.Success);
-            Assert.Contains("Database error", result.Errors);
+            await Assert.ThrowsAsync<NotFoundException>(() => _userRepository.GetUser("testUser"));
         }
 
         [Fact]
@@ -116,28 +106,24 @@ namespace eRM_VersionHub_Tester.Repositories
             var user = new User { Username = "testUser", CreationDate = DateTime.Now };
             _mockDbRepository
                 .Setup(repo => repo.EditData<User>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(ApiResponse<User?>.SuccessResponse(user));
+                .ReturnsAsync(user);
 
             var result = await _userRepository.UpdateUser(user);
 
-            Assert.True(result.Success);
-            Assert.Equal(user, result.Data);
+            Assert.NotNull(result);
+            Assert.Equal(user.Username, result.Username);
+            Assert.Equal(user.CreationDate, result.CreationDate);
         }
 
         [Fact]
-        public async Task UpdateUser_ShouldReturnErrorOnFailure()
+        public async Task UpdateUser_ShouldThrowExceptionOnFailure()
         {
             var user = new User { Username = "testUser", CreationDate = DateTime.Now };
             _mockDbRepository
                 .Setup(repo => repo.EditData<User>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(
-                    ApiResponse<User?>.ErrorResponse(new List<string> { "Database error" })
-                );
+                .ReturnsAsync((User)null);
 
-            var result = await _userRepository.UpdateUser(user);
-
-            Assert.False(result.Success);
-            Assert.Contains("Database error", result.Errors);
+            await Assert.ThrowsAsync<NotFoundException>(() => _userRepository.UpdateUser(user));
         }
 
         [Fact]
@@ -146,27 +132,25 @@ namespace eRM_VersionHub_Tester.Repositories
             var user = new User { Username = "testUser", CreationDate = DateTime.Now };
             _mockDbRepository
                 .Setup(repo => repo.EditData<User>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(ApiResponse<User?>.SuccessResponse(user));
+                .ReturnsAsync(user);
 
             var result = await _userRepository.DeleteUser("testUser");
 
-            Assert.True(result.Success);
-            Assert.Equal(user, result.Data);
+            Assert.NotNull(result);
+            Assert.Equal(user.Username, result.Username);
+            Assert.Equal(user.CreationDate, result.CreationDate);
         }
 
         [Fact]
-        public async Task DeleteUser_ShouldReturnErrorOnFailure()
+        public async Task DeleteUser_ShouldThrowExceptionOnFailure()
         {
             _mockDbRepository
                 .Setup(repo => repo.EditData<User>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(
-                    ApiResponse<User?>.ErrorResponse(new List<string> { "Database error" })
-                );
+                .ReturnsAsync((User)null);
 
-            var result = await _userRepository.DeleteUser("testUser");
-
-            Assert.False(result.Success);
-            Assert.Contains("Database error", result.Errors);
+            await Assert.ThrowsAsync<NotFoundException>(
+                () => _userRepository.DeleteUser("testUser")
+            );
         }
     }
 }

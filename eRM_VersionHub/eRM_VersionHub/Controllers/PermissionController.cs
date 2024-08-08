@@ -8,63 +8,72 @@ namespace eRM_VersionHub.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PermissionController(IPermissionService permissionService, ILogger<PermissionController> logger) : ControllerBase
+    public class PermissionController : ControllerBase
     {
-        private readonly ILogger<PermissionController> _logger = logger;
-        private readonly IPermissionService _permissionService = permissionService;
+        private readonly ILogger<PermissionController> _logger;
+        private readonly IPermissionService _permissionService;
+
+        public PermissionController(
+            IPermissionService permissionService,
+            ILogger<PermissionController> logger
+        )
+        {
+            _logger = logger;
+            _permissionService = permissionService;
+        }
 
         [HttpGet("{Username}")]
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> GetPermission(string Username)
         {
-            _logger.LogDebug(AppLogEvents.Controller, "Invoked GetPermission with paramter: {Username}", Username);
+            _logger.LogDebug(
+                AppLogEvents.Controller,
+                "Invoked GetPermission with parameter: {Username}",
+                Username
+            );
             var result = await _permissionService.GetAllPermissionList(Username);
-            _logger.LogDebug(AppLogEvents.Controller, "GetPermissionList result: {result}", result);
-
-            if (result.Success)
-            {
-                _logger.LogInformation(AppLogEvents.Controller, "GetPermission returned: {Data}", result.Data);
-                return Ok(ApiResponse<AppPermissionDto>.SuccessResponse(result.Data).Serialize());
-            }
-
-            _logger.LogWarning(AppLogEvents.Controller, "GetFavorites returned error(s): {Errors}", result.Errors);
-            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
+            _logger.LogInformation(
+                AppLogEvents.Controller,
+                "GetPermission returned: {Data}",
+                result
+            );
+            return Ok(ApiResponse<AppPermissionDto>.SuccessResponse(result).Serialize());
         }
 
         [HttpPost]
         [Authorize(Roles = "admin")]
-        public async Task<IActionResult> AddPermssion([FromBody] Permission permission)
+        public async Task<IActionResult> AddPermission([FromBody] Permission permission)
         {
-            _logger.LogDebug(AppLogEvents.Controller, "Invoked AddPermssion with data: {permission}", permission);
-            ApiResponse<Permission?> result = await _permissionService.CreatePermission(permission);
-            _logger.LogDebug(AppLogEvents.Controller, "CreatePermission result: {result}", result);
-
-            if (result.Success)
-            {
-                _logger.LogInformation(AppLogEvents.Controller, "AddPermssion returned: {Data}", result.Data);
-                return Ok(result.Data);
-            }
-
-            _logger.LogWarning(AppLogEvents.Controller, "AddPermssion returned error(s): {Errors}", result.Errors);
-            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
+            _logger.LogDebug(
+                AppLogEvents.Controller,
+                "Invoked AddPermission with data: {permission}",
+                permission
+            );
+            var result = await _permissionService.CreatePermission(permission);
+            _logger.LogInformation(
+                AppLogEvents.Controller,
+                "AddPermission returned: {Data}",
+                result
+            );
+            return Ok(ApiResponse<Permission>.SuccessResponse(result).Serialize());
         }
 
         [HttpDelete]
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> DeletePermission([FromBody] Permission permission)
         {
-            _logger.LogDebug(AppLogEvents.Controller, "Invoked DeletePermission with data: {permission}", permission);
-            ApiResponse<Permission?> result = await _permissionService.DeletePermission(permission);
-            _logger.LogDebug(AppLogEvents.Controller, "DeletePermission result: {result}", result);
-
-            if (result.Success)
-            {
-                _logger.LogInformation(AppLogEvents.Controller, "DeletePermission returned: {Data}", result.Data);
-                return Ok(result.Data);
-            }
-
-            _logger.LogWarning(AppLogEvents.Controller, "DeletePermission returned error(s): {Errors}", result.Errors);
-            return Problem(detail: string.Join(";", result.Errors), statusCode: 400);
+            _logger.LogDebug(
+                AppLogEvents.Controller,
+                "Invoked DeletePermission with data: {permission}",
+                permission
+            );
+            var result = await _permissionService.DeletePermission(permission);
+            _logger.LogInformation(
+                AppLogEvents.Controller,
+                "DeletePermission returned: {Data}",
+                result
+            );
+            return Ok(ApiResponse<Permission>.SuccessResponse(result).Serialize());
         }
     }
 }

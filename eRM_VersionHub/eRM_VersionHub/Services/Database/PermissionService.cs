@@ -1,75 +1,135 @@
 ﻿using eRM_VersionHub.Dtos;
+using eRM_VersionHub.Middleware;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories.Interfaces;
 using eRM_VersionHub.Services.Interfaces;
-using Microsoft.Extensions.Options;
 
 namespace eRM_VersionHub.Services.Database
 {
-
-    public class PermissionService(IPermissionRepository repository, ILogger<PermissionService> logger, IUserRepository userRepository, IServiceProvider serviceProvider) : IPermissionService
+    public class PermissionService : IPermissionService
     {
-        public async Task<ApiResponse<Permission?>> CreatePermission(Permission permission)
-        {
-            logger.LogDebug(AppLogEvents.Service, "Invoked CreatePermission with data: {permission}", permission);
-            ApiResponse<Permission?> result = await repository.CreatePermission(permission);
+        private readonly IPermissionRepository _repository;
+        private readonly ILogger<PermissionService> _logger;
+        private readonly IUserRepository _userRepository;
+        private readonly IServiceProvider _serviceProvider;
 
-            logger.LogInformation(AppLogEvents.Service, "CreatePermission returned: {result}", result);
+        public PermissionService(
+            IPermissionRepository repository,
+            ILogger<PermissionService> logger,
+            IUserRepository userRepository,
+            IServiceProvider serviceProvider
+        )
+        {
+            _repository = repository;
+            _logger = logger;
+            _userRepository = userRepository;
+            _serviceProvider = serviceProvider;
+        }
+
+        public async Task<Permission> CreatePermission(Permission permission)
+        {
+            _logger.LogDebug(
+                AppLogEvents.Service,
+                "Invoked CreatePermission with data: {permission}",
+                permission
+            );
+            var result = await _repository.CreatePermission(permission);
+            if (result == null)
+            {
+                throw new BadRequestException("Failed to create permission");
+            }
+            _logger.LogInformation(
+                AppLogEvents.Service,
+                "CreatePermission returned: {result}",
+                result
+            );
             return result;
         }
 
-        public async Task<ApiResponse<List<Permission>>> GetPermissionList(string Username)
+        public async Task<List<Permission>> GetPermissionList(string Username)
         {
-            logger.LogDebug(AppLogEvents.Service, "Invoked GetPermissionList with parameter: {Username}", Username);
-            ApiResponse<List<Permission>> result = await repository.GetPermissionList(Username);
-
-            logger.LogInformation(AppLogEvents.Service, "GetPermissionList returned: {result}", result);
+            _logger.LogDebug(
+                AppLogEvents.Service,
+                "Invoked GetPermissionList with parameter: {Username}",
+                Username
+            );
+            var result = await _repository.GetPermissionList(Username);
+            if (result == null || !result.Any())
+            {
+                throw new NotFoundException($"No permissions found for user: {Username}");
+            }
+            _logger.LogInformation(
+                AppLogEvents.Service,
+                "GetPermissionList returned: {result}",
+                result
+            );
             return result;
         }
 
-        public async Task<ApiResponse<AppPermissionDto>> GetAllPermissionList(string username)
+        public async Task<AppPermissionDto> GetAllPermissionList(string username)
         {
-            var appDataScanner = serviceProvider.GetRequiredService<IAppDataScanner>();
+            var appDataScanner = _serviceProvider.GetRequiredService<IAppDataScanner>();
             var apps = appDataScanner.GetAppsNames();
-            var targerUser = await userRepository.GetUser(username);
-            if (targerUser.Data == null || apps == null)
-            {
-                var s = ApiResponse<string>.ErrorResponse(["Internal server error"]);
+            var targetUser = await _userRepository.GetUser(username);
 
+            if (targetUser == null || apps == null)
+            {
+                throw new InvalidOperationException("Internal server error");
             }
-            var userPermissionList = await repository.GetPermissionList(targerUser.Data.Username);
+
+            var userPermissionList = await _repository.GetPermissionList(targetUser.Username);
             var permissionMap = new Dictionary<string, bool>();
-            foreach (var item in apps.Data)
+            foreach (var item in apps)
             {
-                permissionMap[item] = userPermissionList.Data.Any(p => p.AppID == item);
+                permissionMap[item] = userPermissionList.Any(p => p.AppID == item);
             }
 
-            return ApiResponse<AppPermissionDto>.SuccessResponse(new AppPermissionDto() { User = targerUser.Data.Username, AppsPermission = permissionMap });
+            return new AppPermissionDto
+            {
+                User = targetUser.Username,
+                AppsPermission = permissionMap
+            };
         }
 
-
-        public async Task<ApiResponse<Permission?>> DeletePermission(Permission permission)
+        public async Task<Permission> DeletePermission(Permission permission)
         {
-            logger.LogDebug(AppLogEvents.Service, "Invoked DeletePermission with data: {permission}", permission);
-            ApiResponse<Permission?> result = await repository.DeletePermission(permission);
-
-            logger.LogInformation(AppLogEvents.Service, "DeletePermission returned: {result}", result);
+            _logger.LogDebug(
+                AppLogEvents.Service,
+                "Invoked DeletePermission with data: {permission}",
+                permission
+            );
+            var result = await _repository.DeletePermission(permission);
+            if (result == null)
+            {
+                throw new NotFoundException("Permission not found or could not be deleted");
+            }
+            _logger.LogInformation(
+                AppLogEvents.Service,
+                "DeletePermission returned: {result}",
+                result
+            );
             return result;
         }
 
-        public async Task<bool> ValidatePermissions(VersionDto version, MyAppSettings settings, string? userName)
+        public async Task<bool> ValidatePermissions(
+            VersionDto version,
+            MyAppSettings settings,
+            string? userName
+        )
         {
             if (string.IsNullOrEmpty(userName))
                 return false;
 
-            var response = await repository.GetPermissionList(userName);
-            if (!response.Success || response.Data == null || response.Data.Count == 0)
+            var permissions = await _repository.GetPermissionList(userName);
+            if (permissions == null || permissions.Count == 0)
                 return false;
 
             List<string> modulesList = [];
-            foreach (var appPerm in response.Data)
+            foreach (var appPerm in permissions)
             {
-                var appModel = AppDataScanner.GetAppJsonModel(Path.Combine(settings.AppsPath, appPerm.AppID, settings.ApplicationConfigFile));
+                var appModel = AppDataScanner.GetAppJsonModel(
+                    Path.Combine(settings.AppsPath, appPerm.AppID, settings.ApplicationConfigFile)
+                );
                 if (appModel != null)
                     modulesList.AddRange(appModel.Modules.Select(module => module.ModuleId));
             }

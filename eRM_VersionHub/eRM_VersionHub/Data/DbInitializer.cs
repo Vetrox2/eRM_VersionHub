@@ -6,28 +6,22 @@ namespace eRM_VersionHub.Data
 {
     public class DbInitializer
     {
-        private IDbRepository _dbRepository;
-        private IFavoriteRepository _favoriteRepository;
-        private IPermissionRepository _permissionRepository;
-        private IUserRepository _userRepository;
+        private readonly IDbRepository _dbRepository;
+        private readonly IFavoriteRepository _favoriteRepository;
+        private readonly IPermissionRepository _permissionRepository;
+        private readonly IUserRepository _userRepository;
         private readonly ILogger<DbInitializer> _logger;
 
         public DbInitializer(WebApplication app, ILogger<DbInitializer> logger)
         {
             _logger = logger;
             _logger.LogDebug(AppLogEvents.Database, "Initializing database");
-            InitDb(app);
-        }
-
-        public void InitDb(WebApplication app)
-        {
             using var scope = app.Services.CreateScope();
-            _dbRepository = scope.ServiceProvider.GetService<IDbRepository>();
-            _favoriteRepository = scope.ServiceProvider.GetService<IFavoriteRepository>();
-            _permissionRepository = scope.ServiceProvider.GetService<IPermissionRepository>();
-            _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
-
-            _logger.LogDebug(AppLogEvents.Database, "Getting needed services (DbRepository, FavoriteRepository, PermissionRepository, UserRepository)");
+            _dbRepository = scope.ServiceProvider.GetRequiredService<IDbRepository>();
+            _favoriteRepository = scope.ServiceProvider.GetRequiredService<IFavoriteRepository>();
+            _permissionRepository =
+                scope.ServiceProvider.GetRequiredService<IPermissionRepository>();
+            _userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
             CreateTables();
         }
 
@@ -49,7 +43,6 @@ namespace eRM_VersionHub.Data
                     Type = "VARCHAR(255)",
                     NotNull = true
                 },
-
                 new ColumnDefinition
                 {
                     Name = "app_id",
@@ -58,19 +51,28 @@ namespace eRM_VersionHub.Data
                 }
             };
 
-            _logger.LogDebug(AppLogEvents.Database, "Creating table permission with data: {columns}", columns);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Creating table permission with data: {columns}",
+                columns
+            );
             var result = await _dbRepository.CreateTable("permissions", columns);
-            _logger.LogDebug(AppLogEvents.Database, "Result of CreatePermissionTable: {result}", result);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Result of CreatePermissionTable: {result}",
+                result
+            );
 
-            if (!result.Success)
+            if (!result)
             {
-                _logger.LogError(AppLogEvents.Database, "CreatePermissionTable returned: {Errors}", result.Errors);
-                Console.WriteLine(
-                    $"Failed to create Permissions table: {string.Join(", ", result.Errors)}"
-                );
+                throw new InvalidOperationException("Failed to create Permissions table");
             }
 
-            _logger.LogInformation(AppLogEvents.Database, "CreatePermissionTable returned: {result}", result.Data);
+            _logger.LogInformation(
+                AppLogEvents.Database,
+                "CreatePermissionTable returned: {result}",
+                result
+            );
         }
 
         private async Task CreateFavoriteTable()
@@ -83,7 +85,6 @@ namespace eRM_VersionHub.Data
                     Type = "VARCHAR(255)",
                     NotNull = true
                 },
-
                 new ColumnDefinition
                 {
                     Name = "app_id",
@@ -92,19 +93,28 @@ namespace eRM_VersionHub.Data
                 }
             };
 
-            _logger.LogDebug(AppLogEvents.Database, "Creating table favorites with data: {columns}", columns);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Creating table favorites with data: {columns}",
+                columns
+            );
             var result = await _dbRepository.CreateTable("favorites", columns);
-            _logger.LogDebug(AppLogEvents.Database, "Result of CreateFavoriteTable: {result}", result);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Result of CreateFavoriteTable: {result}",
+                result
+            );
 
-            if (!result.Success)
+            if (!result)
             {
-                _logger.LogError(AppLogEvents.Database, "CreateFavoriteTable returned: {Errors}", result.Errors);
-                Console.WriteLine(
-                   $"Failed to create Favorites table: {string.Join(", ", result.Errors)}"
-               );
+                throw new InvalidOperationException("Failed to create Favorites table");
             }
 
-            _logger.LogInformation(AppLogEvents.Database, "CreateFavoriteTable returned: {result}", result.Data);
+            _logger.LogInformation(
+                AppLogEvents.Database,
+                "CreateFavoriteTable returned: {result}",
+                result
+            );
         }
 
         private async Task CreateUserTable()
@@ -117,7 +127,6 @@ namespace eRM_VersionHub.Data
                     Type = "VARCHAR(255)",
                     PrimaryKey = true
                 },
-
                 new ColumnDefinition
                 {
                     Name = "creation_date",
@@ -126,40 +135,57 @@ namespace eRM_VersionHub.Data
                 }
             };
 
-            _logger.LogDebug(AppLogEvents.Database, "Creating table users with data: {columns}", columns);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Creating table users with data: {columns}",
+                columns
+            );
             var result = await _dbRepository.CreateTable("users", columns);
             _logger.LogDebug(AppLogEvents.Database, "Result of CreateUserTable: {result}", result);
 
-            if (!result.Success)
+            if (!result)
             {
-                _logger.LogError(AppLogEvents.Database, "CreateUserTable returned: {Errors}", result.Errors);
-                Console.WriteLine(
-                    $"Failed to create Users table: {string.Join(", ", result.Errors)}"
-                );
+                throw new InvalidOperationException("Failed to create Users table");
             }
 
-            _logger.LogInformation(AppLogEvents.Database, "CreateUserTable returned: {result}", result.Data);
+            _logger.LogInformation(
+                AppLogEvents.Database,
+                "CreateUserTable returned: {result}",
+                result
+            );
         }
 
         private async Task SeedData()
         {
             Permission permission = new() { Username = "admin", AppID = "adminxe" };
-            _logger.LogDebug(AppLogEvents.Database, "Creating permission: {permission}", permission);
+            _logger.LogDebug(
+                AppLogEvents.Database,
+                "Creating permission: {permission}",
+                permission
+            );
 
-            ApiResponse<Permission?> resultP = await _permissionRepository.CreatePermission(permission);
-            _logger.LogInformation(AppLogEvents.Database, "Result of CreatePermission: {Data}", resultP.Data);
+            var resultP = await _permissionRepository.CreatePermission(permission);
+            _logger.LogInformation(
+                AppLogEvents.Database,
+                "Result of CreatePermission: {Data}",
+                resultP
+            );
 
             Favorite favorite = new() { Username = "admin", AppID = "app456" };
             _logger.LogDebug(AppLogEvents.Database, "Creating favorite: {favorite}", favorite);
 
-            ApiResponse<Favorite?> resultF = await _favoriteRepository.CreateFavorite(favorite);
-            _logger.LogInformation(AppLogEvents.Database, "Result of CreateFavorite: {Data}", resultF.Data);
+            var resultF = await _favoriteRepository.CreateFavorite(favorite);
+            _logger.LogInformation(
+                AppLogEvents.Database,
+                "Result of CreateFavorite: {Data}",
+                resultF
+            );
 
             User user = new() { Username = "admin", CreationDate = DateTime.UtcNow };
             _logger.LogDebug(AppLogEvents.Database, "Creating user: {user}", user);
 
-            ApiResponse<User?> resultU = await _userRepository.CreateUser(user);
-            _logger.LogInformation(AppLogEvents.Database, "Result of CreateUser: {Data}", resultU.Data);
+            var resultU = await _userRepository.CreateUser(user);
+            _logger.LogInformation(AppLogEvents.Database, "Result of CreateUser: {Data}", resultU);
         }
     }
 }

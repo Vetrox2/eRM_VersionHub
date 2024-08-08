@@ -1,42 +1,71 @@
-﻿using eRM_VersionHub.Models;
-using eRM_VersionHub.Repositories.Interfaces;
+﻿using eRM_VersionHub.Middleware;
+using eRM_VersionHub.Models;
 
-
-namespace eRM_VersionHub.Repositories
+public class FavoriteRepository : IFavoriteRepository
 {
-    public class FavoriteRepository(IDbRepository dbRepository, ILogger<FavoriteRepository> logger) : IFavoriteRepository
+    private readonly ILogger<FavoriteRepository> _logger;
+    private readonly IDbRepository _dbRepository;
+
+    public FavoriteRepository(IDbRepository dbRepository, ILogger<FavoriteRepository> logger)
     {
-        private readonly ILogger<FavoriteRepository> _logger = logger;
-        private readonly IDbRepository _dbRepository = dbRepository;
+        _logger = logger;
+        _dbRepository = dbRepository;
+    }
 
-        public async Task<ApiResponse<Favorite?>> CreateFavorite(Favorite favorite)
+    public async Task<Favorite> CreateFavorite(Favorite favorite)
+    {
+        _logger.LogDebug(
+            AppLogEvents.Repository,
+            "Invoked CreateFavorite with data: {favorite}",
+            favorite
+        );
+        var result = await _dbRepository.EditData<Favorite>(
+            "INSERT INTO favorites(username, app_id) VALUES (@Username, @AppID) RETURNING *",
+            favorite
+        );
+        if (result == null)
         {
-            _logger.LogDebug(AppLogEvents.Repository, "Invoked CreateFavorite with data: {favorite}", favorite);
-            ApiResponse<Favorite?> result = await _dbRepository.EditData<Favorite>(
-                "INSERT INTO favorites(username, app_id) VALUES (@Username, @AppID) RETURNING *", favorite);
-
-            _logger.LogInformation(AppLogEvents.Repository, "CreateFavorite returned: {result}", result);
-            return result;
+            throw new InvalidOperationException("Failed to create favorite");
         }
+        _logger.LogInformation(AppLogEvents.Repository, "CreateFavorite completed successfully");
+        return result;
+    }
 
-        public async Task<ApiResponse<List<Favorite>>> GetFavoriteList(string Username)
+    public async Task<List<Favorite>> GetFavoriteList(string Username)
+    {
+        _logger.LogDebug(
+            AppLogEvents.Repository,
+            "Invoked GetFavoriteList with parameter: {Username}",
+            Username
+        );
+        var result = await _dbRepository.GetAll<Favorite>(
+            "SELECT * FROM favorites WHERE username=@Username",
+            new { Username }
+        );
+        if (result == null || !result.Any())
         {
-            _logger.LogDebug(AppLogEvents.Repository, "Invoked GetFavoriteList with parameter: {Username}", Username);
-            ApiResponse<List<Favorite>> result = await _dbRepository.GetAll<Favorite>(
-                "SELECT * FROM favorites WHERE username=@Username", new { Username });
-
-            _logger.LogInformation(AppLogEvents.Repository, "GetFavoriteList returned: {result}", result);
-            return result;
+            throw new NotFoundException($"No favorites found for user {Username}");
         }
+        _logger.LogInformation(AppLogEvents.Repository, "GetFavoriteList completed successfully");
+        return result;
+    }
 
-        public async Task<ApiResponse<Favorite?>> DeleteFavorite(Favorite favorite)
+    public async Task<Favorite> DeleteFavorite(Favorite favorite)
+    {
+        _logger.LogDebug(
+            AppLogEvents.Repository,
+            "Invoked DeleteFavorite with data: {favorite}",
+            favorite
+        );
+        var result = await _dbRepository.EditData<Favorite>(
+            "DELETE FROM favorites WHERE username=@Username AND app_id=@AppID RETURNING *",
+            favorite
+        );
+        if (result == null)
         {
-            _logger.LogDebug(AppLogEvents.Repository, "Invoked DeleteFavorite with data: {favorite}", favorite);
-            ApiResponse<Favorite?> result = await _dbRepository.EditData<Favorite>(
-                "DELETE FROM favorites WHERE username=@Username AND app_id=@AppID RETURNING *", favorite);
-
-            _logger.LogInformation(AppLogEvents.Repository, "DeleteFavorite returned: {result}", result);
-            return result;
+            throw new NotFoundException("Favorite not found");
         }
+        _logger.LogInformation(AppLogEvents.Repository, "DeleteFavorite completed successfully");
+        return result;
     }
 }

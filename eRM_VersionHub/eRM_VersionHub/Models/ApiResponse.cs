@@ -13,20 +13,19 @@ namespace eRM_VersionHub.Models
             Errors = new List<string>();
         }
 
+        public ApiResponse(List<string> errors)
+        {
+            Errors = errors;
+        }
+
         public static ApiResponse<T> SuccessResponse(T data)
         {
-            return new ApiResponse<T>
-            {
-                Data = data
-            };
+            return new ApiResponse<T> { Data = data };
         }
 
         public static ApiResponse<T> ErrorResponse(List<string> errors)
         {
-            return new ApiResponse<T>
-            {
-                Errors = errors
-            };
+            return new ApiResponse<T> { Errors = errors };
         }
 
         public override string ToString() => this.Serialize();

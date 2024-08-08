@@ -1,13 +1,12 @@
-﻿using Dapper;
+﻿using System.Reflection;
+using Dapper;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories;
 using eRM_VersionHub.Services.Database;
 using eRM_VersionHub.Services.Interfaces;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Options;
 using Moq;
 using Npgsql;
-using System.Reflection;
 
 namespace eRM_VersionHub_Tester.Repositories
 {
@@ -98,17 +97,12 @@ namespace eRM_VersionHub_Tester.Repositories
                     Type = "INT",
                     PrimaryKey = true
                 },
-                new()
-                {
-                    Name = "Name",
-                    Type = "VARCHAR(100)"
-                }
+                new() { Name = "Name", Type = "VARCHAR(100)" }
             };
 
             var result = await _dbRepository.CreateTable(tableNameCommand, columnDefinitions);
 
-            Assert.True(result.Success);
-            Assert.True(result.Data);
+            Assert.True(result);
 
             var tableExists = await _realConnection.ExecuteScalarAsync<bool>(
                 "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = @SchemaName AND table_name = @TableName)",
@@ -135,8 +129,7 @@ namespace eRM_VersionHub_Tester.Repositories
 
             var result = await _dbRepository.TableExists("testtable");
 
-            Assert.True(result.Success);
-            Assert.True(result.Data);
+            Assert.True(result);
         }
 
         [Fact]
@@ -151,11 +144,7 @@ namespace eRM_VersionHub_Tester.Repositories
                     Type = "INT",
                     PrimaryKey = true
                 },
-                new()
-                {
-                    Name = "Name",
-                    Type = "VARCHAR(100)"
-                }
+                new() { Name = "Name", Type = "VARCHAR(100)" }
             };
 
             await _dbRepository.CreateTable(tableName, columnDefinitions);
@@ -169,9 +158,7 @@ namespace eRM_VersionHub_Tester.Repositories
                 new { Id = 1 }
             );
 
-            Assert.True(result.Success);
-            Assert.Equal(1, result.Data.Id);
-            Assert.Equal("Test", result.Data.Name);
+            Assert.Equal(1, result.Id);
         }
     }
 

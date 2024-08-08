@@ -1,6 +1,4 @@
 ﻿using eRM_VersionHub.Models;
-using eRM_VersionHub.Repositories;
-using eRM_VersionHub.Repositories.Interfaces;
 using Moq;
 
 namespace eRM_VersionHub_Tester.Repositories
@@ -15,7 +13,10 @@ namespace eRM_VersionHub_Tester.Repositories
         {
             _mockDbRepository = new Mock<IDbRepository>();
             _mockLogger = new Mock<ILogger<FavoriteRepository>>();
-            _favoriteRepository = new FavoriteRepository(_mockDbRepository.Object, _mockLogger.Object);
+            _favoriteRepository = new FavoriteRepository(
+                _mockDbRepository.Object,
+                _mockLogger.Object
+            );
         }
 
         [Fact]
@@ -24,12 +25,11 @@ namespace eRM_VersionHub_Tester.Repositories
             var favorite = new Favorite { Username = "testUser", AppID = "testApp" };
             _mockDbRepository
                 .Setup(repo => repo.EditData<Favorite>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(ApiResponse<Favorite?>.SuccessResponse(favorite));
+                .ReturnsAsync(favorite);
 
             var result = await _favoriteRepository.CreateFavorite(favorite);
 
-            Assert.True(result.Success);
-            Assert.Equal(favorite, result.Data);
+            Assert.Equal(favorite, result);
         }
 
         [Fact]
@@ -43,12 +43,11 @@ namespace eRM_VersionHub_Tester.Repositories
             };
             _mockDbRepository
                 .Setup(repo => repo.GetAll<Favorite>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(ApiResponse<List<Favorite>>.SuccessResponse(favorites));
+                .ReturnsAsync(favorites);
 
             var result = await _favoriteRepository.GetFavoriteList(username);
 
-            Assert.True(result.Success);
-            Assert.Equal(favorites, result.Data);
+            Assert.Equal(favorites, result);
         }
 
         [Fact]
@@ -57,12 +56,11 @@ namespace eRM_VersionHub_Tester.Repositories
             var favorite = new Favorite { Username = "testUser", AppID = "testApp" };
             _mockDbRepository
                 .Setup(repo => repo.EditData<Favorite>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(ApiResponse<Favorite?>.SuccessResponse(favorite));
+                .ReturnsAsync(favorite);
 
             var result = await _favoriteRepository.DeleteFavorite(favorite);
 
-            Assert.True(result.Success);
-            Assert.Equal(favorite, result.Data);
+            Assert.Equal(favorite, result);
         }
 
         [Fact]
@@ -71,30 +69,25 @@ namespace eRM_VersionHub_Tester.Repositories
             var favorite = new Favorite { Username = "testUser", AppID = "testApp" };
             _mockDbRepository
                 .Setup(repo => repo.EditData<Favorite>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(
-                    ApiResponse<Favorite?>.ErrorResponse(new List<string> { "Database error" })
-                );
+                .ReturnsAsync((Favorite)null);
 
-            var result = await _favoriteRepository.CreateFavorite(favorite);
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _favoriteRepository.CreateFavorite(favorite)
+            );
 
-            Assert.False(result.Success);
-            Assert.Contains("Database error", result.Errors);
-        }
-
-        [Fact]
-        public async Task GetFavoriteList_ShouldReturnErrorOnFailure()
-        {
-            var username = "testUser";
-            _mockDbRepository
-                .Setup(repo => repo.GetAll<Favorite>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(
-                    ApiResponse<List<Favorite>>.ErrorResponse(new List<string> { "Database error" })
-                );
-
-            var result = await _favoriteRepository.GetFavoriteList(username);
-
-            Assert.False(result.Success);
-            Assert.Contains("Database error", result.Errors);
+            _mockLogger.Verify(
+                x =>
+                    x.Log(
+                        LogLevel.Debug,
+                        It.IsAny<EventId>(),
+                        It.Is<It.IsAnyType>(
+                            (o, t) => o.ToString().Contains("Invoked CreateFavorite")
+                        ),
+                        It.IsAny<Exception>(),
+                        It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)
+                    ),
+                Times.Once
+            );
         }
 
         [Fact]
@@ -103,14 +96,25 @@ namespace eRM_VersionHub_Tester.Repositories
             var favorite = new Favorite { Username = "testUser", AppID = "testApp" };
             _mockDbRepository
                 .Setup(repo => repo.EditData<Favorite>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(
-                    ApiResponse<Favorite?>.ErrorResponse(new List<string> { "Database error" })
-                );
+                .ReturnsAsync((Favorite)null);
 
-            var result = await _favoriteRepository.DeleteFavorite(favorite);
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _favoriteRepository.CreateFavorite(favorite)
+            );
 
-            Assert.False(result.Success);
-            Assert.Contains("Database error", result.Errors);
+            _mockLogger.Verify(
+                x =>
+                    x.Log(
+                        LogLevel.Debug,
+                        It.IsAny<EventId>(),
+                        It.Is<It.IsAnyType>(
+                            (o, t) => o.ToString().Contains("Invoked CreateFavorite")
+                        ),
+                        It.IsAny<Exception>(),
+                        It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)
+                    ),
+                Times.Once
+            );
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using eRM_VersionHub.Models;
-using eRM_VersionHub.Repositories.Interfaces;
 using eRM_VersionHub.Services.Database;
 using Moq;
 
@@ -21,16 +20,14 @@ namespace eRM_VersionHub_Tester.Services
         [Fact]
         public async Task CreateFavorite_ShouldCallRepositoryMethod()
         {
-            var username = "testUser";
-            var favorite = new Favorite { Username = username, AppID = "testApp" };
-            var expectedResponse = new ApiResponse<Favorite?> { Errors = [], Data = favorite };
+            var favorite = new Favorite { Username = "testUser", AppID = "testApp" };
             _mockRepository
                 .Setup(repo => repo.CreateFavorite(It.IsAny<Favorite>()))
-                .ReturnsAsync(expectedResponse);
+                .ReturnsAsync(favorite);
 
             var result = await _favoriteService.CreateFavorite(favorite);
 
-            Assert.Equal(expectedResponse, result);
+            Assert.Equal(favorite, result);
             _mockRepository.Verify(repo => repo.CreateFavorite(favorite), Times.Once);
         }
 
@@ -38,37 +35,29 @@ namespace eRM_VersionHub_Tester.Services
         public async Task GetFavoriteList_ShouldCallRepositoryMethod()
         {
             var username = "testUser";
-            var expectedResponse = new ApiResponse<List<Favorite>>
+            var favorites = new List<Favorite>
             {
-                Errors = [],
-                Data = new List<Favorite>
-                {
-                    new Favorite { Username = username, AppID = "testApp" }
-                }
+                new Favorite { Username = username, AppID = "testApp" }
             };
-            _mockRepository
-                .Setup(repo => repo.GetFavoriteList(username))
-                .ReturnsAsync(expectedResponse);
+            _mockRepository.Setup(repo => repo.GetFavoriteList(username)).ReturnsAsync(favorites);
 
             var result = await _favoriteService.GetFavoriteList(username);
 
-            Assert.Equal(expectedResponse, result);
+            Assert.Equal(favorites, result);
             _mockRepository.Verify(repo => repo.GetFavoriteList(username), Times.Once);
         }
 
         [Fact]
         public async Task DeleteFavorite_ShouldCallRepositoryMethod()
         {
-            var username = "testUser";
-            var favorite = new Favorite { Username = username, AppID = "testApp" };
-            var expectedResponse = new ApiResponse<Favorite?> { Errors = [], Data = favorite };
+            var favorite = new Favorite { Username = "testUser", AppID = "testApp" };
             _mockRepository
                 .Setup(repo => repo.DeleteFavorite(It.IsAny<Favorite>()))
-                .ReturnsAsync(expectedResponse);
+                .ReturnsAsync(favorite);
 
             var result = await _favoriteService.DeleteFavorite(favorite);
 
-            Assert.Equal(expectedResponse, result);
+            Assert.Equal(favorite, result);
             _mockRepository.Verify(repo => repo.DeleteFavorite(favorite), Times.Once);
         }
     }
