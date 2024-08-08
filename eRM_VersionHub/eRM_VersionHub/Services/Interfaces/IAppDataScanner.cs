@@ -6,8 +6,8 @@ namespace eRM_VersionHub.Services.Interfaces
 {
     public interface IAppDataScanner
     {
-        Task<ApiResponse<List<AppStructureDto>>> GetAppsStructure(string userToken);
-        ApiResponse<List<string>> GetAppsNames();
+        Task<List<AppStructureDto>> GetAppsStructure(string userToken);
+        List<string> GetAppsNames();
         List<AppStructureDto>? GetCurrentStructureAndSaveToCache();
     }
 }

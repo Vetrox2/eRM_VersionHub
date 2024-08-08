@@ -14,10 +14,15 @@ namespace eRM_VersionHub_Tester.Services
         private readonly Mock<IPermissionService> _mockPermissionService;
         private readonly Mock<ILogger<AppDataScanner>> _mockLogger;
         private readonly Mock<IAppStructureCache> _mockCache;
-        private readonly FileStructureGenerator _fileStructureGenerator = new FileStructureGenerator();
+        private readonly FileStructureGenerator _fileStructureGenerator =
+            new FileStructureGenerator();
         private AppDataScanner _appDataScanner;
 
-        private string appsPath, internalPath, externalPath, appJson, token = "userToken";
+        private string appsPath,
+            internalPath,
+            externalPath,
+            appJson,
+            token = "userToken";
 
         public AppDataScannerTests()
         {
@@ -29,14 +34,15 @@ namespace eRM_VersionHub_Tester.Services
 
         public Task InitializeAsync()
         {
-            (appsPath, appJson, internalPath, externalPath) = _fileStructureGenerator.GenerateFileStructure();
+            (appsPath, appJson, internalPath, externalPath) =
+                _fileStructureGenerator.GenerateFileStructure();
             _appDataScanner = new AppDataScanner(
-                        _mockFavoriteService.Object,
-                        _mockPermissionService.Object,
-                        _mockLogger.Object,
-                        Options.Create(new AppSettings() { MyAppSettings = GetAppSettings() }),
-                        _mockCache.Object
-                    );
+                _mockFavoriteService.Object,
+                _mockPermissionService.Object,
+                _mockLogger.Object,
+                Options.Create(new AppSettings() { MyAppSettings = GetAppSettings() }),
+                _mockCache.Object
+            );
             return Task.CompletedTask;
         }
 
@@ -46,7 +52,6 @@ namespace eRM_VersionHub_Tester.Services
             _fileStructureGenerator.Dispose();
         }
 
-
         [Fact]
         public async Task GetAppsStructure_CheckWrongAppsPath()
         {
@@ -54,23 +59,20 @@ namespace eRM_VersionHub_Tester.Services
             _mockPermissionService
                 .Setup(service => service.GetPermissionList(token))
                 .ReturnsAsync(
-                    ApiResponse<List<Permission>>.SuccessResponse(
-                        [
-                            new Permission() { Username = token, AppID = "app1" },
-                            new Permission() { Username = token, AppID = "app2" },
-                            new Permission() { Username = token, AppID = "app3" }
-                        ]
-                    )
+                    new List<Permission>
+                    {
+                        new Permission { Username = token, AppID = "app1" },
+                        new Permission { Username = token, AppID = "app2" },
+                        new Permission { Username = token, AppID = "app3" }
+                    }
                 );
             var settings = GetAppSettings();
             settings.AppsPath = "abc";
 
-            // Act
-            var structure = await _appDataScanner.GetAppsStructure(token);
-
-            // Assert
-            Assert.False(structure.Success);
-            Assert.True(structure.Errors?.Contains("Fatal error"));
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _appDataScanner.GetAppsStructure(token)
+            );
         }
 
         [Fact]
@@ -80,23 +82,20 @@ namespace eRM_VersionHub_Tester.Services
             _mockPermissionService
                 .Setup(service => service.GetPermissionList(token))
                 .ReturnsAsync(
-                    ApiResponse<List<Permission>>.SuccessResponse(
-                        [
-                            new Permission() { Username = token, AppID = "app1" },
-                            new Permission() { Username = token, AppID = "app2" },
-                            new Permission() { Username = token, AppID = "app3" }
-                        ]
-                    )
+                    new List<Permission>
+                    {
+                        new Permission { Username = token, AppID = "app1" },
+                        new Permission { Username = token, AppID = "app2" },
+                        new Permission { Username = token, AppID = "app3" }
+                    }
                 );
             var settings = GetAppSettings();
             settings.InternalPackagesPath = "abc";
 
-            // Act
-            var structure = await _appDataScanner.GetAppsStructure(token);
-
-            // Assert
-            Assert.False(structure.Success);
-            Assert.True(structure.Errors?.Contains("Fatal error"));
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _appDataScanner.GetAppsStructure(token)
+            );
         }
 
         [Fact]
@@ -106,23 +105,20 @@ namespace eRM_VersionHub_Tester.Services
             _mockPermissionService
                 .Setup(service => service.GetPermissionList(token))
                 .ReturnsAsync(
-                    ApiResponse<List<Permission>>.SuccessResponse(
-                        [
-                            new Permission() { Username = token, AppID = "app1" },
-                            new Permission() { Username = token, AppID = "app2" },
-                            new Permission() { Username = token, AppID = "app3" }
-                        ]
-                    )
+                    new List<Permission>
+                    {
+                        new Permission { Username = token, AppID = "app1" },
+                        new Permission { Username = token, AppID = "app2" },
+                        new Permission { Username = token, AppID = "app3" }
+                    }
                 );
             var settings = GetAppSettings();
             settings.ExternalPackagesPath = "abc";
 
-            // Act
-            var structure = await _appDataScanner.GetAppsStructure(token);
-
-            // Assert
-            Assert.False(structure.Success);
-            Assert.True(structure.Errors?.Contains("Fatal error"));
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _appDataScanner.GetAppsStructure(token)
+            );
         }
 
         [Fact]
@@ -131,15 +127,12 @@ namespace eRM_VersionHub_Tester.Services
             // Arrange
             _mockPermissionService
                 .Setup(service => service.GetPermissionList(token))
-                .ReturnsAsync(
-                    ApiResponse<List<Permission>>.SuccessResponse([]));
+                .ReturnsAsync(new List<Permission>());
 
-            // Act
-            var structure = await _appDataScanner.GetAppsStructure(token);
-
-            // Assert
-            Assert.False(structure.Success);
-            Assert.True(structure.Errors?.Contains("User permissions not found"));
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _appDataScanner.GetAppsStructure(token)
+            );
         }
 
         [Fact]
@@ -149,75 +142,75 @@ namespace eRM_VersionHub_Tester.Services
             _mockPermissionService
                 .Setup(service => service.GetPermissionList(token))
                 .ReturnsAsync(
-                    ApiResponse<List<Permission>>.SuccessResponse(
-                        [
-                            new Permission() { Username = token, AppID = "app1" },
-                            new Permission() { Username = token, AppID = "app2" },
-                            new Permission() { Username = token, AppID = "app3" }
-                        ]
-                    )
+                    new List<Permission>
+                    {
+                        new Permission { Username = token, AppID = "app1" },
+                        new Permission { Username = token, AppID = "app2" },
+                        new Permission { Username = token, AppID = "app3" }
+                    }
                 );
 
             // Act
-            var response = await _appDataScanner.GetAppsStructure(token);
-            var structure = response.Data;
+            var structure = await _appDataScanner.GetAppsStructure(token);
 
             // Assert
             Assert.NotNull(structure);
+            Assert.Equal(3, structure.Count);
+            Assert.Equal(4, structure.FirstOrDefault(app => app.ID == "app1")?.Versions.Count);
+            Assert.Equal(
+                2,
+                structure
+                    .FirstOrDefault(app => app.ID == "app1")
+                    ?.Versions.FirstOrDefault(version => version.ID == "0.1")
+                    ?.Modules.Count
+            );
+            Assert.Equal(
+                2,
+                structure
+                    .FirstOrDefault(app => app.ID == "app1")
+                    ?.Versions.FirstOrDefault(version => version.ID == "0.2")
+                    ?.Modules.Count
+            );
+            Assert.Single(
+                structure
+                    .FirstOrDefault(app => app.ID == "app1")
+                    ?.Versions.FirstOrDefault(version => version.ID == "0.3")
+                    ?.Modules
+            );
+            Assert.Equal(
+                2,
+                structure
+                    .FirstOrDefault(app => app.ID == "app1")
+                    ?.Versions.FirstOrDefault(version => version.ID == "0.4-prefix")
+                    ?.Modules.Count
+            );
 
-            if (structure != null)
-            {
-                Assert.True(structure.Count == 3);
-                Assert.True(structure.FirstOrDefault(app => app.ID == "app1")?.Versions.Count == 4);
-                Assert.True(
-                    structure
-                        .FirstOrDefault(app => app.ID == "app1")
-                        ?.Versions.FirstOrDefault(version => version.ID == "0.1")
-                        ?.Modules.Count == 2
-                );
-                Assert.True(
-                    structure
-                        .FirstOrDefault(app => app.ID == "app1")
-                        ?.Versions.FirstOrDefault(version => version.ID == "0.2")
-                        ?.Modules.Count == 2
-                );
-                Assert.True(
-                    structure
-                        .FirstOrDefault(app => app.ID == "app1")
-                        ?.Versions.FirstOrDefault(version => version.ID == "0.3")
-                        ?.Modules.Count == 1
-                );
-                Assert.True(
-                    structure
-                        .FirstOrDefault(app => app.ID == "app1")
-                        ?.Versions.FirstOrDefault(version => version.ID == "0.4-prefix")
-                        ?.Modules.Count == 2
-                );
+            Assert.Equal(2, structure[1].Versions.Count);
+            Assert.Equal(2, structure.FirstOrDefault(app => app.ID == "app2")?.Versions.Count);
+            Assert.Equal(
+                2,
+                structure
+                    .FirstOrDefault(app => app.ID == "app2")
+                    ?.Versions.FirstOrDefault(version => version.ID == "0.1")
+                    ?.Modules.Count
+            );
+            Assert.Equal(
+                2,
+                structure
+                    .FirstOrDefault(app => app.ID == "app2")
+                    ?.Versions.FirstOrDefault(version => version.ID == "0.2")
+                    ?.Modules.Count
+            );
 
-                Assert.True(structure[1].Versions.Count == 2);
-                Assert.True(structure.FirstOrDefault(app => app.ID == "app2")?.Versions.Count == 2);
-                Assert.True(
-                    structure
-                        .FirstOrDefault(app => app.ID == "app2")
-                        ?.Versions.FirstOrDefault(version => version.ID == "0.1")
-                        ?.Modules.Count == 2
-                );
-                Assert.True(
-                    structure
-                        .FirstOrDefault(app => app.ID == "app2")
-                        ?.Versions.FirstOrDefault(version => version.ID == "0.2")
-                        ?.Modules.Count == 2
-                );
-
-                Assert.True(structure[2].Versions.Count == 1);
-                Assert.True(structure.FirstOrDefault(app => app.ID == "app3")?.Versions.Count == 1);
-                Assert.True(
-                    structure
-                        .FirstOrDefault(app => app.ID == "app3")
-                        ?.Versions.FirstOrDefault(version => version.ID == "0.1")
-                        ?.Modules.Count == 2
-                );
-            }
+            Assert.Single(structure[2].Versions);
+            Assert.Single(structure.FirstOrDefault(app => app.ID == "app3")?.Versions);
+            Assert.Equal(
+                2,
+                structure
+                    .FirstOrDefault(app => app.ID == "app3")
+                    ?.Versions.FirstOrDefault(version => version.ID == "0.1")
+                    ?.Modules.Count
+            );
         }
 
         [Fact]
@@ -227,34 +220,37 @@ namespace eRM_VersionHub_Tester.Services
             _mockPermissionService
                 .Setup(service => service.GetPermissionList(token))
                 .ReturnsAsync(
-                    ApiResponse<List<Permission>>.SuccessResponse(
-                        [
-                            new Permission() { Username = token, AppID = "app1" },
-                            new Permission() { Username = token, AppID = "app2" },
-                            new Permission() { Username = token, AppID = "app3" }
-                        ]
-                    )
+                    new List<Permission>
+                    {
+                        new Permission { Username = token, AppID = "app1" },
+                        new Permission { Username = token, AppID = "app2" },
+                        new Permission { Username = token, AppID = "app3" }
+                    }
                 );
 
             // Act
-            var response = await _appDataScanner.GetAppsStructure(token);
-            var structure = response.Data;
+            var structure = await _appDataScanner.GetAppsStructure(token);
 
             // Assert
             Assert.NotNull(structure);
-            structure?.ForEach(app =>
-                app.Versions.ForEach(ver =>
-                    ver.Modules.ForEach(module =>
+            foreach (var app in structure)
+            {
+                foreach (var ver in app.Versions)
+                {
+                    foreach (var module in ver.Modules)
                     {
-                        if (module.Name == "module2" && (ver.ID == "0.1" || ver.ID == "0.2" || ver.ID == "0.4-prefix"))
+                        if (
+                            module.Name == "module2"
+                            && (ver.ID == "0.1" || ver.ID == "0.2" || ver.ID == "0.4-prefix")
+                        )
                             Assert.True(module.IsPublished);
                         else if (module.Name == "module3" && ver.ID == "0.2")
                             Assert.True(module.IsPublished);
                         else
                             Assert.False(module.IsPublished);
-                    })
-                )
-            );
+                    }
+                }
+            }
         }
 
         [Fact]
@@ -264,23 +260,21 @@ namespace eRM_VersionHub_Tester.Services
             _mockPermissionService
                 .Setup(service => service.GetPermissionList(token))
                 .ReturnsAsync(
-                    ApiResponse<List<Permission>>.SuccessResponse(
-                        [
-                            new Permission() { Username = token, AppID = "app1" },
-                            new Permission() { Username = token, AppID = "app3" }
-                        ]
-                    )
+                    new List<Permission>
+                    {
+                        new Permission { Username = token, AppID = "app1" },
+                        new Permission { Username = token, AppID = "app3" }
+                    }
                 );
 
             // Act
-            var response = await _appDataScanner.GetAppsStructure(token);
-            var structure = response.Data;
+            var structure = await _appDataScanner.GetAppsStructure(token);
 
             // Assert
             Assert.NotNull(structure);
-            Assert.True(structure?.Any(app => app.ID == "app1"));
-            Assert.True(structure?.Any(app => app.ID == "app3"));
-            Assert.False(structure?.Any(app => app.ID == "app2"));
+            Assert.Contains(structure, app => app.ID == "app1");
+            Assert.Contains(structure, app => app.ID == "app3");
+            Assert.DoesNotContain(structure, app => app.ID == "app2");
         }
 
         [Fact]
@@ -290,38 +284,33 @@ namespace eRM_VersionHub_Tester.Services
             _mockPermissionService
                 .Setup(service => service.GetPermissionList(token))
                 .ReturnsAsync(
-                    ApiResponse<List<Permission>>.SuccessResponse(
-                        [
-                            new Permission() { Username = token, AppID = "app1" },
-                            new Permission() { Username = token, AppID = "app2" },
-                            new Permission() { Username = token, AppID = "app3" }
-                        ]
-                    )
+                    new List<Permission>
+                    {
+                        new Permission { Username = token, AppID = "app1" },
+                        new Permission { Username = token, AppID = "app2" },
+                        new Permission { Username = token, AppID = "app3" }
+                    }
                 );
 
             _mockFavoriteService
                 .Setup(service => service.GetFavoriteList(token))
                 .ReturnsAsync(
-                    ApiResponse<List<Favorite>>.SuccessResponse(
-                        [
-                            new Favorite() { Username = token, AppID = "app2" },
-                            new Favorite() { Username = token, AppID = "app3" }
-                        ]
-                    )
+                    new List<Favorite>
+                    {
+                        new Favorite { Username = token, AppID = "app2" },
+                        new Favorite { Username = token, AppID = "app3" }
+                    }
                 );
 
             // Act
-            var response = await _appDataScanner.GetAppsStructure(token);
-            var structure = response.Data;
+            var structure = await _appDataScanner.GetAppsStructure(token);
 
             // Assert
             Assert.NotNull(structure);
-            Assert.True(structure?.FirstOrDefault(app => app.ID == "app2")?.IsFavourite);
-            Assert.True(structure?.FirstOrDefault(app => app.ID == "app3")?.IsFavourite);
-            Assert.False(structure?.FirstOrDefault(app => app.ID == "app1")?.IsFavourite);
+            Assert.True(structure.FirstOrDefault(app => app.ID == "app2")?.IsFavourite);
+            Assert.True(structure.FirstOrDefault(app => app.ID == "app3")?.IsFavourite);
+            Assert.False(structure.FirstOrDefault(app => app.ID == "app1")?.IsFavourite);
         }
-
-
 
         private MyAppSettings GetAppSettings()
         {
