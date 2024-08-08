@@ -1,5 +1,8 @@
+using System.Security.Claims;
+using System.Text.Json;
 using Dapper;
 using eRM_VersionHub.Data;
+using eRM_VersionHub.Middleware;
 using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories;
 using eRM_VersionHub.Repositories.Interfaces;
@@ -11,8 +14,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Security.Claims;
-using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,82 +56,92 @@ builder.Services.AddHostedService<FileChangeWatcher>();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
-    options.AddSecurityDefinition("Keycloak", new OpenApiSecurityScheme
-    {
-        Type = SecuritySchemeType.OAuth2,
-        Flows = new OpenApiOAuthFlows
+    options.AddSecurityDefinition(
+        "Keycloak",
+        new OpenApiSecurityScheme
         {
-            Implicit = new OpenApiOAuthFlow
+            Type = SecuritySchemeType.OAuth2,
+            Flows = new OpenApiOAuthFlows
             {
-                AuthorizationUrl = new Uri("http://localhost:8080/realms/eRM-realm/protocol/openid-connect/auth"),
+                Implicit = new OpenApiOAuthFlow
+                {
+                    AuthorizationUrl = new Uri(
+                        "http://localhost:8080/realms/eRM-realm/protocol/openid-connect/auth"
+                    ),
+                }
             }
         }
-    });
+    );
 
-    OpenApiSecurityScheme keycloakSecurityScheme = new()
-    {
-        Reference = new OpenApiReference
+    OpenApiSecurityScheme keycloakSecurityScheme =
+        new()
         {
-            Id = "Keycloak",
-            Type = ReferenceType.SecurityScheme,
-        },
-        In = ParameterLocation.Header,
-        Name = "Bearer",
-        Scheme = "Bearer",
-    };
+            Reference = new OpenApiReference
+            {
+                Id = "Keycloak",
+                Type = ReferenceType.SecurityScheme,
+            },
+            In = ParameterLocation.Header,
+            Name = "Bearer",
+            Scheme = "Bearer",
+        };
 
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        { keycloakSecurityScheme, Array.Empty<string>() },
-    });
+    options.AddSecurityRequirement(
+        new OpenApiSecurityRequirement { { keycloakSecurityScheme, Array.Empty<string>() }, }
+    );
 });
 
 // Add JWT Bearer Authentication
 var keycloakSettings = builder.Configuration.GetSection("Keycloak").Get<KeycloakSettings>();
 
-builder.Services
-        .AddAuthentication()
-        .AddJwtBearer(options =>
+builder
+    .Services.AddAuthentication()
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.Authority = keycloakSettings.Authority;
+        options.MetadataAddress = keycloakSettings.MetadataAddress;
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            options.RequireHttpsMetadata = false;
-            options.Authority = keycloakSettings.Authority;
-            options.MetadataAddress = keycloakSettings.MetadataAddress;
-            options.TokenValidationParameters = new TokenValidationParameters
+            ValidateIssuer = true,
+            ValidIssuer = keycloakSettings.Authority,
+            ValidateAudience = true,
+            ValidAudience = keycloakSettings.ClientId,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = "preferred_username"
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = context =>
             {
-                ValidateIssuer = true,
-                ValidIssuer = keycloakSettings.Authority,
-                ValidateAudience = true,
-                ValidAudience = keycloakSettings.ClientId,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                RoleClaimType = ClaimTypes.Role,
-                NameClaimType = "preferred_username"
-            };
-            options.Events = new JwtBearerEvents
-            {
-                OnTokenValidated = context =>
-                {
-                    var userClaims = context.Principal.Identity as ClaimsIdentity;
+                var userClaims = context.Principal.Identity as ClaimsIdentity;
 
-                    // Extract the realm_access claim and parse roles
-                    var realmAccessClaim = context.Principal.FindFirst("realm_access")?.Value;
-                    if (realmAccessClaim != null)
+                // Extract the realm_access claim and parse roles
+                var realmAccessClaim = context.Principal.FindFirst("realm_access")?.Value;
+                if (realmAccessClaim != null)
+                {
+                    var realmAccess = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+                        realmAccessClaim
+                    );
+                    if (realmAccess.TryGetValue("roles", out var rolesElement))
                     {
-                        var realmAccess = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(realmAccessClaim);
-                        if (realmAccess.TryGetValue("roles", out var rolesElement))
+                        var roles = rolesElement
+                            .EnumerateArray()
+                            .Select(role => role.GetString())
+                            .ToList();
+                        foreach (var role in roles)
                         {
-                            var roles = rolesElement.EnumerateArray().Select(role => role.GetString()).ToList();
-                            foreach (var role in roles)
-                            {
-                                userClaims.AddClaim(new Claim(ClaimTypes.Role, role));
-                            }
+                            userClaims.AddClaim(new Claim(ClaimTypes.Role, role));
                         }
                     }
-
-                    return Task.CompletedTask;
                 }
-            };
-        });
+
+                return Task.CompletedTask;
+            }
+        };
+    });
 
 builder.Services.AddAuthorization(o =>
 {
@@ -142,6 +153,7 @@ builder.Services.AddAuthorization(o =>
 
 // Build app
 var app = builder.Build();
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // Configure middleware
 app.UseHttpLogging();
@@ -168,16 +180,23 @@ if (app.Environment.IsDevelopment())
         options.OAuthClientId("swaggerUI");
         options.OAuthUsePkce();
         options.OAuthScopeSeparator(" ");
-        options.OAuthAdditionalQueryStringParams(new Dictionary<string, string> { { "prompt", "login" } });
+        options.OAuthAdditionalQueryStringParams(
+            new Dictionary<string, string> { { "prompt", "login" } }
+        );
     });
 
     var logger = app.Services.GetRequiredService<ILogger<DbInitializer>>();
     var db = new DbInitializer(app, logger);
 
-    AppSettings? settings = app.Services.CreateScope().ServiceProvider.GetService<IOptions<AppSettings>>().Value;
+    AppSettings? settings = app
+        .Services.CreateScope()
+        .ServiceProvider.GetService<IOptions<AppSettings>>()
+        .Value;
     if (settings != null)
-        PackagesGenerator.Generate(settings.MyAppSettings.InternalPackagesPath, Path.Combine(Directory.GetParent(settings.MyAppSettings.AppsPath).Name, "packages.txt")); // To delete
-
+        PackagesGenerator.Generate(
+            settings.MyAppSettings.InternalPackagesPath,
+            Path.Combine(Directory.GetParent(settings.MyAppSettings.AppsPath).Name, "packages.txt")
+        ); // To delete
 }
 
 // Configure the HTTP request pipeline.
