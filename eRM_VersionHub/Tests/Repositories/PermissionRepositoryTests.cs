@@ -1,6 +1,6 @@
-﻿using eRM_VersionHub.Models;
+﻿using eRM_VersionHub.Middleware;
+using eRM_VersionHub.Models;
 using eRM_VersionHub.Repositories;
-using eRM_VersionHub.Repositories.Interfaces;
 using Moq;
 
 namespace eRM_VersionHub_Tester.Repositories
@@ -15,42 +15,49 @@ namespace eRM_VersionHub_Tester.Repositories
         {
             _mockDbRepository = new Mock<IDbRepository>();
             _mockLogger = new Mock<ILogger<PermissionRepository>>();
-            _permissionRepository = new PermissionRepository(_mockDbRepository.Object, _mockLogger.Object);
+            _permissionRepository = new PermissionRepository(
+                _mockDbRepository.Object,
+                _mockLogger.Object
+            );
         }
 
         [Fact]
         public async Task CreatePermission_ShouldReturnCreatedPermission()
         {
+            // Arrange
             var permission = new Permission { Username = "testUser", AppID = "testApp" };
             _mockDbRepository
                 .Setup(repo => repo.EditData<Permission>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(ApiResponse<Permission?>.SuccessResponse(permission));
+                .ReturnsAsync(permission);
 
+            // Act
             var result = await _permissionRepository.CreatePermission(permission);
 
-            Assert.True(result.Success);
-            Assert.Equal(permission, result.Data);
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(permission.Username, result.Username);
+            Assert.Equal(permission.AppID, result.AppID);
         }
 
         [Fact]
-        public async Task CreatePermission_ShouldReturnErrorOnFailure()
+        public async Task CreatePermission_ShouldThrowExceptionOnFailure()
         {
+            // Arrange
             var permission = new Permission { Username = "testUser", AppID = "testApp" };
             _mockDbRepository
                 .Setup(repo => repo.EditData<Permission>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(
-                    ApiResponse<Permission?>.ErrorResponse(new List<string> { "Database error" })
-                );
+                .ReturnsAsync((Permission)null);
 
-            var result = await _permissionRepository.CreatePermission(permission);
-
-            Assert.False(result.Success);
-            Assert.Contains("Database error", result.Errors);
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _permissionRepository.CreatePermission(permission)
+            );
         }
 
         [Fact]
         public async Task GetPermissionList_ShouldReturnListOfPermissions()
         {
+            // Arrange
             var username = "testUser";
             var permissions = new List<Permission>
             {
@@ -59,60 +66,63 @@ namespace eRM_VersionHub_Tester.Repositories
             };
             _mockDbRepository
                 .Setup(repo => repo.GetAll<Permission>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(ApiResponse<List<Permission>>.SuccessResponse(permissions));
+                .ReturnsAsync(permissions);
 
+            // Act
             var result = await _permissionRepository.GetPermissionList(username);
 
-            Assert.True(result.Success);
-            Assert.Equal(permissions, result.Data);
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+            Assert.Equal(permissions, result);
         }
 
         [Fact]
-        public async Task GetPermissionList_ShouldReturnErrorOnFailure()
+        public async Task GetPermissionList_ShouldThrowExceptionOnFailure()
         {
+            // Arrange
             var username = "testUser";
             _mockDbRepository
                 .Setup(repo => repo.GetAll<Permission>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(
-                    ApiResponse<List<Permission>>.ErrorResponse(
-                        new List<string> { "Database error" }
-                    )
-                );
+                .ReturnsAsync((List<Permission>)null);
 
-            var result = await _permissionRepository.GetPermissionList(username);
-
-            Assert.False(result.Success);
-            Assert.Contains("Database error", result.Errors);
+            // Act & Assert
+            await Assert.ThrowsAsync<NotFoundException>(
+                () => _permissionRepository.GetPermissionList(username)
+            );
         }
 
         [Fact]
         public async Task DeletePermission_ShouldReturnDeletedPermission()
         {
+            // Arrange
             var permission = new Permission { Username = "testUser", AppID = "testApp" };
             _mockDbRepository
                 .Setup(repo => repo.EditData<Permission>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(ApiResponse<Permission?>.SuccessResponse(permission));
+                .ReturnsAsync(permission);
 
+            // Act
             var result = await _permissionRepository.DeletePermission(permission);
 
-            Assert.True(result.Success);
-            Assert.Equal(permission, result.Data);
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(permission.Username, result.Username);
+            Assert.Equal(permission.AppID, result.AppID);
         }
 
         [Fact]
-        public async Task DeletePermission_ShouldReturnErrorOnFailure()
+        public async Task DeletePermission_ShouldThrowExceptionOnFailure()
         {
+            // Arrange
             var permission = new Permission { Username = "testUser", AppID = "testApp" };
             _mockDbRepository
                 .Setup(repo => repo.EditData<Permission>(It.IsAny<string>(), It.IsAny<object>()))
-                .ReturnsAsync(
-                    ApiResponse<Permission?>.ErrorResponse(new List<string> { "Database error" })
-                );
+                .ReturnsAsync((Permission)null);
 
-            var result = await _permissionRepository.DeletePermission(permission);
-
-            Assert.False(result.Success);
-            Assert.Contains("Database error", result.Errors);
+            // Act & Assert
+            await Assert.ThrowsAsync<NotFoundException>(
+                () => _permissionRepository.DeletePermission(permission)
+            );
         }
     }
 }
