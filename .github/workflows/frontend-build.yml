@@ -8,8 +8,7 @@ on:
       - frontend/**
 
 env:
-  CURRENT_TAG: "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:$GITHUB_SHA-dev"
-  LATEST_TAG: "${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend:latest"
+  PROJECT_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/erm_versionhub-frontend
 
 jobs:
   build:
@@ -25,11 +24,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t $CURRENT_TAG frontend
+          docker build -t $PROJECT_NAME:$GITHUB_SHA-dev frontend
           
       - name: Push Docker image
         run: |
-          docker tag $CURRENT_TAG $LATEST_TAG
+          docker tag $PROJECT_NAME:$GITHUB_SHA-dev $PROJECT_NAME:latest
           echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push $CURRENT_TAG
-          docker push $LATEST_TAG
+          docker push $PROJECT_NAME:$GITHUB_SHA-dev
+          docker push $PROJECT_NAME:latest
